@@ -45,7 +45,7 @@
 |------|------|---------|
 | [[🎓-AI-기반-학습-관리-시스템-(AI‐LMS)-프로젝트-계획서]] | v5.0 통합 계획서 | 01번의 상위 비전. MVP는 이 중 v1.0 범위만 구현 |
 | [[📇-Flashcard-SRS-모듈-상세-설계-(v5.0)]] | SM-2 기반 반복 학습 | Week 28(M7) 착수 예정. MVP 인프라 위에 구축 |
-| [[📓-Knowledge-Notes-모듈-상세-설계-(v5.0)]] | Obsidian형 지식 노트 | Week 31(M8) 착수 예정. **Blocker A3 결정 필요** (MySQL vs PostgreSQL) |
+| [[📓-Knowledge-Notes-모듈-상세-설계-(v5.0)]] | Obsidian형 지식 노트 | Week 31(M8) 착수 예정. **Blocker A3 결정 필요** (PostgreSQL(확정)) |
 
 ### 🔐 컴플라이언스
 | # | 문서 |
@@ -88,7 +88,7 @@
 ## 🔑 핵심 기술 결정
 
 - **Backend**: Spring Boot 4 + Java 21 (Virtual Threads) + OAuth2 + Outbox
-- **Data**: MySQL (SSOT) + pgvector (콘텐츠·GitHub 임베딩) + Redis + Kafka + Elasticsearch
+- **Data**: PostgreSQL (SSOT) + pgvector (콘텐츠·GitHub 임베딩) + Redis + Kafka + Elasticsearch
 - **AI**: Claude Sonnet 4.6 (학습 경로·코드 리뷰) + Haiku 4.5 (짧은 멘토 응답) + text-embedding-3-small
 - **Sandbox**: Docker + **gVisor (runsc)** + 네트워크 차단 + 30초 limit
 - **Web**: React 18 + Monaco Editor + Zustand + TanStack Query
