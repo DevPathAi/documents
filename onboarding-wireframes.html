@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>DevPath AI — Onboarding Wireframe Specifications</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f4efe4;
+    --paper-dark: #e8e0ce;
+    --ink: #1a1f2e;
+    --ink-soft: #2d3548;
+    --ink-muted: #6b7285;
+    --grid: rgba(26, 31, 46, 0.05);
+    --accent: #d4571f;
+    --accent-soft: #f4d4bb;
+    --ar: #d4571f;
+    --wireframe-fill: #d9d2c1;
+    --wireframe-stroke: #a8a193;
+    --dim-line: #7a8498;
+    --primary-preview: #2d3f5f;
+    --dark-screen: #1a1f2e;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'IBM Plex Sans KR', sans-serif;
+    background: var(--paper);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 24px 24px;
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 48px 32px 96px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .document {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* === Document header === */
+  .doc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding-bottom: 24px;
+    margin-bottom: 64px;
+    border-bottom: 2px solid var(--ink);
+    position: relative;
+  }
+  .doc-header::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: -6px;
+    height: 1px;
+    background: var(--ink);
+  }
+
+  .doc-title {
+    font-family: 'Fraunces', serif;
+    font-size: 48px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+  .doc-subtitle {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+
+  .doc-meta {
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-muted);
+    line-height: 1.8;
+  }
+  .doc-meta strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  /* === Legend strip === */
+  .legend-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    padding: 20px 24px;
+    background: var(--paper-dark);
+    border: 1px solid var(--ink);
+    border-radius: 2px;
+    margin-bottom: 64px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+  .swatch {
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--ink);
+    flex-shrink: 0;
+  }
+
+  /* === Plate (each screen) === */
+  .plate {
+    margin-bottom: 120px;
+    position: relative;
+  }
+
+  .plate-header {
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px dashed var(--ink-muted);
+  }
+
+  .plate-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    background: var(--ink);
+    color: var(--paper);
+    letter-spacing: 0.1em;
+  }
+
+  .plate-title {
+    font-family: 'Fraunces', serif;
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .plate-desc {
+    margin-left: auto;
+    font-size: 13px;
+    color: var(--ink-soft);
+    max-width: 400px;
+    text-align: right;
+    font-style: italic;
+  }
+
+  .plate-body {
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    gap: 64px;
+    align-items: flex-start;
+  }
+
+  /* === Phone frame (mobile screens) === */
+  .phone-stage {
+    display: flex;
+    justify-content: center;
+    position: relative;
+    padding: 24px 80px;
+  }
+
+  .phone {
+    width: 375px;
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: 32px;
+    padding: 8px;
+    position: relative;
+    box-shadow: 4px 6px 0 var(--ink);
+  }
+  .phone-screen {
+    background: var(--paper);
+    border-radius: 24px;
+    overflow: hidden;
+    position: relative;
+  }
+  .phone-notch {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 110px;
+    height: 26px;
+    background: var(--ink);
+    border-radius: 0 0 12px 12px;
+    z-index: 2;
+  }
+
+  /* === Wireframe elements === */
+  .wf-status-bar {
+    height: 44px;
+    background: transparent;
+  }
+
+  .wf-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    height: 56px;
+  }
+
+  .wf-back { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--ink); }
+
+  .wf-progress {
+    padding: 8px 20px 16px;
+  }
+  .wf-progress-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-muted);
+  }
+  .wf-dots { display: flex; gap: 6px; }
+  .wf-dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--ink-soft); }
+  .wf-dot.filled { background: var(--ink); border-color: var(--ink); }
+
+  .wf-progress-bar {
+    height: 6px;
+    background: var(--paper-dark);
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid var(--wireframe-stroke);
+  }
+  .wf-progress-fill {
+    height: 100%;
+    background: var(--ink);
+    width: 50%;
+  }
+
+  .wf-content { padding: 24px 20px; }
+
+  .wf-caption {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-muted);
+    letter-spacing: 0.04em;
+    margin-bottom: 8px;
+  }
+
+  .wf-heading-xl {
+    font-family: 'Fraunces', serif;
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--ink);
+    margin-bottom: 12px;
+    letter-spacing: -0.01em;
+  }
+  .wf-heading-lg {
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .wf-heading-md {
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 8px;
+  }
+  .wf-body {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    margin-bottom: 16px;
+  }
+  .wf-small {
+    font-size: 12px;
+    color: var(--ink-muted);
+    line-height: 1.5;
+  }
+
+  /* === Option cards === */
+  .wf-option {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    border: 1.5px solid var(--wireframe-stroke);
+    border-radius: 12px;
+    background: var(--paper);
+    margin-bottom: 12px;
+    min-height: 72px;
+  }
+  .wf-option.selected {
+    border: 2px solid var(--ink);
+    background: var(--accent-soft);
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .wf-radio {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1.5px solid var(--ink-soft);
+    flex-shrink: 0;
+    position: relative;
+  }
+  .wf-radio.checked {
+    border: 5px solid var(--ink);
+  }
+  .wf-option-content { flex: 1; }
+  .wf-option-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 2px;
+  }
+  .wf-option-desc {
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+
+  /* === Button === */
+  .wf-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 56px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    border: 2px solid var(--ink);
+    cursor: default;
+  }
+  .wf-button.primary {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .wf-button.secondary {
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .wf-button.ar {
+    background: var(--ar);
+    color: var(--paper);
+    border-color: var(--ar);
+  }
+  .wf-button.disabled {
+    background: var(--paper-dark);
+    color: var(--ink-muted);
+    border-color: var(--wireframe-stroke);
+  }
+  .wf-button.ghost {
+    border-color: transparent;
+    background: transparent;
+  }
+
+  .wf-sticky-bottom {
+    padding: 16px 20px 20px;
+    border-top: 1px solid var(--wireframe-stroke);
+    background: var(--paper);
+  }
+
+  /* === Code block === */
+  .wf-code-block {
+    background: var(--dark-screen);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 16px 0;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .wf-code-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: #0d1220;
+    font-size: 11px;
+    color: #8892a6;
+  }
+  .wf-code-body {
+    padding: 16px;
+    font-size: 12px;
+    line-height: 1.7;
+    color: #e2e8f0;
+  }
+  .kw { color: #c792ea; }
+  .str { color: #c3e88d; }
+  .fn { color: #82aaff; }
+  .cmt { color: #546e7a; }
+
+  /* === AR Badge === */
+  .wf-ar-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    background: var(--accent-soft);
+    border: 2px solid var(--ar);
+    border-radius: 12px;
+    margin-bottom: 24px;
+  }
+  .wf-ar-badge-icon {
+    font-size: 20px;
+  }
+  .wf-ar-badge-text {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 600;
+    color: #8b3810;
+  }
+  .wf-ar-badge-arrow { font-size: 14px; color: var(--ar); }
+
+  /* === Loading stepper === */
+  .wf-stepper {
+    background: var(--paper-dark);
+    border: 1px solid var(--wireframe-stroke);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .wf-step-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0;
+    font-size: 13px;
+  }
+  .wf-step-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .wf-step-icon.done { color: var(--ink); }
+  .wf-step-icon.loading { color: var(--accent); }
+  .wf-step-icon.pending { color: var(--ink-muted); }
+
+  /* === Path reveal step card === */
+  .wf-step-card {
+    display: flex;
+    gap: 14px;
+    padding: 16px 18px;
+    border: 1.5px solid var(--wireframe-stroke);
+    border-radius: 12px;
+    background: var(--paper);
+    margin-bottom: 10px;
+  }
+  .wf-step-card.active {
+    border: 2px solid var(--ink);
+    background: var(--accent-soft);
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .wf-step-card.locked {
+    opacity: 0.6;
+  }
+  .wf-step-num {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: var(--paper);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .wf-step-card.locked .wf-step-num {
+    background: var(--ink-muted);
+  }
+  .wf-step-body { flex: 1; }
+  .wf-step-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .wf-step-desc {
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+  .wf-step-badge {
+    align-self: flex-start;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 4px 8px;
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  .wf-step-card.locked .wf-step-badge {
+    background: transparent;
+    color: var(--ink-muted);
+  }
+
+  .wf-why-card {
+    background: var(--accent-soft);
+    border: 1.5px solid var(--ar);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 24px;
+  }
+  .wf-why-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #8b3810;
+    margin-bottom: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.04em;
+  }
+  .wf-why-list {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--ink-soft);
+  }
+  .wf-why-list li {
+    list-style: none;
+    padding-left: 12px;
+    position: relative;
+  }
+  .wf-why-list li::before {
+    content: '·';
+    position: absolute;
+    left: 0;
+    font-weight: 700;
+  }
+
+  /* === AR camera view === */
+  .wf-ar-camera {
+    height: 600px;
+    background: linear-gradient(180deg, #1a1f2e 0%, #2d3548 50%, #1a1f2e 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .wf-ar-camera::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  .wf-ar-top {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    background: linear-gradient(180deg, rgba(0,0,0,0.4), transparent);
+    z-index: 2;
+  }
+  .wf-ar-top-btn {
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 20px;
+    padding: 6px 12px;
+    color: white;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .wf-ar-tap-target {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 180px;
+    height: 120px;
+    border: 2px dashed #5cb8ff;
+    background: rgba(92, 184, 255, 0.15);
+    border-radius: 8px;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 1; transform: translate(-50%, -50%) scale(1.03); }
+  }
+  .wf-ar-bottom {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 20px;
+    background: linear-gradient(0deg, rgba(0,0,0,0.7), transparent);
+    color: white;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  /* === Dimensions panel === */
+  .dims {
+    background: var(--paper-dark);
+    border: 1px solid var(--ink);
+    border-radius: 2px;
+    padding: 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    line-height: 1.8;
+    position: sticky;
+    top: 24px;
+  }
+  .dims h4 {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--ink);
+    font-weight: 700;
+  }
+  .dims-section {
+    margin-bottom: 20px;
+  }
+  .dims-section:last-child { margin-bottom: 0; }
+  .dims-label {
+    color: var(--ink-muted);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  .dims-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    color: var(--ink-soft);
+  }
+  .dims-row strong { color: var(--ink); font-weight: 600; }
+
+  .callout {
+    padding: 10px 12px;
+    background: var(--accent-soft);
+    border-left: 3px solid var(--ar);
+    margin-top: 12px;
+    font-family: 'IBM Plex Sans KR', sans-serif;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #8b3810;
+  }
+
+  /* === Divider === */
+  .wf-divider {
+    height: 1px;
+    background: var(--wireframe-stroke);
+    margin: 16px 0;
+    position: relative;
+  }
+  .wf-divider-text {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--paper);
+    padding: 0 12px;
+    font-size: 11px;
+    color: var(--ink-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* === Social button variants === */
+  .wf-social-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    height: 56px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    padding: 0 20px;
+  }
+  .wf-social-btn.github {
+    background: var(--ink);
+    color: var(--paper);
+    justify-content: flex-start;
+  }
+  .wf-social-btn.github .badge {
+    margin-left: auto;
+    font-size: 10px;
+    padding: 3px 8px;
+    background: var(--ar);
+    border-radius: 4px;
+    font-weight: 700;
+  }
+  .wf-social-btn.google {
+    background: var(--paper);
+    color: var(--ink);
+    border: 1.5px solid var(--wireframe-stroke);
+  }
+  .wf-social-btn.kakao {
+    background: #fee500;
+    color: #191919;
+  }
+
+  /* === Meta row === */
+  .wf-meta-row {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin-bottom: 20px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* === Footer === */
+  .doc-footer {
+    margin-top: 120px;
+    padding-top: 32px;
+    border-top: 2px solid var(--ink);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-muted);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* === Responsive === */
+  @media (max-width: 1100px) {
+    .plate-body { grid-template-columns: 1fr; }
+    .dims { position: static; }
+    .phone-stage { padding: 24px 0; }
+  }
+
+  /* === Print === */
+  @media print {
+    body { background: white; }
+    .plate { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="document">
+
+  <header class="doc-header">
+    <div>
+      <h1 class="doc-title">Onboarding Wireframes</h1>
+      <div class="doc-subtitle">DevPath AI · Specification v1.0 · Figma-ready</div>
+    </div>
+    <div class="doc-meta">
+      <strong>PROJECT</strong> DevPath AI<br>
+      <strong>DATE</strong> 2026-04-22<br>
+      <strong>VIEWPORT</strong> 375 × 812 (Mobile)<br>
+      <strong>GRID</strong> 8-point system
+    </div>
+  </header>
+
+  <div class="legend-strip">
+    <div class="legend-item">
+      <span class="swatch" style="background: var(--paper);"></span>
+      <span>PAPER / CANVAS</span>
+    </div>
+    <div class="legend-item">
+      <span class="swatch" style="background: var(--ink);"></span>
+      <span>INK / PRIMARY</span>
+    </div>
+    <div class="legend-item">
+      <span class="swatch" style="background: var(--accent-soft); border-color: var(--ar);"></span>
+      <span>AR ACCENT</span>
+    </div>
+    <div class="legend-item">
+      <span class="swatch" style="background: var(--wireframe-fill);"></span>
+      <span>WIREFRAME PLACEHOLDER</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- PLATE 01: Sign-up                                               -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <section class="plate">
+    <div class="plate-header">
+      <span class="plate-number">S01</span>
+      <h2 class="plate-title">Sign-up · Social Login</h2>
+      <p class="plate-desc">GitHub을 최우선 강조, 카카오는 공식 브랜드 컬러 유지</p>
+    </div>
+
+    <div class="plate-body">
+      <div class="phone-stage">
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="wf-status-bar"></div>
+            <div class="wf-header-bar">
+              <div class="wf-back">←</div>
+              <div></div>
+            </div>
+
+            <div class="wf-content">
+              <h1 class="wf-heading-xl">시작할<br>준비가 됐네요</h1>
+              <p class="wf-body">당신의 개발 이력을 기반으로 경로를 추천합니다. GitHub 로그인을 권장합니다.</p>
+
+              <div style="margin-top: 40px;">
+                <div class="wf-social-btn github">
+                  <span>⬢</span>
+                  <span>GitHub으로 계속</span>
+                  <span class="badge">추천</span>
+                </div>
+                <div class="wf-social-btn google">
+                  <span>G</span>
+                  <span>Google로 계속</span>
+                </div>
+                <div class="wf-social-btn kakao">
+                  <span>K</span>
+                  <span>카카오로 계속</span>
+                </div>
+              </div>
+
+              <div class="wf-divider">
+                <span class="wf-divider-text">또는</span>
+              </div>
+
+              <div style="text-align: center; padding: 12px; font-size: 14px; color: var(--ink-soft); font-weight: 500;">
+                이메일로 가입
+              </div>
+
+              <p class="wf-small" style="text-align: center; margin-top: 32px;">
+                가입 시 이용약관과 개인정보 처리방침에<br>동의합니다.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="dims">
+        <h4>Dimensions</h4>
+
+        <div class="dims-section">
+          <div class="dims-label">Viewport</div>
+          <div class="dims-row"><span>Width</span><strong>375</strong></div>
+          <div class="dims-row"><span>Height</span><strong>812</strong></div>
+          <div class="dims-row"><span>H-padding</span><strong>20 (space/5)</strong></div>
+        </div>
+
+        <div class="dims-section">
+          <div class="dims-label">Vertical rhythm</div>
+          <div class="dims-row"><span>Top → Title</span><strong>32 (space/8)</strong></div>
+          <div class="dims-row"><span>Title → Body</span><strong>12 (space/3)</strong></div>
+          <div class="dims-row"><span>Body → Buttons</span><strong>40 (space/10)</strong></div>
+          <div class="dims-row"><span>Button gap</span><strong>12 (space/3)</strong></div>
+          <div class="dims-row"><span>Buttons → Divider</span><strong>32 (space/8)</strong></div>
+        </div>
+
+        <div class="dims-section">
+          <div class="dims-label">Components</div>
+          <div class="dims-row"><span>Social Button</span><strong>H 56</strong></div>
+          <div class="dims-row"><span>Button radius</span><strong>12 (radius/md)</strong></div>
+          <div class="dims-row"><span>GitHub badge</span><strong>H 22, px 8</strong></div>
+        </div>
+
+        <div class="dims-section">
+          <div class="dims-label">Typography</div>
+          <div class="dims-row"><span>Title</span><strong>display-md 28/36</strong></div>
+          <div class="dims-row"><span>Body</span><strong>body-md 15/24</strong></div>
+          <div class="dims-row"><span>Button</span><strong>heading-sm 15/24 600</strong></div>
+        </div>
+
+        <div class="callout">
+          GitHub 버튼에만 "추천" 뱃지 + 가장 대비 큰 색상(검정). Google·카카오는 보조 시각 계급.
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- PLATE 02: Onboarding Intro                                      -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <section class="plate">
+    <div class="plate-header">
+      <span class="plate-number">O01</span>
+      <h2 class="plate-title">Onboarding Intro</h2>
+      <p class="plate-desc">기대치 설정. 4단계 · 2분임을 명시해 심리적 장벽 제거</p>
+    </div>
+
+    <div class="plate-body">
+      <div class="phone-stage">
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="wf-status-bar"></div>
+            <div class="wf-header-bar">
+              <div class="wf-back">←</div>
+              <div style="font-size: 14px; color: var(--ink-muted);">나중에</div>
+            </div>
+
+            <div class="wf-content">
+              <h1 class="wf-heading-xl">2분이면 끝납니다</h1>
+              <p class="wf-body">4단계로 당신의 로드맵을 만들어드립니다.</p>
+
+              <div style="background: var(--paper); border: 1.5px solid var(--wireframe-stroke); border-radius: 12px; margin-top: 24px; overflow: hidden;">
+                <div style="display: flex; align-items: center; gap: 14px; padding: 18px 20px; border-bottom: 1px solid var(--wireframe-stroke);">
+                  <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--ink); color: var(--paper); display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 12px;">1</div>
+                  <div style="flex: 1; font-size: 15px; font-weight: 500;">학습 목표</div>
+                  <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-muted);">30초</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 14px; padding: 18px 20px; border-bottom: 1px solid var(--wireframe-stroke);">
+                  <div style="width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--ink-muted); color: var(--ink-muted); display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 12px;">2</div>
+                  <div style="flex: 1; font-size: 15px; color: var(--ink-soft);">관심 트랙</div>
+                  <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-muted);">30초</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 14px; padding: 18px 20px; border-bottom: 1px solid var(--wireframe-stroke);">
+                  <div style="width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--ink-muted); color: var(--ink-muted); display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 12px;">3</div>
+                  <div style="flex: 1; font-size: 15px; color: var(--ink-soft);">실력 진단 <span style="color: var(--ink-muted); font-size: 12px;">15문항</span></div>
+                  <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-muted);">2분</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 14px; padding: 18px 20px;">
+                  <div style="width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--ink-muted); color: var(--ink-muted); display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 12px;">4</div>
+                  <div style="flex: 1; font-size: 15px; color: var(--ink-soft);">학습 약속</div>
+                  <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-muted);">30초</div>
+                </div>
+              </div>
+
+              <p class="wf-small" style="margin-top: 32px;">
+                💡 답변은 마이페이지에서 언제든 수정할 수 있습니다.
+              </p>
+            </div>
+
+            <div class="wf-sticky-bottom">
+              <div class="wf-button primary">
+                <span>시작하기</span>
+                <span>→</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="dims">
+        <h4>Dimensions</h4>
+
+        <div class="dims-section">
+          <div class="dims-label">Step List Card</div>
+          <div class="dims-row"><span>Row height</span><strong>64</strong></div>
+          <div class="dims-row"><span>Row padding</span><strong>18 × 20</strong></div>
+          <div class="dims-row"><span>Divider</span><strong>1px neutral/200</strong></div>
+          <div class="dims-row"><span>Number circle</span><strong>28 × 28</strong></div>
+          <div class="dims-row"><span>Gap num → text</span><strong>14</strong></div>
+          <div class="dims-row"><span>Radius</span><strong>12</strong></div>
+        </div>
+
+        <div class="dims-section">
+          <div class="dims-label">Sticky Bottom CTA</div>
+          <div class="dims-row"><span>Container padding</span><strong>16 / 20 / 20</strong></div>
+          <div class="dims-row"><span>Button height</span><strong>56</strong></div>
+          <div class="dims-row"><span>Button width</span><strong>100% - 40</strong></div>
+          <div class="dims-row"><span>Safe-area</span><strong>env(safe-area-inset-bottom)</strong></div>
+        </div>
+
+        <div class="callout">
+          Step 1만 active(채워진 원). 나머지는 outline. 진행 중에도 현재 단계만 강조.
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- PLATE 03: Goal Selection                                        -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <section class="plate">
+    <div class="plate-header">
+      <span class="plate-number">O02</span>
+      <h2 class="plate-title">Goal Selection</h2>
+      <p class="plate-desc">Option Card 패턴. 선택 시 CTA 활성화</p>
+    </div>
+
+    <div class="plate-body">
+      <div class="phone-stage">
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="wf-status-bar"></div>
+            <div class="wf-header-bar">
+              <div class="wf-back">←</div>
+              <div style="font-size: 22px; color: var(--ink);">×</div>
+            </div>
+
+            <div class="wf-progress">
+              <div class="wf-progress-row">
+                <div class="wf-dots">
+                  <div class="wf-dot filled"></div>
+                  <div class="wf-dot"></div>
+                  <div class="wf-dot"></div>
+                  <div class="wf-dot"></div>
+                </div>
+                <div>1/4 · 2분 남음</div>
+              </div>
+              <div class="wf-progress-bar">
+                <div class="wf-progress-fill" style="width: 25%;"></div>
+              </div>
+            </div>
+
+            <div class="wf-content" style="padding-top: 16px;">
+              <h2 class="wf-heading-lg">어떤 목표로 학습하세요?</h2>
+              <p class="wf-small" style="margin-bottom: 24px;">개인화 경로의 방향을 결정합니다.</p>
+
+              <div class="wf-option">
+                <div class="wf-radio"></div>
+                <div class="wf-option-content">
+                  <div class="wf-option-title">취업 준비</div>
+                  <div class="wf-option-desc">첫 직장, 부트캠프 수료</div>
+                </div>
+              </div>
+
+              <div class="wf-option">
+                <div class="wf-radio"></div>
+                <div class="wf-option-content">
+                  <div class="wf-option-title">이직 · 레벨업</div>
+                  <div class="wf-option-desc">현직자, 더 큰 도전</div>
+                </div>
+              </div>
+
+              <div class="wf-option">
+                <div class="wf-radio"></div>
+                <div class="wf-option-content">
+                  <div class="wf-option-title">실무 역량 강화</div>
+                  <div class="wf-option-desc">현재 업무에 바로 적용</div>
+                </div>
+              </div>
+
+              <div class="wf-option selected">
+                <div class="wf-radio checked"></div>
+                <div class="wf-option-content">
+                  <div class="wf-option-title">사이드 프로젝트</div>
+                  <div class="wf-option-desc">포트폴리오, 창업 준비</div>
+                </div>
+              </div>
+
+              <p class="wf-small" style="text-align: center; margin-top: 20px;">
+                선택은 하나만. 부가 관심사는 다음 단계에서.
+              </p>
+            </div>
+
+            <div class="wf-sticky-bottom">
+              <div class="wf-button primary">
+                <span>다음</span><span>→</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="dims">
+        <h4>Dimensions</h4>
+
+        <div class="dims-section">
+          <div class="dims-label">Progress Bar</div>
+          <div class="dims-row"><span>Total height</span><strong>56</strong></div>
+          <div class="dims-row"><span>Bar height</span><strong>6</strong></div>
+          <div class="dims-row"><span>Dot size</span><strong>8 × 8</strong></div>
+          <div class="dims-row"><span>Dot gap</span><strong>6</strong></div>
+          <div class="dims-row"><span>Row → Bar gap</span><strong>8</strong></div>
+        </div>
+
+        <div class="dims-section">
+          <div class="dims-label">Option Card</div>
+          <div class="dims-row"><span>Min height</span><strong>72</strong></div>
+          <div class="dims-row"><span>Padding</span><strong>16 × 20</strong></div>
+          <div class="dims-row"><span>Card gap</span><strong>12</strong></div>
+          <div class="dims-row"><span>Radio size</span><strong>20 × 20</strong></div>
+          <div class="dims-row"><span>Border default</span><strong>1.5px neutral/300</strong></div>
+          <div class="dims-row"><span>Border selected</span><strong>2px primary/500</strong></div>
+        </div>
+
+        <div class="dims-section">
+          <div class="dims-label">Typography</div>
+          <div class="dims-row"><span>Question</span><strong>heading-lg 22/30</strong></div>
+          <div class="dims-row"><span>Option title</span><strong>15/24 600</strong></div>
+          <div class="dims-row"><span>Option desc</span><strong>12/18 400</strong></div>
+        </div>
+
+        <div class="callout">
+          CTA "다음" 버튼은 옵션 미선택 시 disabled. 선택 즉시 primary 활성화 + 200ms 페이드.
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- PLATE 04: Diagnostic Quiz                                       -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <section class="plate">
+    <div class="plate-header">
+      <span class="plate-number">O03</span>
+      <h2 class="plate-title">Diagnostic Quiz (Code)</h2>
+      <p class="plate-desc">코드 문제 + "잘 모르겠어요" 옵션으로 찍기 대신 정확한 진단 유도</p>
+    </div>
+
+    <div class="plate-body">
+      <div class="phone-stage">
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="wf-status-bar"></div>
+            <div class="wf-header-bar">
+              <div class="wf-back">←</div>
+              <div style="font-size: 22px; color: var(--ink);">×</div>
+            </div>
+
+            <div class="wf-progress">
+              <div class="wf-progress-row">
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink);">Q3 / 15</div>
+                <div>진단 · 1분 40초 남음</div>
+              </div>
+              <div class="wf-progress-bar">
+                <div class="wf-progress-fill" style="width: 20%;"></div>
+              </div>
+            </div>
+
+            <div class="wf-content" style="padding-top: 20px;">
+              <div class="wf-caption">JPA · 난이도 ⭐⭐☆☆☆</div>
+              <h3 class="wf-heading-md">다음 코드의 문제는?</h3>
+
+              <div class="wf-code-block">
+                <div class="wf-code-header">
+                  <span>OrderService.java</span>
+                  <span>Java</span>
+                </div>
+                <div class="wf-code-body">
+<span class="kw">List</span>&lt;Order&gt; orders =<br>
+&nbsp;&nbsp;orderRepo.<span class="fn">findAll</span>();<br>
+<br>
+orders.<span class="fn">forEach</span>(o -&gt;<br>
+&nbsp;&nbsp;<span class="kw">System</span>.out.<span class="fn">println</span>(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;o.<span class="fn">getMember</span>().<span class="fn">getName</span>()<br>
+&nbsp;&nbsp;)<br>
+);
+                </div>
+              </div>
+
+              <p style="font-size: 13px; color: var(--ink-soft); margin: 16px 0 12px;">정답 하나를 선택하세요.</p>
+
+              <div class="wf-option" style="min-height: 56px; padding: 14px 18px; margin-bottom: 8px;">
+                <div class="wf-radio"></div>
+                <div class="wf-option-content">
+                  <div class="wf-option-title">N+1 쿼리 발생</div>
+                </div>
+              </div>
+              <div class="wf-option" style="min-height: 56px; padding: 14px 18px; margin-bottom: 8px;">
+                <div class="wf-radio"></div>
+                <div class="wf-option-content">
+                  <div class="wf-option-title">LazyInitializationException</div>
+                </div>
+              </div>
+              <div class="wf-option selected" style="min-height: 56px; padding: 14px 18px; margin-bottom: 8px;">
+                <div class="wf-radio checked"></div>
+                <div class="wf-option-content">
+                  <div class="wf-option-title">둘 다 가능성 있음</div>
+                </div>
+              </div>
+              <div class="wf-option" style="min-height: 56px; padding: 14px 18px; margin-bottom: 8px;">
+                <div class="wf-radio"></div>
+                <div class="wf-option-content">
+                  <div class="wf-option-title">문제 없음</div>
+                </div>
+              </div>
+
+              <div class="wf-divider">
+                <span class="wf-divider-text">또는</span>
+              </div>
+
+              <div style="border: 1.5px dashed var(--wireframe-stroke); border-radius: 12px; padding: 14px; text-align: center; color: var(--ink-muted); font-size: 14px; font-weight: 500;">
+                잘 모르겠어요
+              </div>
+            </div>
+
+            <div class="wf-sticky-bottom">
+              <div class="wf-button primary">
+                <span>다음</span><span>→</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="dims">
+        <h4>Dimensions</h4>
+
+        <div class="dims-section">
+          <div class="dims-label">Code Block</div>
+          <div class="dims-row"><span>Background</span><strong>neutral/950</strong></div>
+          <div class="dims-row"><span>Radius</span><strong>12</strong></div>
+          <div class="dims-row"><span>Header height</span><strong>36</strong></div>
+          <div class="dims-row"><span>Body padding</span><strong>16 × 20</strong></div>
+          <div class="dims-row"><span>Font</span><strong>JetBrains Mono 14/22</strong></div>
+        </div>
+
+        <div class="dims-section">
+          <div class="dims-label">Compact Option</div>
+          <div class="dims-row"><span>Height</span><strong>56</strong></div>
+          <div class="dims-row"><span>Padding</span><strong>14 × 18</strong></div>
+          <div class="dims-row"><span>Card gap</span><strong>8</strong></div>
+        </div>
+
+        <div class="dims-section">
+          <div class="dims-label">"잘 모르겠어요"</div>
+          <div class="dims-row"><span>Border</span><strong>dashed 1.5px</strong></div>
+          <div class="dims-row"><span>Text</span><strong>neutral/500 500</strong></div>
+          <div class="dims-row"><span>내부 데이터</span><strong>skipped: true</strong></div>
+        </div>
+
+        <div class="callout">
+          Q5, Q10 완료 시 toast 등장: "1/3 지점. 맞춤 경로 품질이 올라가고 있어요."
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- PLATE 05: Loading                                               -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <section class="plate">
+    <div class="plate-header">
+      <span class="plate-number">O06</span>
+      <h2 class="plate-title">Path Generation Loading</h2>
+      <p class="plate-desc">6초 로딩을 투명하게 — 기다림이 아니라 진행 체감</p>
+    </div>
+
+    <div class="plate-body">
+      <div class="phone-stage">
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="wf-status-bar"></div>
+
+            <div class="wf-content" style="padding-top: 80px;">
+              <h1 class="wf-heading-xl" style="text-align: center;">당신의 로드맵을<br>만들고 있어요</h1>
+              <p class="wf-small" style="text-align: center; margin-top: 12px;">평균 6초 소요</p>
+
+              <div class="wf-stepper" style="margin-top: 48px;">
+                <div class="wf-step-row">
+                  <div class="wf-step-icon done">✓</div>
+                  <div>진단 결과 분석 완료</div>
+                </div>
+                <div class="wf-step-row">
+                  <div class="wf-step-icon done">✓</div>
+                  <div>GitHub 기록 검토 완료</div>
+                </div>
+                <div class="wf-step-row">
+                  <div class="wf-step-icon loading">⟳</div>
+                  <div>유사 학습자 1,240명과 비교 중</div>
+                </div>
+                <div class="wf-step-row">
+                  <div class="wf-step-icon pending">○</div>
+                  <div style="color: var(--ink-muted);">맞춤 콘텐츠 매칭</div>
+                </div>
+              </div>
+
+              <div style="margin-top: 40px; opacity: 0.3; filter: blur(6px);">
+                <div style="height: 80px; background: var(--wireframe-fill); border-radius: 12px; margin-bottom: 10px;"></div>
+                <div style="height: 80px; background: var(--wireframe-fill); border-radius: 12px; margin-bottom: 10px;"></div>
+                <div style="height: 80px; background: var(--wireframe-fill); border-radius: 12px;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="dims">
+        <h4>Dimensions</h4>
+
+        <div class="dims-section">
+          <div class="dims-label">Layout</div>
+          <div class="dims-row"><span>Top spacing</span><strong>80 (space/16 + 16)</strong></div>
+          <div class="dims-row"><span>Title → Subtitle</span><strong>12</strong></div>
+          <div class="dims-row"><span>Subtitle → Stepper</span><strong>48 (space/12)</strong></div>
+          <div class="dims-row"><span>Stepper → Preview</span><strong>40 (space/10)</strong></div>
+        </div>
+
+        <div class="dims-section">
+          <div class="dims-label">Stepper Card</div>
+          <div class="dims-row"><span>Padding</span><strong>20</strong></div>
+          <div class="dims-row"><span>Row height</span><strong>32</strong></div>
+          <div class="dims-row"><span>Icon size</span><strong>20 × 20</strong></div>
+          <div class="dims-row"><span>Icon → Text gap</span><strong>12</strong></div>
+          <div class="dims-row"><span>Spinner rotate</span><strong>1.2s linear infinite</strong></div>
+        </div>
+
+        <div class="dims-section">
+          <div class="dims-label">Blurred Preview</div>
+          <div class="dims-row"><span>Opacity</span><strong>0.3</strong></div>
+          <div class="dims-row"><span>Blur</span><strong>6px</strong></div>
+          <div class="dims-row"><span>목적</span><strong>Path reveal 예고</strong></div>
+        </div>
+
+        <div class="callout">
+          각 스텝은 1.5~2초 간격으로 done으로 전환. 전체 완료 시 O07로 fade 400ms.
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- PLATE 06: Path Reveal                                           -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <section class="plate">
+    <div class="plate-header">
+      <span class="plate-number">O07</span>
+      <h2 class="plate-title">Path Reveal · First Aha Moment</h2>
+      <p class="plate-desc">제품 전체의 핵심 순간. 모션과 시각적 위계에 가장 공들일 것</p>
+    </div>
+
+    <div class="plate-body">
+      <div class="phone-stage">
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="wf-status-bar"></div>
+            <div class="wf-header-bar">
+              <div style="font-family: 'Fraunces', serif; font-weight: 700; font-size: 18px;">DevPath</div>
+              <div style="display: flex; gap: 16px;">
+                <div style="font-size: 18px;">🔔</div>
+                <div style="font-size: 18px;">⚙</div>
+              </div>
+            </div>
+
+            <div class="wf-content" style="padding-top: 24px;">
+              <div class="wf-caption" style="color: var(--ar);">맞춤 로드맵 완성</div>
+              <h1 class="wf-heading-xl" style="font-size: 26px;">홍길동님을 위한<br>3개월 백엔드 로드맵</h1>
+              <p class="wf-body" style="margin-top: 16px;">JPA 기초는 탄탄합니다. 성능 최적화와 MSA로 다음 단계로.</p>
+
+              <div class="wf-why-card" style="margin-top: 32px;">
+                <div class="wf-why-title">🎯 진단에서 발견한 것</div>
+                <ul class="wf-why-list">
+                  <li>강점: JPA 매핑, Security 기초</li>
+                  <li>약점: N+1, 트랜잭션 범위</li>
+                  <li>GitHub: Spring Boot 리포 4개</li>
+                </ul>
+                <p style="font-size: 12px; margin-top: 10px; color: var(--ink-soft); line-height: 1.6;">
+                  이 결과로 "성능 최적화 → 분산 시스템 기초 → MSA 실전" 순서로 구성했습니다.
+                </p>
+              </div>
+
+              <h3 class="wf-heading-md" style="margin-top: 32px;">전체 로드맵</h3>
+
+              <div class="wf-step-card active" style="margin-top: 16px;">
+                <div class="wf-step-num">1</div>
+                <div class="wf-step-body">
+                  <div class="wf-step-title">JPA N+1 문제 해결</div>
+                  <div class="wf-step-desc">진단 40% → 실전 투입 · ⏱ 1주</div>
+                </div>
+                <div class="wf-step-badge">시작</div>
+              </div>
+
+              <div class="wf-step-card locked">
+                <div class="wf-step-num">2</div>
+                <div class="wf-step-body">
+                  <div class="wf-step-title">트랜잭션 고급</div>
+                  <div class="wf-step-desc">격리 수준, 전파 속성 · ⏱ 1주</div>
+                </div>
+                <div class="wf-step-badge">🔒</div>
+              </div>
+
+              <div class="wf-step-card locked">
+                <div class="wf-step-num">3</div>
+                <div class="wf-step-body">
+                  <div class="wf-step-title">인덱스와 쿼리 튜닝</div>
+                  <div class="wf-step-desc">실행 계획 읽기 · ⏱ 1주</div>
+                </div>
+                <div class="wf-step-badge">🔒</div>
+              </div>
+            </div>
+
+            <div class="wf-sticky-bottom">
+              <div class="wf-button primary" style="margin-bottom: 8px;">
+                <span>오늘의 학습 시작 (15분)</span><span>→</span>
+              </div>
+              <div style="text-align: center; padding: 8px; font-size: 13px; color: var(--ink-muted); font-weight: 500;">
+                경로 수정하기
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="dims">
+        <h4>Dimensions</h4>
+
+        <div class="dims-section">
+          <div class="dims-label">Title Section</div>
+          <div class="dims-row"><span>Eyebrow caption</span><strong>11/16 500</strong></div>
+          <div class="dims-row"><span>Title</span><strong>display-lg 32/40</strong></div>
+          <div class="dims-row"><span>Subtitle</span><strong>body-md 15/24</strong></div>
+          <div class="dims-row"><span>Eyebrow → Title</span><strong>12</strong></div>
+        </div>
+
+        <div class="dims-section">
+          <div class="dims-label">Why Card</div>
+          <div class="dims-row"><span>Background</span><strong>ar/100 (soft)</strong></div>
+          <div class="dims-row"><span>Border</span><strong>1.5px ar/500</strong></div>
+          <div class="dims-row"><span>Padding</span><strong>18 × 20</strong></div>
+          <div class="dims-row"><span>Radius</span><strong>12</strong></div>
+        </div>
+
+        <div class="dims-section">
+          <div class="dims-label">Step Card</div>
+          <div class="dims-row"><span>Padding</span><strong>16 × 18</strong></div>
+          <div class="dims-row"><span>Number circle</span><strong>32 × 32</strong></div>
+          <div class="dims-row"><span>Card gap</span><strong>10</strong></div>
+          <div class="dims-row"><span>Active border</span><strong>2px primary + shadow</strong></div>
+          <div class="dims-row"><span>Locked opacity</span><strong>0.6</strong></div>
+        </div>
+
+        <div class="dims-section">
+          <div class="dims-label">Motion on enter</div>
+          <div class="dims-row"><span>Title fade-up</span><strong>400ms</strong></div>
+          <div class="dims-row"><span>Why card</span><strong>delay 200ms</strong></div>
+          <div class="dims-row"><span>Steps stagger</span><strong>80ms × i</strong></div>
+        </div>
+
+        <div class="callout">
+          잠금 해제: Step 1 완료 시 Step 2의 🔒 → 번호로 전환 (스프링 애니메이션 400ms).
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- PLATE 07: Content with AR Badge                                 -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <section class="plate">
+    <div class="plate-header">
+      <span class="plate-number">C01</span>
+      <h2 class="plate-title">Content View · AR Entry Point</h2>
+      <p class="plate-desc">AR 뱃지가 두 번째 Aha Moment의 관문</p>
+    </div>
+
+    <div class="plate-body">
+      <div class="phone-stage">
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="wf-status-bar"></div>
+            <div class="wf-header-bar">
+              <div style="font-size: 14px; color: var(--ink-soft);">← 로드맵</div>
+              <div style="display: flex; gap: 16px;">
+                <div style="font-size: 18px;">♡</div>
+                <div style="font-size: 18px;">⋯</div>
+              </div>
+            </div>
+            <div style="height: 3px; background: var(--paper-dark); position: relative;">
+              <div style="height: 100%; background: var(--ink); width: 30%;"></div>
+            </div>
+
+            <div class="wf-content">
+              <div class="wf-caption">STEP 1 · 2/5강</div>
+              <h1 class="wf-heading-lg" style="font-size: 24px;">JPA N+1 문제,<br>한 번에 이해하기</h1>
+
+              <div class="wf-meta-row">
+                <span>⏱ 15분</span>
+                <span>👥 342명 학습 중</span>
+                <span>⭐ 4.8</span>
+              </div>
+
+              <div class="wf-ar-badge">
+                <div class="wf-ar-badge-icon">🥽</div>
+                <div class="wf-ar-badge-text">이 구조를 AR 3D로 보기<br><span style="font-weight: 400; font-size: 11px; opacity: 0.8;">모바일 필요</span></div>
+                <div class="wf-ar-badge-arrow">→</div>
+              </div>
+
+              <p class="wf-body" style="font-size: 15px; color: var(--ink);">
+                N+1 문제는 ORM을 쓰는 개발자라면 반드시 마주치는 성능 이슈입니다.
+              </p>
+
+              <div style="width: 100%; height: 180px; background: var(--wireframe-fill); border: 1px solid var(--wireframe-stroke); border-radius: 12px; margin: 20px 0; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-muted);">
+                [ IMAGE · ratio 16:9 ]
+              </div>
+
+              <p class="wf-body" style="font-size: 15px;">
+                가장 흔한 증상은 쿼리 1회면 해결될 일을 N+1번의 쿼리로 처리하는 것입니다.
+              </p>
+
+              <div class="wf-code-block">
+                <div class="wf-code-header">
+                  <span>Problem.java</span>
+                  <span>Java</span>
+                </div>
+                <div class="wf-code-body">
+<span class="cmt">// 문제 코드</span><br>
+<span class="kw">List</span>&lt;Order&gt; orders =<br>
+&nbsp;&nbsp;repo.<span class="fn">findAll</span>();
+                </div>
+              </div>
+            </div>
+
+            <div class="wf-sticky-bottom">
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-muted); margin-bottom: 10px; text-align: center;">
+                스크롤 30% · 약 10분 남음
+              </div>
+              <div class="wf-button disabled">
+                <span>읽는 중...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="dims">
+        <h4>Dimensions</h4>
+
+        <div class="dims-section">
+          <div class="dims-label">Progress Indicator (top)</div>
+          <div class="dims-row"><span>Height</span><strong>3</strong></div>
+          <div class="dims-row"><span>Position</span><strong>below header</strong></div>
+          <div class="dims-row"><span>Updates</span><strong>on scroll, throttled</strong></div>
+        </div>
+
+        <div class="dims-section">
+          <div class="dims-label">AR Badge (large)</div>
+          <div class="dims-row"><span>Height</span><strong>64</strong></div>
+          <div class="dims-row"><span>Padding</span><strong>14 × 18</strong></div>
+          <div class="dims-row"><span>Background</span><strong>ar/100</strong></div>
+          <div class="dims-row"><span>Border</span><strong>2px ar/500</strong></div>
+          <div class="dims-row"><span>Icon</span><strong>20 × 20</strong></div>
+          <div class="dims-row"><span>Conditional</span><strong>scene_template_id != null</strong></div>
+        </div>
+
+        <div class="dims-section">
+          <div class="dims-label">CTA State Logic</div>
+          <div class="dims-row"><span>Scroll &lt; 80%</span><strong>Ghost "읽는 중..."</strong></div>
+          <div class="dims-row"><span>Scroll ≥ 80%</span><strong>Primary "완료 + 다음"</strong></div>
+          <div class="dims-row"><span>Back mid-scroll</span><strong>Save + toast</strong></div>
+        </div>
+
+        <div class="callout">
+          데스크톱: AR 뱃지 탭 시 QR 모달. 모바일: 네이티브 AR 앱 전환 (S05 Screen A01 → A02).
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- PLATE 08: AR Camera View                                        -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <section class="plate">
+    <div class="plate-header">
+      <span class="plate-number">A02</span>
+      <h2 class="plate-title">AR Camera · Plane Detection</h2>
+      <p class="plate-desc">카메라 피드 위 오버레이 UI. 다크 모드 유일 화면</p>
+    </div>
+
+    <div class="plate-body">
+      <div class="phone-stage">
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen" style="background: #1a1f2e;">
+            <div class="wf-status-bar"></div>
+
+            <div class="wf-ar-camera">
+              <div class="wf-ar-top">
+                <div class="wf-ar-top-btn">🥽 종료</div>
+                <div class="wf-ar-top-btn">? 도움말</div>
+              </div>
+
+              <div class="wf-ar-tap-target"></div>
+
+              <div class="wf-ar-bottom">
+                파란 영역을 탭하세요
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="dims">
+        <h4>Dimensions</h4>
+
+        <div class="dims-section">
+          <div class="dims-label">Top Overlay</div>
+          <div class="dims-row"><span>Height</span><strong>fade to 0 @ 80px</strong></div>
+          <div class="dims-row"><span>Padding</span><strong>16 × 20</strong></div>
+          <div class="dims-row"><span>Background</span><strong>linear rgba(0,0,0,0.4) → 0</strong></div>
+        </div>
+
+        <div class="dims-section">
+          <div class="dims-label">Control Button</div>
+          <div class="dims-row"><span>Padding</span><strong>6 × 12</strong></div>
+          <div class="dims-row"><span>Radius</span><strong>20 (pill)</strong></div>
+          <div class="dims-row"><span>Background</span><strong>rgba(255,255,255,0.15)</strong></div>
+          <div class="dims-row"><span>Backdrop blur</span><strong>8px</strong></div>
+          <div class="dims-row"><span>Border</span><strong>1px rgba(255,255,255,0.3)</strong></div>
+        </div>
+
+        <div class="dims-section">
+          <div class="dims-label">Plane Indicator</div>
+          <div class="dims-row"><span>Border</span><strong>2px dashed #5CB8FF</strong></div>
+          <div class="dims-row"><span>Background</span><strong>rgba(92,184,255,0.15)</strong></div>
+          <div class="dims-row"><span>Pulse</span><strong>1.5s ease-in-out infinite</strong></div>
+        </div>
+
+        <div class="dims-section">
+          <div class="dims-label">Status Copy</div>
+          <div class="dims-row"><span>State 1</span><strong>책상·바닥을 비추세요</strong></div>
+          <div class="dims-row"><span>State 2</span><strong>공간 인식 중...</strong></div>
+          <div class="dims-row"><span>State 3</span><strong>파란 영역을 탭하세요</strong></div>
+        </div>
+
+        <div class="callout">
+          5분 이상 사용 시 "잠깐 쉬어갈까요?" 모달 자동 등장. 장기 피로감 관리.
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="doc-footer">
+    <div>
+      DEVPATH AI · WIREFRAME SPEC v1.0 · 8 PLATES<br>
+      RELATED: devpath-ai-wireframe-spec.md · devpath-ai-microcopy-guide.md
+    </div>
+    <div style="text-align: right;">
+      © 2026 · FIGMA-READY · 375×812 MOBILE PRIMARY
+    </div>
+  </footer>
+
+</div>
+
+</body>
+</html>

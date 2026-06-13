@@ -15,8 +15,9 @@
 |---|------|------|
 | 01 | [프로젝트 계획서](./01_프로젝트_계획서.md) | 개요, 2 Aha 전략, KPI, 일정 |
 | 02 | [ERD 문서](./02_ERD_문서.md) | 사용자/진단/경로/커뮤니티/Sandbox 스키마 |
-| 03 | [아키텍처 정의서](./03_프로젝트_아키텍처_정의서.md) | 모놀리식 코어 + gVisor Sandbox + AI Gateway |
+| 03 | [아키텍처 정의서](./03_프로젝트_아키텍처_정의서.md) | 폴리레포 서비스 + 중앙집중 스키마(PostgreSQL) + gVisor Sandbox + AI Gateway |
 | 04 | [API 명세서](./04_API_명세서.md) | OAuth2, 경로, Sandbox, 멘토, 커뮤니티 엔드포인트 |
+| 26 | [학습 맥락 자동첨부 구현](./26_학습맥락_자동첨부_구현.md) | **차별화 핵심 LCS** 엔지니어링 구현 스펙 |
 
 ### 🎨 화면 & 요구사항
 | # | 문서 |
@@ -28,6 +29,7 @@
 | 18 | [온보딩 마이크로카피 가이드](./18_온보딩_마이크로카피_가이드.md) |
 | 19 | [온보딩 와이어프레임 스펙](./19_온보딩_와이어프레임_스펙.md) |
 | 20 | [커뮤니티 기능 설계서](./20_커뮤니티_기능_설계서.md) |
+| — | [온보딩 와이어프레임 (HTML)](./onboarding-wireframes.html) · [커뮤니티 와이어프레임 (HTML)](./community-wireframes.html) · [LCS 데이터 흐름 다이어그램 (HTML)](./lcs-data-flow-diagrams.html) |
 
 ### 🛠 개발 프로세스
 | # | 문서 |
@@ -37,6 +39,8 @@
 | 11 | [테스트 전략서](./11_테스트_전략서.md) |
 | 12 | [코드 리뷰 규칙](./12_코드_리뷰_규칙.md) |
 | 13 | [테스트 보고서](./13_테스트_보고서.md) |
+| 24 | [선행 트러블슈팅 참고 (Synapse)](./24_선행_트러블슈팅_참고.md) |
+| 25 | [문서 정합성 점검 보고서](./25_문서_정합성_점검_보고서.md) |
 
 ### 🚀 배포 & 운영
 | # | 문서 |
@@ -50,6 +54,19 @@
 | # | 문서 |
 |---|------|
 | 23 | [개인정보 영향평가 PIA](./23_개인정보_영향평가_PIA.md) |
+| 33 | [개인정보 처리방침](./33_개인정보_처리방침.md) |
+| 34 | [동의 화면 마이크로카피](./34_동의화면_마이크로카피.md) |
+
+### 💼 사업 & 대외 (모두의 창업 / 예비창업패키지)
+| # | 문서 |
+|---|------|
+| 27 | [MVP 설계서 (지원금 활용 계획)](./27_MVP_설계서.md) |
+| 28 | [장기 전략 (90일 통합)](./28_장기_전략.md) |
+| 29 | [예비창업패키지 사업계획서](./29_예비창업패키지_사업계획서.md) |
+| 30 | [발표 평가 Q&A 스크립트](./30_발표_QA_스크립트.md) |
+| 31 | [통계 출처 검증 가이드](./31_통계_출처_검증.md) |
+| 32 | [첨부 영상 대본](./32_영상_대본.md) |
+| — | [피치덱 (HTML)](./pitch-deck.html) |
 
 ### 📎 참고본 & v5.0 확장 설계 (MVP 범위 외)
 | 문서 | 상태 |
@@ -67,17 +84,19 @@
 | 이해관계자 | 먼저 볼 문서 |
 |-----------|-------------|
 | 신규 팀원 온보딩 | 01 → 03 → 07 → 09 |
-| 개발자 (기능 구현) | 02 → 04 → 05 → 06 → 11 |
+| 개발자 (기능 구현) | 02 → 04 → 05 → 06 → 11 → 26 |
 | QA / 테스터 | 07 → 11 → 13 |
 | DevOps / SRE | 10 → 14 → 16 |
 | PM / 기획자 | 01 → 07 → 08 → 17 |
 | 디자이너 / UX 라이터 | 06 → 08 → 18 → 19 |
+| 심사 / 투자자 대응 | 27 → 29 → 30 → 31 → pitch-deck |
 
 ---
 
 ## 🔑 핵심 기술 스택
 
 - **Backend**: Spring Boot 4 + Java 21 (Virtual Threads) + OAuth2 + Outbox
+- **아키텍처**: 폴리레포 서비스 + 중앙집중 스키마 (distributed modular monolith)
 - **Data**: PostgreSQL (SSOT) + pgvector + Redis + Kafka + Elasticsearch
 - **AI**: Claude Sonnet 4.6 / Haiku 4.5 + text-embedding-3-small
 - **Sandbox**: Docker + gVisor (runsc) + 네트워크 차단 + 30초 limit
@@ -88,8 +107,11 @@
 
 ## 🔗 관련 레포지토리
 
+서비스·인프라 레포는 [조직 프로필](https://github.com/DevPathAi)을 참고하세요.
+
 | 레포 | 용도 |
 |------|------|
-| [storyboard](https://github.com/DevPathAi/storyboard) | 인터랙티브 HTML 화면 스토리보드 |
-| [prototype](https://github.com/DevPathAi/prototype) | 프로토타입 구현 |
-| [templates](https://github.com/DevPathAi/templates) | 공용 템플릿 모음 |
+| [devpath-shared](https://github.com/DevPathAi/devpath-shared) | 공유 스키마 + 공통 라이브러리 + 중앙 Flyway |
+| [devpath-gateway](https://github.com/DevPathAi/devpath-gateway) · [*-svc](https://github.com/DevPathAi) | API Gateway + 도메인 서비스 5개 |
+| [devpath-frontend](https://github.com/DevPathAi/devpath-frontend) · [devpath-gitops](https://github.com/DevPathAi/devpath-gitops) | 프론트엔드 + GitOps |
+| [storyboard](https://github.com/DevPathAi/storyboard) · [prototype](https://github.com/DevPathAi/prototype) · [templates](https://github.com/DevPathAi/templates) | 스토리보드 · 프로토타입 · 템플릿 |
