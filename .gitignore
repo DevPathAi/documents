@@ -10,3 +10,6 @@ Thumbs.db
 # Temp
 *.tmp
 ~$*
+
+# OMC (세션 상태 — 커밋 금지)
+.omc/
