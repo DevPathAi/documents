@@ -1,7 +1,7 @@
 # 02. ERD 문서
 
 > **버전**: v1.0
-> **DB 엔진**: MySQL 8.x (OLTP) · pgvector (임베딩) · Redis (세션/캐시) · Elasticsearch (BM25)
+> **DB 엔진**: PostgreSQL 17 (OLTP/SSOT) · pgvector (임베딩) · Redis (세션/캐시) · Elasticsearch (BM25)
 
 총 9개 도메인 — 사용자·인증, GitHub 프로필, 온보딩·진단, 학습 경로, 콘텐츠, Sandbox, AI 리뷰, 커뮤니티·멘토, 진척.
 

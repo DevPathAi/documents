@@ -78,7 +78,7 @@
 ## 🔑 핵심 기술 스택
 
 - **Backend**: Spring Boot 4 + Java 21 (Virtual Threads) + OAuth2 + Outbox
-- **Data**: MySQL (SSOT) + pgvector + Redis + Kafka + Elasticsearch
+- **Data**: PostgreSQL (SSOT) + pgvector + Redis + Kafka + Elasticsearch
 - **AI**: Claude Sonnet 4.6 / Haiku 4.5 + text-embedding-3-small
 - **Sandbox**: Docker + gVisor (runsc) + 네트워크 차단 + 30초 limit
 - **Web**: React 18 + Monaco Editor + Zustand + TanStack Query
