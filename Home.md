@@ -107,7 +107,7 @@
 - **Data**: PostgreSQL (SSOT) + pgvector (콘텐츠·GitHub 임베딩) + Redis + Kafka + Elasticsearch
 - **AI**: Claude Sonnet 4.6 (학습 경로·코드 리뷰) + Haiku 4.5 (짧은 멘토 응답) + text-embedding-3-small
 - **Sandbox**: Docker + **gVisor (runsc)** + 네트워크 차단 + 30초 limit
-- **Web**: React 18 + Monaco Editor + Zustand + TanStack Query
+- **Web**: Flutter Web (Dart) + Riverpod 3 + go_router + dio + Monaco Editor(Sandbox)
 - **Mobile**: Flutter 3.x + Riverpod + drift
 
 ---
