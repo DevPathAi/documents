@@ -100,7 +100,7 @@
 - **Data**: PostgreSQL (SSOT) + pgvector + Redis + Kafka + Elasticsearch
 - **AI**: Claude Sonnet 4.6 / Haiku 4.5 + text-embedding-3-small
 - **Sandbox**: Docker + gVisor (runsc) + 네트워크 차단 + 30초 limit
-- **Web**: React 18 + Monaco Editor + Zustand + TanStack Query
+- **Web**: Flutter Web (Dart) + Riverpod 3 + go_router + dio + Monaco Editor(Sandbox)
 - **Mobile**: Flutter 3.x + Riverpod + drift
 
 ---
