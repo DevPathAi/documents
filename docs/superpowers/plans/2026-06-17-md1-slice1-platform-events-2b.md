@@ -18,6 +18,7 @@
 - 이벤트 페이로드 = outbox.payload(JSON 문자열, 2a에서 Jackson 직렬화한 `UserRegisteredEvent`).
 - 릴레이는 멱등: 발행 성공 행만 `published_at` 설정. 중복 발행 가능성(at-least-once) → 소비자는 멱등(동일 user 환영 알림 중복 방지).
 - 비밀값 커밋 금지. 브랜치: 각 레포 develop에서 분기 → develop PR. main 직접 금지(shared 릴리스 PR 제외).
+- **Boot 4 사실(2a 실행에서 확정 — 반드시 적용):** Spring Boot 4 = Jackson 3 → JSON 직렬화/역직렬화는 `tools.jackson.databind.json.JsonMapper` 빈 주입(`com.fasterxml...ObjectMapper`는 빈 미등록). 테스트 슬라이스 import는 Boot 4 경로(@SpringBootTest 변동 없음, @AutoConfigureMockMvc=`org.springframework.boot.webmvc.test.autoconfigure`). mock 빈은 `@MockitoBean`. **모든 `@SpringBootTest`/`@DataJpaTest`는 `@ActiveProfiles("test")` 필수** — 2a가 develop에 추가한 test-flyway(test 프로파일에서 shared jar의 `classpath:db/migration` 적용)가 테스트 DB 스키마를 프로비저닝한다. 2b가 develop에서 분기하므로 이 test-flyway 인프라(build.gradle의 spring-boot-flyway·flyway-core·flyway-database-postgresql + application-test.yml의 flyway 설정)를 **상속**한다 — 단, notifications 테이블(Task 1)이 shared jar에 포함되려면 Task 1을 main 릴리스해야 platform test-flyway가 그 마이그레이션을 적용한다(D-6 재적용).
 
 ## Preconditions
 
@@ -352,7 +353,7 @@ package ai.devpath.platform.notification;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import ai.devpath.shared.event.UserRegisteredEvent;
 import java.time.Instant;
 import java.util.UUID;
@@ -370,7 +371,7 @@ class WelcomeNotificationConsumerTest {
 	@Autowired WelcomeNotificationConsumer consumer;
 	@Autowired NotificationRepository notifications;
 	@Autowired UserRepository users;
-	@Autowired ObjectMapper om;
+	@Autowired JsonMapper om;
 
 	@Test
 	void createsWelcomeNotificationOnceIdempotently() throws Exception {
@@ -396,7 +397,7 @@ class WelcomeNotificationConsumerTest {
 package ai.devpath.platform.notification;
 
 import ai.devpath.shared.event.UserRegisteredEvent;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper; // Boot 4 = Jackson 3
 import java.time.Instant;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
@@ -406,18 +407,18 @@ public class WelcomeNotificationConsumer {
 
 	private static final String TYPE = "WELCOME";
 	private final NotificationRepository notifications;
-	private final ObjectMapper objectMapper;
+	private final JsonMapper jsonMapper;
 
-	public WelcomeNotificationConsumer(NotificationRepository notifications, ObjectMapper objectMapper) {
+	public WelcomeNotificationConsumer(NotificationRepository notifications, JsonMapper jsonMapper) {
 		this.notifications = notifications;
-		this.objectMapper = objectMapper;
+		this.jsonMapper = jsonMapper;
 	}
 
 	@KafkaListener(topics = UserRegisteredEvent.EVENT_TYPE, groupId = "devpath-platform")
 	public void onUserRegistered(String payload) {
 		UserRegisteredEvent event;
 		try {
-			event = objectMapper.readValue(payload, UserRegisteredEvent.class);
+			event = jsonMapper.readValue(payload, UserRegisteredEvent.class);
 		} catch (Exception e) {
 			throw new IllegalStateException("UserRegisteredEvent 역직렬화 실패", e);
 		}
