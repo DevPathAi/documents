@@ -511,6 +511,7 @@ public interface OutboxRepository extends JpaRepository<OutboxEntry, Long> {}
 
 Run: `./gradlew test --tests "ai.devpath.platform.user.UserMappingTest"`
 Expected: PASS — `ddl-auto: validate`가 매핑을 검증하고 CRUD 성공. (실패 시 컬럼명/타입 불일치 → shared 스키마 대조.)
+> **P2-4 검증:** 이 테스트의 outbox insert(JSON 문자열 payload → `jsonb` 컬럼, `@JdbcTypeCode(SqlTypes.JSON)`)가 실제 PostgreSQL에 성공하는지 반드시 확인한다. Hibernate 7이 String을 JSON 문자열로 이중 인코딩하거나 타입 변환에 실패하면, payload 필드를 `String` 유지 + `@JdbcTypeCode(SqlTypes.JSON)`가 raw JSON으로 바인딩되는지 확인하고, 안 되면 `columnDefinition`/커스텀 타입 또는 `JsonNode` 매핑으로 확정(자체 직렬화 회피). 저장 후 재조회로 payload 동등성 단언 추가 권장.
 
 - [ ] **Step 5: 커밋**
 
@@ -615,7 +616,11 @@ public class SecurityConfig {
 
 	@Bean
 	public SecretKey jwtSecretKey() {
-		return new SecretKeySpec(props.getJwtSecret().getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+		byte[] bytes = props.getJwtSecret().getBytes(StandardCharsets.UTF_8);
+		if (bytes.length < 32) { // P1-3: HS256은 최소 256비트. 짧은 시크릿 부팅 실패.
+			throw new IllegalStateException("JWT_SECRET must be >= 32 bytes (HS256), got " + bytes.length);
+		}
+		return new SecretKeySpec(bytes, "HmacSHA256");
 	}
 
 	@Bean
@@ -709,7 +714,9 @@ class TokenCipherTest {
 
 	@Test
 	void encryptThenDecryptRoundtrips() throws Exception {
-		TokenCipher cipher = new TokenCipher(null); // null env → 임시 keyset
+		// 활성 프로파일 없음(empty) → 임시 keyset 허용(P1-2).
+		var env = new org.springframework.mock.env.MockEnvironment();
+		TokenCipher cipher = new TokenCipher(null, env);
 		String plain = "gho_exampletoken123";
 		String enc = cipher.encrypt(plain);
 		assertNotEquals(plain, enc);
@@ -747,11 +754,18 @@ public class TokenCipher {
 	private static final Logger log = LoggerFactory.getLogger(TokenCipher.class);
 	private final Aead aead;
 
-	public TokenCipher(@Value("${TOKEN_ENC_KEYSET:#{null}}") String keysetB64) throws Exception {
+	public TokenCipher(@Value("${TOKEN_ENC_KEYSET:#{null}}") String keysetB64,
+			org.springframework.core.env.Environment env) throws Exception {
 		AeadConfig.register();
 		KeysetHandle handle;
 		if (keysetB64 == null || keysetB64.isBlank()) {
-			log.warn("TOKEN_ENC_KEYSET 미설정 — 임시 인메모리 keyset 사용(개발 전용). 프로덕션은 반드시 env 주입.");
+			// P1-2: 임시 인메모리 keyset은 local/test 프로파일에서만 허용. 그 외(prod 등)는 부팅 실패.
+			var profiles = java.util.Arrays.asList(env.getActiveProfiles());
+			boolean devOrTest = profiles.contains("local") || profiles.contains("test") || profiles.isEmpty();
+			if (!devOrTest) {
+				throw new IllegalStateException("TOKEN_ENC_KEYSET 미설정 — 운영 프로파일에서는 필수다(부팅 실패).");
+			}
+			log.warn("TOKEN_ENC_KEYSET 미설정 — 임시 인메모리 keyset 사용(local/test 전용, 재시작 시 기존 토큰 복호화 불가).");
 			handle = KeysetHandle.generateNew(PredefinedAeadParameters.AES256_GCM);
 		} else {
 			String json = new String(Base64.getDecoder().decode(keysetB64), StandardCharsets.UTF_8);
@@ -1127,6 +1141,8 @@ git commit -m "feat(auth): 사용자 upsert + UserRegisteredEvent outbox 기록(
 
 refresh 쿠키 유틸과, OAuth2 로그인 + JWT 리소스서버를 함께 구성하는 `SecurityFilterChain`. 보호 경로 미인증 401·공개 경로 통과를 통합 검증.
 
+> **⚠️ 실행 순서(P1-1):** 이 Task는 `OAuth2LoginSuccessHandler`(Task 8) 빈을 주입받는다. **Task 8을 먼저 구현한 뒤 Task 7을 수행**하라(순환 의존 회피). 공개 경로는 설계서 §5.3 계약 표 기준(`/auth/refresh`·`/auth/logout` NO_BEARER, `/users/**` Bearer 필요).
+
 **Files:**
 - Create: `auth/RefreshCookies.java`
 - Modify: `config/SecurityConfig.java`(FilterChain + 성공핸들러 주입 빈)
@@ -1234,7 +1250,7 @@ public class RefreshCookies {
 		http
 			.csrf(csrf -> csrf.disable())
 			.authorizeHttpRequests(authorize -> authorize
-				.requestMatchers("/oauth2/**", "/login/**", "/auth/refresh", "/actuator/health").permitAll()
+				.requestMatchers("/oauth2/**", "/login/**", "/auth/refresh", "/auth/logout", "/actuator/health").permitAll()
 				.anyRequest().authenticated())
 			.oauth2Login(oauth -> oauth.successHandler(successHandler))
 			.oauth2ResourceServer(rs -> rs.jwt(org.springframework.security.config.Customizer.withDefaults()));
@@ -1353,25 +1369,33 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 	private final RefreshTokenStore refreshStore;
 	private final RefreshCookies cookies;
 	private final AuthProperties props;
+	private final org.springframework.security.oauth2.client.OAuth2AuthorizedClientService authorizedClients;
 
 	public OAuth2LoginSuccessHandler(UserRegistrationService registration, RefreshTokenStore refreshStore,
-			RefreshCookies cookies, AuthProperties props) {
+			RefreshCookies cookies, AuthProperties props,
+			org.springframework.security.oauth2.client.OAuth2AuthorizedClientService authorizedClients) {
 		this.registration = registration;
 		this.refreshStore = refreshStore;
 		this.cookies = cookies;
 		this.props = props;
+		this.authorizedClients = authorizedClients;
 	}
 
 	@Override
 	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
 			Authentication authentication) throws IOException {
 		OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) authentication;
-		String provider = token.getAuthorizedClientRegistrationId().toUpperCase();
+		String registrationId = token.getAuthorizedClientRegistrationId();
+		String provider = registrationId.toUpperCase();
 		Map<String, Object> attrs = token.getPrincipal().getAttributes();
 		String providerUserId = String.valueOf(attrs.get("id"));
 		String nickname = attrs.get("name") != null ? String.valueOf(attrs.get("name")) : String.valueOf(attrs.get("login"));
 		String email = attrs.get("email") != null ? String.valueOf(attrs.get("email")) : null;
-		String accessToken = null; // provider access token 캡처는 OAuth2AuthorizedClient 경유(2b에서 보강); 현재 null 허용.
+
+		// P0-2: provider access token 캡처 → UserRegistrationService가 Tink 암호화 후 access_token_encrypted 저장(D-3 지역성).
+		var client = authorizedClients.loadAuthorizedClient(registrationId, token.getName());
+		String accessToken = (client != null && client.getAccessToken() != null)
+				? client.getAccessToken().getTokenValue() : null;
 
 		var user = registration.registerOrFind(
 				new UserRegistrationService.OauthUser(provider, providerUserId, email, nickname, accessToken));
@@ -1383,7 +1407,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 }
 ```
 
-> provider access token 캡처(`access_token_encrypted` 채우기)는 `OAuth2AuthorizedClientService`/`@RegisteredOAuth2AuthorizedClient` 경유가 필요해 2b에서 보강한다. 현재는 신원·암호화 경로(TokenCipher)만 결선하고 token=null 허용(컬럼 nullable).
+> **P0-2 반영:** `OAuth2AuthorizedClientService.loadAuthorizedClient(registrationId, principalName)`로 GitHub access token을 캡처해 암호화 저장한다(GitHub collector 소비, D-3). `OAuth2AuthorizedClientService` 빈은 Spring Boot가 자동 구성(인메모리 authorized client repository). **Step 1 테스트 보강:** `OAuth2AuthorizedClientService`를 `@MockitoBean`으로 주입해 `loadAuthorizedClient`가 access token "gho_xxx"를 가진 client를 반환하도록 스텁 → 성공 핸들러 후 `identities.findByProviderAndProviderUserId(...).getAccessTokenEncrypted()`가 null이 아님을 검증. (provider token 저장이 슬라이스 완료 기준에 포함됨 — 2b로 미루지 않는다.)
 
 - [ ] **Step 4: 테스트 통과 확인**
 
@@ -1731,7 +1755,7 @@ Expected: build 통과. (CI는 PG service container 사용. Redis는 platform CI
 - provider 추상화(github reg, google/kakao 설정 추가형) → application.yml registration(github), Boot 자동구성 ✓ (추가 provider는 yaml만)
 - JPA 엔티티 매핑(ddl-auto validate) → Task 2 ✓
 - JWT 발급(HMAC, R5) → Task 3 ✓
-- provider 토큰 Tink 암호화 → Task 4 ✓ (캡처는 2b 보강 명시)
+- provider 토큰 Tink 암호화 + **캡처(OAuth2AuthorizedClientService)** → Task 4 + Task 8 ✓ (P0-2: 2a에서 캡처·저장, `access_token_encrypted` not-null 검증)
 - Redis refresh 회전·무효화(D-2, D-7) → Task 5 ✓
 - 사용자 upsert + UserRegisteredEvent outbox 동일 tx(D-5 producer 기록부) → Task 6 ✓
 - SecurityFilterChain(oauth2Login + JWT 검증) → Task 7 ✓
@@ -1739,11 +1763,11 @@ Expected: build 통과. (CI는 PG service container 사용. Redis는 platform CI
 - /auth/refresh(회전)·/auth/logout → Task 9 ✓
 - /users/me → Task 10 ✓
 - shared main 릴리스 선행(D-6) → Task 0 ✓
-- 범위 외(outbox 릴레이·Kafka·notification 소비자·notifications 테이블=2b, provider 토큰 캡처=2b) → 명시 제외 ✓
+- 범위 외(outbox 릴레이·Kafka·notification 소비자·notifications 테이블=2b) → 명시 제외 ✓ (provider 토큰 캡처는 P0-2로 2a에 포함됨 — 더 이상 2b 아님)
 
 **2. Placeholder scan:** 모든 Task에 실제 코드·테스트·명령 포함. "구현 주의"는 Security 7/Tink 정확 시그니처 확정 지시(플랜 코드는 grounded 최선형) — 구현자가 컴파일 확정. TBD/추상 지시 없음.
 
-**3. Type consistency:** `UserRegistrationService.OauthUser`(record, 5필드), `RefreshTokenStore.Rotated(long userId,String newToken)`, `LoginResponse(access_token/refresh_token_cookie_set/user)`, `UserSummary(id,nickname,onboardingStatus,plan)`, `RefreshCookies.COOKIE_NAME="refresh_token"`, `JwtService.mintAccessToken(long,String)` — 정의처와 사용처 일치. provider="GITHUB" 일관(shared CHECK).
+**3. Type consistency:** `UserRegistrationService.OauthUser`(record, 5필드), `RefreshTokenStore.Rotated(long userId,String newToken)`, `LoginResponse(access_token/refresh_token_cookie_set/user)`, `UserSummary(String id, email, nickname, role, onboardingStatus)`+`of(User)`(D-9, id 문자열·camelCase user 객체), `RefreshCookies.COOKIE_NAME="refresh_token"`, `JwtService.mintAccessToken(long,String)` — 정의처와 사용처 일치. provider="GITHUB" 일관(shared CHECK). 인증 계약은 설계서 §5.3 단일 기준.
 
 **상호 의존 주의:** Task 7(FilterChain)은 Task 8(성공핸들러) 빈을 주입 → **Task 8을 7보다 먼저** 구현 권장. `/auth/logout` permitAll 여부는 Task 7 requestMatchers와 Task 9 테스트를 일치시킬 것(플랜은 `/auth/refresh`·`/auth/logout` 둘 다 permitAll).
 

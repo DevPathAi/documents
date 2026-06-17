@@ -74,7 +74,10 @@ CREATE TABLE notifications (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_notifications_user_created ON notifications(user_id, created_at);
+-- P1-4: WELCOME 알림은 사용자당 1개(소비 레이스/중복 발행 시 DB가 멱등 보장).
+CREATE UNIQUE INDEX uq_notifications_welcome_user ON notifications(user_id) WHERE type = 'WELCOME';
 ```
+> 이 부분 UNIQUE 인덱스로 동시 소비 레이스에서도 두 번째 INSERT는 제약 위반으로 실패한다. 소비자는 `existsByUserIdAndType`(베스트에포트) + INSERT 시 `DataIntegrityViolationException`을 잡아 무시(이미 생성됨)하는 이중 방어를 둔다.
 - [ ] **Step 4: 통과 확인** — `./gradlew test --tests "ai.devpath.shared.db.FlywayMigrationTest.notificationsTableExists"` → PASS.
 - [ ] **Step 5: 커밋 + develop PR + 머지 + main 릴리스**
 ```bash
@@ -203,12 +206,19 @@ public class OutboxRelay {
 	@Scheduled(fixedDelay = 2000)
 	public void relay() { relayOnce(); }
 
-	@Transactional
+	// P0-3: Kafka send는 비동기다. future 성공을 확인한 뒤에만 published_at을 설정한다.
+	// 발행 실패 시 해당 행은 미발행 유지(다음 폴링 재시도) + 순서 보장 위해 중단. @Transactional 미사용
+	// (각 save 자동 커밋 → 실패 전 성공분은 published로 확정, Kafka를 DB 트랜잭션에 묶지 않음).
 	public int relayOnce() {
 		var batch = outbox.findTop100ByPublishedAtIsNullOrderByCreatedAtAsc();
 		int count = 0;
 		for (OutboxEntry e : batch) {
-			kafka.send(e.getEventType(), e.getAggregateId(), e.getPayload());
+			try {
+				kafka.send(e.getEventType(), e.getAggregateId(), e.getPayload())
+						.get(5, java.util.concurrent.TimeUnit.SECONDS); // 발행 성공 대기
+			} catch (Exception ex) {
+				break; // 발행 실패 → published_at 미설정, 이후 행은 다음 주기로
+			}
 			e.setPublishedAt(Instant.now());
 			outbox.save(e);
 			count++;
@@ -217,7 +227,9 @@ public class OutboxRelay {
 	}
 }
 ```
-- [ ] **Step 5: 통과 확인** — `./gradlew test --tests "ai.devpath.platform.outbox.OutboxRelayTest"` → PASS.
+> `KafkaTemplate.send(...)`는 `CompletableFuture<SendResult<K,V>>`(Spring Kafka 4)를 반환한다 — `.get(timeout)`로 broker ack를 확인한다. 반환 타입이 다르면 실제 API에 맞춰 future 완료 확인으로 확정(자체 구현 회피).
+- [ ] **Step 4b: 실패 경로 테스트(P0-3)** — Kafka 발행 실패 시 `published_at`이 null로 유지됨을 검증한다. mock `KafkaTemplate`(또는 실패하는 broker 주소)으로 `send(...).get()`이 예외를 던지게 하고, `relayOnce()` 후 해당 outbox 행의 `getPublishedAt()`이 여전히 null임을 단언. (별도 `@SpringBootTest`에서 `@MockitoBean KafkaTemplate` 사용 권장 — EmbeddedKafka 없이 실패 주입.)
+- [ ] **Step 5: 통과 확인** — `./gradlew test --tests "ai.devpath.platform.outbox.OutboxRelayTest"` → PASS(발행 성공 + 실패 시 미발행 유지).
 - [ ] **Step 6: 커밋** — `git commit -m "feat(outbox): Kafka 릴레이(미발행 행 발행 + published_at)"`.
 
 ---
@@ -235,40 +247,45 @@ notifications 테이블 매핑 + 멱등 조회.
   - `Notification(id Long, userId Long, type String, title String, body String, readAt Instant, createdAt Instant)` — table `notifications`.
   - `NotificationRepository.existsByUserIdAndType(Long userId, String type): boolean`(멱등 가드), `countByUserId(Long): long`.
 
-- [ ] **Step 1: 실패 테스트** — `NotificationRepositoryTest.java`(@DataJpaTest, Replace.NONE, 실DB):
+- [ ] **Step 1: 실패 테스트(P1-5: FK 만족 — `@SpringBootTest`+`UserRepository`로 user 저장 후 그 id 사용)** — `NotificationRepositoryTest.java`:
 ```java
 package ai.devpath.platform.notification;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.devpath.platform.user.User;
+import ai.devpath.platform.user.UserRepository;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
-@DataJpaTest
-@AutoConfigureTestDatabase(replace = Replace.NONE)
+@SpringBootTest
+@ActiveProfiles("test")
 class NotificationRepositoryTest {
 
 	@Autowired NotificationRepository repo;
+	@Autowired UserRepository users;
 
 	@Test
 	void savesAndChecksExistenceByType() {
-		// 선행: users 행 필요(FK). 테스트는 기존 user_id 존재 가정 대신 native insert 또는 UserRepository 사용.
-		// 여기서는 user_id=1 존재를 가정하지 않기 위해, FK 만족용 user를 별도 저장하는 헬퍼가 필요하면 @SpringBootTest로 승격.
+		User u = new User();
+		u.setEmail("n" + System.nanoTime() + "@example.com");
+		u.setNickname("지수"); u.setRole("LEARNER"); u.setStatus("ACTIVE"); u.setOnboardingStatus("PENDING");
+		u = users.save(u); // FK 만족용 실제 user
+
 		Notification n = new Notification();
-		n.setUserId(1L); // 실제 테스트에서는 저장된 user의 id 사용
+		n.setUserId(u.getId());
 		n.setType("WELCOME");
 		n.setTitle("환영합니다");
 		n.setCreatedAt(Instant.now());
 		repo.save(n);
-		assertTrue(repo.existsByUserIdAndType(1L, "WELCOME"));
+
+		assertTrue(repo.existsByUserIdAndType(u.getId(), "WELCOME"));
 	}
 }
 ```
-> 주의: notifications.user_id는 users FK. 이 테스트는 FK를 만족할 user 행이 필요하다 → `@SpringBootTest`로 승격해 `UserRepository`로 user 저장 후 그 id 사용하도록 구현 시 조정하라(추측으로 user_id=1 고정 금지).
 - [ ] **Step 2~5**: 실패 확인 → 엔티티/리포지토리 작성 → 통과 → 커밋.
 
 `notification/Notification.java`:
@@ -404,14 +421,18 @@ public class WelcomeNotificationConsumer {
 		} catch (Exception e) {
 			throw new IllegalStateException("UserRegisteredEvent 역직렬화 실패", e);
 		}
-		if (notifications.existsByUserIdAndType(event.userId(), TYPE)) return; // 멱등
+		if (notifications.existsByUserIdAndType(event.userId(), TYPE)) return; // 베스트에포트 멱등
 		Notification n = new Notification();
 		n.setUserId(event.userId());
 		n.setType(TYPE);
 		n.setTitle("환영합니다!");
 		n.setBody("DevPath AI에 가입하신 것을 환영합니다. 진단을 시작해 보세요.");
 		n.setCreatedAt(Instant.now());
-		notifications.save(n);
+		try {
+			notifications.save(n);
+		} catch (org.springframework.dao.DataIntegrityViolationException dup) {
+			// P1-4: 동시 소비 레이스 — uq_notifications_welcome_user 위반 = 이미 생성됨. 무시(멱등).
+		}
 	}
 }
 ```

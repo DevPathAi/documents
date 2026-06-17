@@ -143,6 +143,29 @@ platform-svc는 Security 7 OAuth + JWT + Redis refresh + Tink 암호화 + Outbox
 - **2a — 인증 척추**: deps/config, JPA 엔티티(User·UserOauthIdentity·UserProfile·OutboxEntry, `ddl-auto: validate`), JWT 서비스(HMAC mint+decode), GitHub OAuth2 로그인 + 사용자 upsert + provider 토큰 Tink 암호화 + `UserRegisteredEvent` outbox 기록(동일 tx), Redis refresh 회전+HttpOnly 쿠키, `/auth/refresh`·`/auth/logout`·`/users/me`. mock provider로 독립 테스트.
 - **2b — 이벤트 전파**: outbox 릴레이→Kafka 발행 + 환영 알림 Kafka 소비자 + notifications 테이블(D-8, shared 추가 마이그레이션). 2a 머지 후 작성.
 
+### 5.3 인증 엔드포인트 계약 (권위 — 플랜 리뷰 P0-1·P2-2 반영)
+
+`PUBLIC`/`AUTHENTICATED` 표기의 의미 혼재를 제거하기 위해 인증 방식을 분리해 고정한다. platform·gateway·frontend 테스트는 **이 표를 단일 기준**으로 한다.
+
+| Endpoint | 인증 요건 | 동작 | 실패 |
+|---|---|---|---|
+| `GET /oauth2/authorization/github`, `/login/oauth2/code/github` | NO_BEARER (Spring Security oauth2 세션) | OAuth 로그인 댄스 | — |
+| `POST /auth/refresh` | **REFRESH_COOKIE_REQUIRED** (Bearer 불필요) | refresh 쿠키 회전 → 새 access + 새 쿠키 + D-9 user | 쿠키 없음/무효 → **401** |
+| `POST /auth/logout` | NO_BEARER (cookie optional) | 쿠키 있으면 Redis revoke, 없어도 쿠키 clear | 항상 **204** |
+| `GET /users/me` | **BEARER access JWT 필요** | D-9 user 반환 | Bearer 없음/무효 → **401** |
+
+gateway 공개경로(인증 제외) = `/oauth2/**`,`/login/**`,`/auth/refresh`,`/auth/logout`,`/actuator/health`. 그 외(`/users/**` 등) Bearer 필요.
+
+**JSON naming**: 최상위 응답 필드만 snake_case(`access_token`,`refresh_token_cookie_set`), **user 객체는 camelCase**(`onboardingStatus` 등, dp_core `User` 정합 — D-9). 04_API §1.1의 snake_case user 예시보다 dp_core `User`를 따른다.
+
+### 5.4 플랜 리뷰 반영 (리포트 `reports/2026-06-17-md1-slice1-plan-review.md`)
+
+P0(차단): P0-1 인증 계약(§5.3) / P0-2 provider 토큰 캡처를 2a에서 수행(`OAuth2AuthorizedClientService`, `access_token_encrypted` not-null 검증) / P0-3 outbox 릴레이는 Kafka send **future 성공 확인 후** `published_at` 설정.
+P1: Task 8(핸들러)→Task 7(필터체인) 순서 / `TOKEN_ENC_KEYSET` prod 프로파일 fail-fast / `JWT_SECRET` ≥32바이트 부팅 검증(platform+gateway) / WELCOME 알림 부분 UNIQUE 인덱스 멱등 / 2b user FK 테스트 완성 / **gateway CORS allow-credentials**(R6) / **frontend app-start `bootstrapSession` + `AuthLoading`**.
+P2: 2a Self-Review/frontend 헤더 D-9 동기화 / user camelCase(§5.3) / **github_id drop 릴리스 전제**(아래) / outbox JSON 매핑은 테스트로 검증 / audit 컬럼 insertable 일관.
+
+**github_id drop 릴리스 전제(P2-3)**: 빌드1 마이그레이션 `V202606171001`은 `users.github_id`를 backfill 없이 drop한다. **운영/스테이징에 의미 있는 W1 user 데이터가 없다는 전제** 하에 안전(개발/CI DB는 비어 있음). 데이터가 있다면 후속 보정 마이그레이션/수동 backfill runbook 별도 작성 — 기존 마이그레이션은 수정 금지.
+
 ---
 
 ## 6. 범위 외 (슬라이스 #1 제외)

@@ -115,7 +115,11 @@ public class GatewaySecurityConfig {
 
 	@Bean
 	public SecretKey jwtSecretKey(@Value("${JWT_SECRET:test-secret-please-change-min-32-bytes-long-0123456789}") String secret) {
-		return new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+		byte[] bytes = secret.getBytes(StandardCharsets.UTF_8);
+		if (bytes.length < 32) { // P1-3: HS256 최소 256비트. platform과 동일 검증.
+			throw new IllegalStateException("JWT_SECRET must be >= 32 bytes (HS256), got " + bytes.length);
+		}
+		return new SecretKeySpec(bytes, "HmacSHA256");
 	}
 
 	@Bean
@@ -127,18 +131,38 @@ public class GatewaySecurityConfig {
 	public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
 		http
 			.csrf(ServerHttpSecurity.CsrfSpec::disable)
+			.cors(org.springframework.security.config.Customizer.withDefaults()) // P1-6/R6
 			.authorizeExchange(ex -> ex
 				.pathMatchers("/oauth2/**", "/login/**", "/auth/refresh", "/auth/logout", "/actuator/health").permitAll()
 				.anyExchange().authenticated())
 			.oauth2ResourceServer(rs -> rs.jwt(Customizer.withDefaults()));
 		return http.build();
 	}
+
+	// P1-6/R6: SPA(이종 출처)의 쿠키 동반 요청 허용. allowCredentials=true는 와일드카드 origin과 양립 불가 →
+	// 반드시 명시 allowlist(env)로 주입. 브라우저가 Set-Cookie 처리.
+	@Bean
+	public org.springframework.web.cors.reactive.CorsConfigurationSource corsConfigurationSource(
+			@Value("${CORS_ALLOWED_ORIGINS:http://localhost:5173}") String origins) {
+		var cfg = new org.springframework.web.cors.CorsConfiguration();
+		cfg.setAllowCredentials(true);
+		cfg.setAllowedOrigins(java.util.Arrays.asList(origins.split(",")));
+		cfg.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+		cfg.setAllowedHeaders(java.util.List.of("Authorization", "Content-Type"));
+		var source = new org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/**", cfg);
+		return source;
+	}
 }
 ```
+> `allowCredentials=true`에는 와일드카드(`*`) origin을 쓸 수 없다 — `CORS_ALLOWED_ORIGINS` env allowlist 필수(프론트 출처). `Cookie`는 단순요청에서 자동 동반이라 allowedHeaders에 명시 불필요하나, preflight 동작은 통합 테스트로 확인.
 
 - [ ] **Step 5: 통과 확인** — `./gradlew test --tests "ai.devpath.gateway.config.GatewaySecurityConfigTest"` → PASS.
 
-- [ ] **Step 6: 커밋** — `git commit -m "feat(gateway): JWT(HMAC) 엣지 검증 SecurityWebFilterChain + oauth2-client 의존성 제거"`.
+- [ ] **Step 5b: 추가 테스트(P1-3·P1-6)** — 같은 TDD로 두 케이스를 추가한다:
+  - **P1-3 짧은 secret 거부:** `JWT_SECRET`이 32바이트 미만이면 컨텍스트 로드(또는 `jwtSecretKey` 빈 생성)가 `IllegalStateException`으로 실패함을 검증(`@SpringBootTest`에 짧은 secret 프로퍼티 주입 → `ApplicationContextException`/`assertThrows`).
+  - **P1-6 CORS preflight:** 허용 origin의 OPTIONS preflight가 `Access-Control-Allow-Credentials: true` + 해당 origin 헤더를 반환하고, 비허용 origin은 거부됨을 `WebTestClient`로 검증.
+- [ ] **Step 6: 커밋** — `git commit -m "feat(gateway): JWT(HMAC) 엣지 검증 + CORS(allow-credentials) + oauth2-client 의존성 제거"`.
 
 ---
 

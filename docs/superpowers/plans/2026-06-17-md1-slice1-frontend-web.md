@@ -3,7 +3,7 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. Steps use checkbox (`- [ ]`) syntax.
 
 > **⚠️ 상류 계약 의존 게이트(실행 전 필수 재검증):** 이 플랜은 platform 2a·gateway 구현 전에 작성됐다. platform 2a + gateway develop 머지 직후, **실행 전에** 실제 응답을 curl/통합으로 확인하고 본 플랜의 계약 가정을 정정하라:
-> - **D-9 user 객체 shape 불일치(반드시 해결):** dp_core `User`는 `{id:String, email, nickname, role(enum), onboardingStatus(enum)}`. platform 2a `UserSummary`는 `{id:long, nickname, onboardingStatus, plan}`(email·role 없음, id 숫자). **둘 중 하나를 맞춰야 한다.** 권장: platform `/auth/refresh`·`/users/me`가 `{id, email, nickname, role, onboardingStatus}`를 반환하도록 2a `UserSummary` 확장(또는 별도 `MeResponse`), id는 문자열 직렬화 또는 dp_core `User.id`를 int로. 본 플랜은 "platform이 dp_core `User`와 동일 shape 반환"을 전제로 작성됨 — 2a 실행 시 이 shape를 산출하도록 조정.
+> - **D-9 user 객체 shape(2a에서 해결됨):** platform 2a `UserSummary`가 dp_core `User`와 정합되도록 정렬 완료(`{id(문자열), email, nickname, role, onboardingStatus}`, plan 제거 — 설계서 §5.1/§5.3). 따라서 `/auth/refresh`·`/users/me`의 user 객체는 dp_core `User.fromJson`이 그대로 파싱한다. **실행 전 확인만:** 2a 머지 후 실제 응답이 이 shape(id 문자열·camelCase 키)인지 1회 검증.
 > - **R2 refresh 계약:** 실 `/auth/refresh`는 HttpOnly 쿠키 기반(요청 본문에 refresh 없음, 응답 `{access_token, refresh_token_cookie_set, user}`). 현 dp_core `AuthInterceptor`/목은 본문 `{refreshToken}`+응답 `{accessToken, refreshToken}` 가정 → 교체.
 > - **R1 로그인:** 실 로그인은 `POST /auth/login`이 아니라 브라우저 리다이렉트 `GET {baseUrl}/oauth2/authorization/github` → 콜백 후 SPA가 `/auth/refresh`로 첫 access 획득.
 > - **R6 CORS/쿠키:** dio `withCredentials=true` + gateway CORS allow-credentials·출처 allowlist 필요.
@@ -145,9 +145,68 @@ dio withCredentials(웹 쿠키): `ApiClient.create` 또는 dio 옵션에 `extra`
 
 ---
 
+### Task 3.5: (web) 앱 시작 세션 복원 + AuthLoading (P1-7)
+
+새로고침/재방문 시 HttpOnly refresh 쿠키가 남아 있으면 앱 시작에 한 번 `/auth/refresh`로 세션을 복원한다. 복원 판정 동안 게이트가 `/login`으로 튕기지 않도록 `AuthLoading` 상태를 둔다.
+
+**Files:**
+- Modify: `apps/web/lib/src/features/auth/state/auth_state.dart`(`AuthLoading` 추가)
+- Modify: `apps/web/lib/src/features/auth/application/auth_controller.dart`(`bootstrapSession()`, build()=AuthLoading + 시작 시 복원 트리거)
+- Modify: `apps/web/lib/src/app/router.dart`(`gateRedirect`가 `AuthLoading` 동안 redirect 보류)
+- Modify(test): `apps/web/test/app/gate_redirect_test.dart`(로딩 보류 케이스), `apps/web/test/features/auth/auth_controller_test.dart`
+
+**Interfaces:**
+- Produces:
+  - `sealed AuthState`에 `class AuthLoading extends AuthState`(초기·복원 중) 추가.
+  - `AuthController.build()` → `AuthLoading` 반환 후 `bootstrapSession()` 비동기 호출(`Future.microtask`/`ref` 활용). `bootstrapSession()`: `POST /auth/refresh` 성공 시 `AuthAuthenticated(user)`, 401/실패 시 `AuthUnauthenticated()`.
+  - `gateRedirect(AuthState, String)`: `auth is AuthLoading` → **null 반환(보류, 현재 위치 유지)**. 그 외 기존 분기.
+
+- [ ] **Step 1: 실패 테스트** — (a) `gateRedirect`가 `AuthLoading`일 때 어느 경로에서도 null(보류)을 반환. (b) `bootstrapSession()`이 Mock `/auth/refresh` 200(user)에서 `AuthAuthenticated`, 401에서 `AuthUnauthenticated`로 전이. `ProviderContainer`로 검증.
+- [ ] **Step 2: 실패 확인** — `melos run test`(해당 테스트) → FAIL(AuthLoading 미존재).
+- [ ] **Step 3: 구현**
+
+`auth_state.dart`에 추가:
+```dart
+/// 초기/세션 복원 중. 게이트는 이 동안 redirect를 보류한다.
+class AuthLoading extends AuthState {
+  const AuthLoading();
+}
+```
+`auth_controller.dart`:
+```dart
+  @override
+  AuthState build() {
+    Future.microtask(bootstrapSession); // 앱 시작 1회 세션 복원 시도
+    return const AuthLoading();
+  }
+
+  Future<void> bootstrapSession() async {
+    try {
+      final data = await _client.post<Map<String, dynamic>>('/auth/refresh');
+      await _store.save(access: data['access_token'] as String, refresh: '');
+      state = AuthAuthenticated(User.fromJson((data['user'] as Map).cast<String, dynamic>()));
+    } on ApiException {
+      state = const AuthUnauthenticated(); // 쿠키 없음/만료 → 미인증
+    }
+  }
+```
+`router.dart` `gateRedirect` 앞부분:
+```dart
+String? gateRedirect(AuthState auth, String location) {
+  if (auth is AuthLoading) return null; // 복원 판정 중 보류
+  ...
+}
+```
+> `/auth/callback`의 `bootstrapFromCallback()`과 앱시작 `bootstrapSession()`은 동일 `/auth/refresh` 호출이라 한 메서드로 통합 가능(콜백은 명시 진입, 앱시작은 자동). 로딩 중 UI는 스플래시/스피너.
+
+- [ ] **Step 4: 통과 확인** — `melos run test` → PASS(로딩 보류 + 복원 성공/실패 분기). 기존 `gate_redirect`·`golden_path_smoke` 회귀 유지.
+- [ ] **Step 5: 커밋** — `feat(web): 앱 시작 세션 복원 + AuthLoading 게이트 보류(P1-7)`.
+
+---
+
 ### Task 4: (web) 목 픽스처 실계약 정합화 + AppConfig 문서화
 
-목을 유지하되 실계약 shape(snake_case·`/auth/refresh`에 user 포함·OAuth 흐름)와 정합화해 `useMock` 경로도 실흐름을 반영.
+목을 유지하되 실계약 shape와 정합화해 `useMock` 경로도 실흐름을 반영. **JSON naming(P2-2/§5.3):** `/auth/refresh` 응답의 **최상위 필드만 snake_case**(`access_token`, `refresh_token_cookie_set`), **user 객체는 camelCase**(`{id, email, nickname, role, onboardingStatus}` — dp_core `User.fromJson` 기준, D-9). 04_API §1.1의 snake_case user 예시를 따르지 않는다. OAuth 흐름(콜백→/auth/refresh)도 목에 반영.
 
 **Files:**
 - Modify: `apps/web/lib/src/data/web_mock_fixtures.dart`
