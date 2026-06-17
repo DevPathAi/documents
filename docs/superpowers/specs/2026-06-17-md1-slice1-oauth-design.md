@@ -72,7 +72,7 @@
 
 **이벤트** (`ai.devpath.shared.event`): `UserRegisteredEvent` record(`DomainEvent` 구현), `eventType = "user.user.registered"`(규약 `<도메인>.<엔티티>.<동작>`, 기존 `LearningPathGeneratedEvent` 패턴 준수). 필드: userId, provider, registeredAt 등(하위 호환: 새 필드 nullable/기본값).
 
-**테스트(먼저)**: Flyway 마이그레이션 검증(Testcontainers PostgreSQL 17 — Windows dev는 메모리 참조 `w1-infra-postgres`), `UserRegisteredEvent` 직렬화 호환 테스트.
+**테스트(먼저)**: Flyway 마이그레이션 검증(기존 `FlywayMigrationTest` 패턴 — `PGSimpleDataSource`로 로컬 docker-compose PostgreSQL 17/CI service container에 연결, `Flyway.migrate()` 후 JDBC 메타데이터로 테이블·컬럼 검증. Testcontainers 미사용), `UserRegisteredEvent` 직렬화/eventType 테스트.
 
 ### 3.2 devpath-platform-svc (순서 2 — 인증 코어)
 
