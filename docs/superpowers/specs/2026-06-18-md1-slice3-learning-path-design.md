@@ -34,7 +34,7 @@
 - `path_milestones`(id · path_id FK · week_num · title · goal_description · target_skills JSONB · estimated_hours · why_this_order TEXT).
 - `path_weekly_tasks`(id · milestone_id FK · order_num · content_id FK **nullable**(매칭 실패 허용) · task_type READ/PRACTICE/QUIZ · required BOOL · completed_at). UNIQUE(milestone_id, order_num).
 - `contents`(id · slug UK · title · track · content_md TEXT · estimated_minutes · difficulty · bloom_level · concept_tags JSONB · status DRAFT/PUBLISHED · created_at/updated_at).
-- `content_embeddings`(id · content_id FK · chunk_index · chunk_text TEXT · **embedding VECTOR(768)** · chunk_hash · status ACTIVE/STALE). HNSW 인덱스 on embedding WHERE status='ACTIVE'; 보조 `(track,status,difficulty)`는 contents.
+- `content_embeddings`(id · content_id FK · chunk_index · chunk_text TEXT · **embedding VECTOR(768)** · chunk_hash · status ACTIVE/INACTIVE(ERD 정합)). HNSW 인덱스 on embedding WHERE status='ACTIVE'; 보조 `(track,status,difficulty)`는 contents. **embedding 컬럼은 JdbcTemplate/native 접근**(R-9).
 - `users.current_path_id BIGINT`(nullable, 교차서비스 FK 금지 — 슬라이스 #2 교훈대로 **FK 없이** 논리 참조. platform이 소유하는 users 컬럼이나 learning이 path 생성 후 갱신은 이벤트 기반 또는 미사용; **본 슬라이스는 current_path_id 미사용**, 활성 경로는 learning_paths.status=ACTIVE로 판정).
 - enum은 VARCHAR+CHECK, JSON은 JSONB, PK BIGSERIAL, TIMESTAMPTZ, FK는 **learning 도메인 내부만**(learning_paths↔milestones↔tasks↔contents↔embeddings). user_id는 FK 없음(서비스 경계).
 - **pgvector**: 메인 devpath DB(5432) 이미지를 `pgvector/pgvector:pg17`로 전환 + shared 마이그레이션 `CREATE EXTENSION IF NOT EXISTS vector;`(단일 DB·단일 Flyway 유지). docker-compose·CI postgres 서비스 이미지 동시 변경(pgvector는 postgres 상위호환).
@@ -111,6 +111,21 @@
 7. gateway SSE(text/event-stream) WebFlux 패스스루·타임아웃·버퍼링 확인.
 8. pgvector 이미지 전환에 따른 기존 슬라이스 #1/#2 마이그레이션 테스트 영향(무해 예상, 확인).
 9. ERD VECTOR(1536)→(768) 변경의 문서 정합 반영(ERD 문서 갱신은 별도 docs PR).
+
+## 11-bis. 검토 반영 보완 (2026-06-18 설계 리뷰 P0/P1/P2 — 실소스 검증 후 확정)
+
+> 리뷰 보고서 `docs/superpowers/reports/2026-06-18-md1-slice3-learning-path-design-review.md`의 지적을 실소스로 검증해 확정. 본 절은 위 §2~§10보다 우선한다.
+
+- **R-1 (P0-1) Ollama chat non-streaming + 2단계 파싱**: ai-svc `/ai/path/generate`의 Ollama `/api/chat` body에 **`"stream": false`** + `"format": {json schema}` + `"options": {"temperature": 0.2}` 명시. 응답은 `message.content`(문자열)를 **다시 JSON 파싱**(2단계) + 스키마 검증. 파싱/검증 실패 → 502 + 제한 재시도(예: 1회). MockWebServer 테스트는 요청 body에 `stream:false`·`format` 포함을 단언.
+- **R-2 (P0-2) API prefix = bare path 유지**: 슬라이스 #1/#2가 `/api/v1` 없이 동작(런북 `API_BASE_URL=http://localhost:8080`, gateway 라우트 무prefix). 슬라이스 #3도 **bare path 컨벤션 유지**(`/learning-paths/**`, frontend baseUrl=게이트웨이 루트). `04_API_명세서`의 `/api/v1`은 **별도 docs PR로 정합 정정**(gateway StripPrefix 도입은 슬라이스 #2 라우트 retrofit을 유발하므로 본 슬라이스 범위 외). gateway 라우트·테스트는 무prefix 기준.
+- **R-3 (P0-3) pgvector 전환 범위(빌드 A 명시)**: ① `devpath-shared/docker-compose.yml` 5432를 `postgres:17-alpine`→**`pgvector/pgvector:pg17`**(5433 postgres-vector 제거/deprecated). ② CI postgres 서비스 이미지를 **shared·learning-svc·platform-svc**에서 pgvector로 교체(**ai-svc는 DB 제거하므로 제외** — R-6). ③ 로컬 절차: fresh DB 권장(`docker compose down -v` 후 up). ④ shared 마이그레이션 `CREATE EXTENSION IF NOT EXISTS vector;` + `content_embeddings.embedding VECTOR(768)` + HNSW + FlywayMigrationTest에 extension 존재·VECTOR 컬럼·HNSW 인덱스·`<=>` smoke 쿼리 단언.
+- **R-4 (P1-1) 프론트 breaking migration(빌드 E 명시)**: `PathSseEvent` DTO(stage/progress/message/pathId) 신설, `fromStep`/resume 제거(partial CTA→"다시 생성"), dp_core `LearningPath` 모델을 §5 `GET /me` 스키마(pathId/track/totalWeeks/diagnosis/milestones/tasks)로 **재생성**(.freezed/.g 갱신), `PathPlanView` weeks→milestones 렌더 교체. 골든 스모크 정상완료+중단→재생성 둘 다.
+- **R-5 (P1-2) FR-PATH-005/006 보장**: path 생성 스키마는 milestone별 `tasks` **정확히 3개**(서버가 초과분은 top 3만 persist), `/this-week`는 1주차 **3개 보장 또는 시드부족 fallback 명시**. milestone에 **`expected_outcome`(완료 시 기대 역량)** 필드 추가(생성 프롬프트·`GET /me`·O05). 테스트에 1주차 3과제·완료수준 필드 존재 단언.
+- **R-6 (P1-3) ai-svc 무상태화(빌드 B 명시)**: `spring-boot-starter-data-jpa`·`postgresql` runtime·datasource 설정·`DbConnectionTest`·CI postgres 서비스 **제거**(무상태 Ollama 게이트웨이). 향후 비용추적 DB는 후속 슬라이스.
+- **R-7 (P1-4) 최신 진단 조회(빌드 C 명시)**: `assessment_results`에 user_id/track 없음 → **join 쿼리**: `select ... from assessment_results r join assessments a on r.assessment_id=a.id where a.user_id=:userId and a.status='COMPLETED' order by a.completed_at desc, a.id desc limit 1`. DTO=`{assessmentId, track, diagnosedLevel, strengthConcepts, weaknessConcepts, confidenceWeight}`. 없으면 **409**(error code `NO_COMPLETED_ASSESSMENT`).
+- **R-8 (P1-5) 트랜잭션 경계·동시성**: **Ollama 호출·임베딩 쿼리는 `@Transactional` 밖**에서 수행, **archive+insert+outbox만 짧은 단일 트랜잭션**. 동시 generate/regenerate 레이스는 **`learning_paths(user_id) WHERE status='ACTIVE'` partial UNIQUE 인덱스**로 DB가 ACTIVE 1개 보장(중복 INSERT는 제약 위반→재시도/409). RestClient timeout·재시도·Ollama 5xx/timeout→SSE `error` stage 매핑 명시.
+- **R-9 (P2) 임베딩 repository = native**: `VECTOR(768)`·`<=>`(cosine) 쿼리는 Hibernate 매핑 대신 **JdbcTemplate/native SQL 전용 repository**로 설계(content_embeddings는 JPA 엔티티 매핑 회피, 또는 embedding 컬럼만 native 접근).
+- **세부 정정**: ① `content_embeddings.status` = **ACTIVE/INACTIVE**(ERD 정합, 기존 spec STALE 폐기). ② SSE done payload는 **camelCase `pathId`**(API 명세 `path_id`·`first_week_tasks`는 docs PR로 정합), 프론트 픽스처 동일. ③ regenerate는 동기 200(기존 archive + 새 generate, AI 호출 포함 p95<8s 내; UX timeout 리스크는 프론트 로딩 처리). ④ DONE 전이 조건 = **`where onboarding_status in ('PENDING','IN_PROGRESS')`** + poison payload skip(슬라이스 #2 C 패턴). ⑤ `LearningPathGeneratedEvent` diagnosedLevel 추가 시 **직렬화/역직렬화 호환 테스트**(shared) 포함. ⑥ Ollama 모델 기본값 핀: `OLLAMA_GEN_MODEL=qwen2.5:7b`·`OLLAMA_EMBED_MODEL=nomic-embed-text`(최소 RAM 전제 문서화), 임베딩 응답 길이 768 runtime 검증 fail-fast. ⑦ gateway SSE 패스스루 테스트는 chunk 순차도착(버퍼링 없음)까지 검증.
 
 ## 12. 관련 문서·메모리
 - 슬라이스 #2 설계서: `docs/superpowers/specs/2026-06-18-md1-slice2-diagnostic-design.md`
