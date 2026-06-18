@@ -151,6 +151,7 @@ assessment_id(FK, PK) · diagnosed_level(JUNIOR/MID/SENIOR) · concept_scores(JS
 4. platform 소비자가 진단 결과(diagnosed_level)를 **보관할지**(슬라이스 #3 입력 경로) vs status 전이만 — 슬라이스 #3 설계와 함께 최소화.
 5. 이벤트 페이로드 필드 확정 + ERD §8.9 Outbox 이벤트 표에 `learning.assessment.completed` **문서 반영**(정합성).
 6. 시드 픽스처 규모·track 커버리지(끝단간 15문항 진행 가능 최소량).
+7. **track enum 값은 설계 결정**(ERD §3은 assessments/question_bank의 track 값을 미열거 — user_profiles.target_track BACKEND_SPRING/FRONTEND_REACT/MOBILE_FLUTTER/DEVOPS/FULLSTACK 재사용으로 본 설계가 채택). 플랜에서 shared enum 정의 위치(공용 vs 서비스별) 확정.
 
 ## 12. 관련 문서·메모리
 - 슬라이스 #1 핸드오프: `docs/superpowers/handoff-2026-06-18-md1-slice1-done.md`
