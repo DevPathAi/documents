@@ -750,6 +750,117 @@ develop PR → CI(analyze·test) 녹색 → merge.
 
 ---
 
+## 검토 반영 보완 (2026-06-18 리뷰 P0/P1 — 실소스 검증 완료, 구현 시 우선 적용)
+
+> 아래는 `apps/web/lib/src/app/router.dart`·`packages/dp_core/lib/src/mock/mock_http_adapter.dart`·`apps/web/lib/src/features/auth/application/auth_controller.dart`·`packages/dp_core/lib/src/api/api_client.dart` 실소스로 검증한 정정이다. **위 Task 코드보다 우선한다.**
+
+### R-D1 (P0-1): claim 후 결과 조회는 `complete()`가 아니라 `result()`
+B-2 `ClaimService`가 assessment를 이미 `COMPLETED`로 만들므로, B-1 `complete()`(=`ownedInProgress()` 요구)를 재호출하면 실패한다. → **`AssessmentApi`에 `result()` 추가**하고 `claimAfterLogin()`이 그것을 호출한다.
+
+Task 3 `AssessmentApi`에 추가:
+
+```dart
+  Future<AssessmentResult> result(int assessmentId) async {
+    final data = await client.get<Map<String, dynamic>>(
+      '/onboarding/assessments/$assessmentId/result');
+    return AssessmentResult.fromJson(data);
+  }
+```
+
+Task 4 `claimAfterLogin()`의 `complete` 호출을 교체:
+
+```dart
+  Future<void> claimAfterLogin() async {
+    if (_guestId == null) return;
+    state = const DiagnosticLoading();
+    try {
+      _assessmentId = await _api.claim(_guestId!);
+      final result = await _api.result(_assessmentId!); // complete() 아님 — 이미 COMPLETED
+      _guestId = null;
+      state = DiagnosticResultState(result);
+    } on ApiException catch (e) {
+      state = DiagnosticError(e.message);
+    }
+  }
+```
+(테스트에 `guest complete → 로그인 → claim → result 표시` 시나리오 추가.)
+
+### R-D2 (P0-2): web 게이트가 미인증 guest 진단 진입을 막음 — gate 예외 명시
+실소스 `gateRedirect()`: `if (auth is! AuthAuthenticated) return atLogin ? null : '/login';` → 미인증 사용자는 `/login` 외 모든 경로에서 `/login`으로 리다이렉트된다. guest 진단은 별도 공개 경로 `/diagnostic`을 신설하고 게이트 예외로 둔다.
+
+Task 5에서 `router.dart` `gateRedirect()`를 수정(미인증 허용 경로에 `/diagnostic` 추가):
+
+```dart
+  final atLogin = location == '/login';
+  final atDiagnostic = location == '/diagnostic'; // 비회원 guest 진단 공개
+
+  if (auth is! AuthAuthenticated) {
+    if (atLogin || atDiagnostic) return null; // guest 진단 진입 허용
+    return '/login';
+  }
+```
+그리고 `/diagnostic` GoRoute를 ShellRoute 밖(로그인/온보딩과 동급 최상위)에 등록:
+
+```dart
+      GoRoute(path: '/diagnostic', builder: (_, _) => const DiagnosticPage()),
+```
+OAuth 콜백 복귀: 가입 게이트에서 `login()` 호출 → `/auth/callback` → `bootstrapFromCallback()`로 인증됨 → `/diagnostic`로 복귀 후 `claimAfterLogin()` 호출. 복귀 트리거는 `AuthCallbackPage` 이후 게이트가 인증 사용자를 `/diagnostic`에 머무르게 하고(인증 사용자도 `/diagnostic` 허용), `DiagnosticPage`가 `GateSignup`+인증됨을 감지하면 `claimAfterLogin()`을 호출하도록 한다. (인증 사용자의 `/diagnostic` 접근도 게이트에서 허용하도록 `atDiagnostic`를 인증 분기에서도 통과 처리.)
+
+### R-D3 (P1-1): `MockHttpAdapter` 픽스처는 `(status, body)` 튜플
+실소스 `typedef MockFixture = (int status, Object body);`, `Map<String, MockFixture>`, 키 `'METHOD /path'`(쿼리 있으면 `'METHOD /path?k=v'` 키 정렬). Task 3 테스트 예시를 교체:
+
+```dart
+import 'package:dp_core/dp_core.dart';
+import 'package:test/test.dart';
+
+ApiClient mockClient(Map<String, MockFixture> fixtures) {
+  final c = ApiClient.create(const ApiConfig(baseUrl: 'http://t', useMock: true));
+  c.dio.httpClientAdapter = MockHttpAdapter(fixtures);
+  return c;
+}
+
+void main() {
+  test('startGuest는 guestAssessmentId를 반환', () async {
+    final api = AssessmentApi(mockClient({
+      'POST /onboarding/assessments/guest': (200, {'guestAssessmentId': 'g-123'}),
+    }));
+    expect(await api.startGuest('BACKEND_SPRING'), 'g-123');
+  });
+}
+```
+Task 5 `web_mock_fixtures.dart` 진단 픽스처도 동일 튜플 형식으로 작성.
+
+### R-D4 (P1-2): auth 메서드명·import 정정
+- `loginWithGitHub()` → **`login()`** (실소스 `AuthController.login()`).
+- `AuthAuthenticated`는 `auth_state.dart`에 있다 → 컨트롤러/페이지에 `import '../../auth/state/auth_state.dart';` 추가(`auth_controller.dart`만 import하면 transitive 안 됨).
+
+Task 4 `_advance()`·Task 5 `DiagnosticPage`의 `loginWithGitHub()`를 `login()`으로, import 보강.
+
+### R-D5 (P1-6): 옵션 파싱·선택 UI(하드코딩 답안 제거)
+`_QuestionView`는 `q.options`(JSON 배열 문자열)를 파싱해 선택지 버튼을 렌더하고, 선택 index를 `{"correct":<idx>}`로 제출한다. options가 null/CODE_READING/SHORT_ANSWER면 텍스트 입력 또는 단일 제출 fallback. 위젯 테스트에 "옵션 선택→선택 index가 answer JSON으로 전송" 검증 추가.
+
+```dart
+// options 예: '["singleton","prototype"]' → jsonDecode로 List<String>
+// 선택 시 notifier.submitAnswer(q.id, '{"correct":$index}', timeSpentSec: ...)
+```
+
+### R-D6 (P1 D 보완): `AssessmentApi._base()` 인자 검증 + 결과 모델 필드
+- `_base()`는 `assessmentId`·`guestId` 중 **정확히 하나**만 받도록 단언: 둘 다 null이거나 둘 다 비-null이면 `ArgumentError`.
+- `AssessmentResult` 모델(Task 2)에 `conceptScores`/`strengthConcepts`/`weaknessConcepts`를 받을지 여부 결정: 슬라이스 #2 결과 화면은 `diagnosedLevel`만 사용하므로 **의도적 제외**(필요 시 슬라이스 #3에서 확장)로 문서화. result 응답에 추가 필드가 와도 무시되도록 freezed `fromJson`은 미지정 키 무시(기본 동작).
+
+```dart
+  String _base({int? assessmentId, String? guestId}) {
+    if ((assessmentId == null) == (guestId == null)) {
+      throw ArgumentError('assessmentId와 guestId 중 정확히 하나만 지정해야 한다');
+    }
+    return guestId != null
+        ? '/onboarding/assessments/guest/$guestId'
+        : '/onboarding/assessments/$assessmentId';
+  }
+```
+
+---
+
 ## Self-Review (작성자 점검 결과)
 
 - **Spec coverage**: 설계서 §2 빌드D(gateway 라우트+frontend 실API), §5 엔드포인트, §6 guest→가입게이트→claim, §8 프론트(진행률·skip·결과). gateway 라우팅·공개경로, dp_core 모델·API, 진단 컨트롤러·화면 커버. Task 0(상류 계약 재검증 게이트) 명시.

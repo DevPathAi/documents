@@ -1149,6 +1149,117 @@ Expected: BUILD SUCCESSFUL, 전 테스트 PASS.
 
 ---
 
+## 검토 반영 보완 (2026-06-18 리뷰 P1 — 구현 시 우선 적용)
+
+### R-B2-1 (P1-3): GuestSession에 pending 문항 + answer/timeSpent 보관
+원안 `GuestSession`은 `next()`에서 상태를 안 바꾸고 `answer()`가 임의 questionId를 채점한다. 또 `Presented`에 answer/timeSpentSec가 없어 claim 시 `assessment_items.answer/time_spent_sec`가 유실된다. → **pendingQuestionId**(현재 출제·미응답)와 **answer/timeSpentSec** 보관.
+
+Task 5 `GuestSession`을 교체:
+
+```java
+package ai.devpath.learning.assessment.guest;
+
+import java.util.List;
+
+public record GuestSession(
+    String guestId,
+    String track,
+    double currentDifficulty,
+    Long pendingQuestionId,   // 현재 출제·미응답(없으면 null)
+    List<Presented> presented,
+    boolean completed,
+    String diagnosedLevel) {
+
+  public record Presented(long questionId, double difficulty, Boolean correct,
+                          boolean skipped, String answer, Integer timeSpentSec) {}
+}
+```
+
+### R-B2-2 (P1-3): guest `next()`/`answer()` outstanding 규칙
+- `next()`: `pendingQuestionId`가 있으면 그 문항을 재발급(반복 next 안전). 없으면 새 문항 선택 후 `pendingQuestionId` 설정.
+- `answer()`: `req.questionId`가 `pendingQuestionId`와 일치할 때만 수락, 처리 후 `pendingQuestionId=null`.
+
+Task 5 `GuestAssessmentService`의 `next`/`answer`를 교체:
+
+```java
+  public Optional<NextQuestionResponse> next(String guestId) {
+    GuestSession s = require(guestId);
+    if (engine.isComplete(s.presented().size())) return Optional.empty();
+    if (s.pendingQuestionId() != null) { // outstanding 재발급
+      QuestionBank q = questions.findById(s.pendingQuestionId()).orElseThrow();
+      return Optional.of(view(q, s.presented().size() + 1));
+    }
+    Set<Long> excluded = s.presented().stream()
+        .map(GuestSession.Presented::questionId).collect(Collectors.toSet());
+    QuestionBank q = selector.select(s.track(), s.currentDifficulty(), excluded, questions.findByTrack(s.track()));
+    if (q == null) return Optional.empty();
+    store.save(new GuestSession(s.guestId(), s.track(), s.currentDifficulty(),
+        q.getId(), s.presented(), false, null)); // pending 설정
+    return Optional.of(view(q, s.presented().size() + 1));
+  }
+
+  public void answer(String guestId, AnswerRequest req) {
+    GuestSession s = require(guestId);
+    if (s.pendingQuestionId() == null || s.pendingQuestionId() != req.questionId()) {
+      throw new IllegalArgumentException("현재 출제된 문항이 아님(먼저 next 호출)");
+    }
+    QuestionBank q = questions.findById(req.questionId()).orElseThrow();
+    AdaptiveEngine.AnswerOutcome outcome;
+    Boolean correct;
+    if (req.skipped()) { outcome = AdaptiveEngine.AnswerOutcome.SKIP; correct = null; }
+    else {
+      boolean ok = Objects.equals(normalize(req.answer()), normalize(q.getAnswerKey()));
+      correct = ok;
+      outcome = ok ? AdaptiveEngine.AnswerOutcome.CORRECT : AdaptiveEngine.AnswerOutcome.WRONG;
+    }
+    var presented = new ArrayList<>(s.presented());
+    presented.add(new GuestSession.Presented(q.getId(), q.getDifficulty(), correct,
+        req.skipped(), req.skipped() ? null : req.answer(), req.timeSpentSec()));
+    double nextDiff = engine.nextDifficulty(s.currentDifficulty(), outcome);
+    store.save(new GuestSession(s.guestId(), s.track(), nextDiff, null, presented, false, null)); // pending 해제
+  }
+
+  private NextQuestionResponse view(QuestionBank q, int index) {
+    return new NextQuestionResponse(new QuestionView(q.getId(), q.getQuestionType(),
+        q.getContent(), q.getOptions(), q.getBloomLevel(), q.getDifficulty()),
+        index, AdaptiveEngine.TOTAL_QUESTIONS);
+  }
+```
+`start()`·`complete()`의 `new GuestSession(...)` 호출도 새 시그니처(pendingQuestionId 인자 추가, start=null)로 맞춘다. 회귀 테스트: 반복 next 동일 문항, pending 불일치 answer 400.
+
+### R-B2-3 (P1-3): claim이 answer/timeSpent 보존
+Task 6 `ClaimService`의 item 생성에 answer/timeSpentSec 반영:
+
+```java
+      item.setAnswer(p.answer());
+      item.setTimeSpentSec(p.timeSpentSec());
+```
+
+### R-B2-4 (P1-4): claim 멱등 원자화 — SETNX 락 + DB 멱등 매핑
+Redis mapping 최후 저장은 DB 저장 후 장애·동시요청에 취약. → **claim 진입 시 `SETNX assessment:claim-lock:{guestId}`(짧은 TTL)로 동시 진입 차단** + 완료 매핑 확인. 더 견고히는 DB `guest_claims(guest_id UNIQUE, assessment_id)` 멱등 테이블(빌드 A 추가 마이그레이션) 사용.
+
+최소 보완(Task 6 `claim()` 진입부):
+
+```java
+    String done = redis.opsForValue().get(CLAIM_PREFIX + guestId);
+    if (done != null) return Long.parseLong(done); // 이미 이행됨(멱등)
+    Boolean acquired = redis.opsForValue()
+        .setIfAbsent(CLAIM_PREFIX + "lock:" + guestId, "1", java.time.Duration.ofSeconds(10));
+    if (Boolean.FALSE.equals(acquired)) {
+      throw new IllegalStateException("claim 처리 중(동시 요청) — 재시도하라");
+    }
+    // ... 기존 DB 이행 + CLAIM_PREFIX 매핑 저장 + guest delete ...
+```
+권장(견고): 빌드 A에 `guest_claims` UNIQUE 테이블 추가 → claim에서 INSERT(중복 시 DataIntegrityViolation→기존 매핑 반환). 동시 claim·빠른 재요청에서 outbox/assessment 중복 없음 테스트 추가.
+
+### R-B2-5 (B-2 보완): 멀티 track 시드 + 문항 부족 정책
+`question_bank_seed.sql`·`QuestionBankSeeder`는 BACKEND_SPRING만 채운다. API는 모든 track을 받으므로 → 다른 track 요청 시 `next()`가 후보 없음으로 즉시 종료(204)되는 정책을 명시하거나, 최소 1 track 외 fixture를 확장한다. 본 슬라이스는 **BACKEND_SPRING만 끝단간 보장**, 그 외 track은 "문항 없음→빈 진단(즉시 complete 가능)"으로 문서화하고 시드 확장은 콘텐츠 작업으로 위임.
+
+### R-B2-6 (B-2 보완): OutboxRelay 실패경로 테스트
+Task 2는 성공 발행만 검증. send 실패 시 `published_at` null 유지·순서 중단 계약을 위해, KafkaTemplate을 `@MockitoBean`으로 교체해 `send().get()`이 예외를 던지도록 만들고 `relayOnce()` 후 해당 행 `published_at`이 null인지 검증하는 단위 테스트를 추가(EmbeddedKafka 불요).
+
+---
+
 ## Self-Review (작성자 점검 결과)
 
 - **Spec coverage**: 설계서 §2 빌드B(이벤트·guest·claim·시드), §4(guest 동일 엔진), §6(guest Redis 30분·claim 멱등), §7(이벤트 outbox→Kafka·`learning.assessment.completed`), §9(EmbeddedKafka·guest·claim IT), §11.3(concept 집계 보강)·§11.6(시드) — 커버.

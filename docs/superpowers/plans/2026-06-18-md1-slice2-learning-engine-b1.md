@@ -1128,6 +1128,86 @@ Expected: BUILD SUCCESSFUL, 전 테스트 PASS.
 
 ---
 
+## 검토 반영 보완 (2026-06-18 리뷰 P1 — 구현 시 우선 적용)
+
+### R-B1-1 (P1-3): `next()`는 outstanding(미응답) 문항을 재발급 — 반복 호출 안전
+원안은 `next()` 호출마다 `AssessmentItem`을 생성해, 클라이언트가 `GET /next`를 반복하면 미응답 문항이 누적되고 진행률·종료 판정이 깨진다. → **미응답 문항이 있으면 새로 만들지 않고 그대로 반환**, 종료 판정은 "응답완료 수" 기준.
+
+Task 4 `AssessmentService.next()`를 교체:
+
+```java
+  @Transactional
+  public Optional<NextQuestionResponse> next(long userId, long assessmentId) {
+    Assessment a = ownedInProgress(userId, assessmentId);
+    List<AssessmentItem> all = items.findByAssessmentIdOrderByOrderNumAsc(assessmentId);
+    long answeredCount = all.stream().filter(i -> i.getAnsweredAt() != null).count();
+    if (engine.isComplete((int) answeredCount)) return Optional.empty();
+    // outstanding(미응답) 문항이 있으면 재발급(반복 next 안전)
+    Optional<AssessmentItem> outstanding = all.stream()
+        .filter(i -> i.getAnsweredAt() == null).findFirst();
+    if (outstanding.isPresent()) {
+      QuestionBank q = questions.findById(outstanding.get().getQuestionBankId()).orElseThrow();
+      return Optional.of(toResponse(q, outstanding.get().getOrderNum()));
+    }
+    Set<Long> excluded = all.stream().map(AssessmentItem::getQuestionBankId).collect(Collectors.toSet());
+    QuestionBank q = selector.select(a.getTrack(), a.getCurrentDifficulty(), excluded,
+        questions.findByTrack(a.getTrack()));
+    if (q == null) return Optional.empty();
+    int order = all.size() + 1;
+    AssessmentItem item = new AssessmentItem();
+    item.setAssessmentId(assessmentId);
+    item.setQuestionBankId(q.getId());
+    item.setOrderNum(order);
+    item.setPresentedAt(Instant.now());
+    item.setSkipped(false);
+    items.save(item);
+    return Optional.of(toResponse(q, order));
+  }
+
+  private NextQuestionResponse toResponse(QuestionBank q, int orderNum) {
+    var view = new QuestionView(q.getId(), q.getQuestionType(), q.getContent(), q.getOptions(),
+        q.getBloomLevel(), q.getDifficulty());
+    return new NextQuestionResponse(view, orderNum, AdaptiveEngine.TOTAL_QUESTIONS);
+  }
+```
+
+### R-B1-2 (P1-3): `answer()`는 **outstanding 문항만** 수락 — 임의/중복 answer 차단
+원안은 questionId가 일치하는 미응답 항목을 찾았으나, "현재 outstanding"이 아닌 임의 questionId 수락 여지가 있다. → outstanding 항목과 `questionId`가 일치할 때만 수락한다.
+
+Task 4 `AssessmentService.answer()`의 item 탐색을 교체:
+
+```java
+    List<AssessmentItem> all = items.findByAssessmentIdOrderByOrderNumAsc(assessmentId);
+    AssessmentItem item = all.stream().filter(i -> i.getAnsweredAt() == null).findFirst()
+        .orElseThrow(() -> new IllegalStateException("응답할 outstanding 문항이 없음(먼저 next 호출)"));
+    if (!item.getQuestionBankId().equals(req.questionId())) {
+      throw new IllegalArgumentException("현재 출제된 문항이 아님");
+    }
+```
+(이후 채점·난이도 전이 로직은 원안 유지.)
+
+### R-B1-3 (P1 B-1): `complete()` 조기 종료 정책
+미응답 문항이 남았거나 15문항 미만이면 complete를 거부(또는 의도된 조기 종료 허용 정책 명시). 기본: **outstanding 존재 또는 answeredCount<15면 거부**.
+
+`complete()` 진입부에 추가:
+
+```java
+    List<AssessmentItem> all = items.findByAssessmentIdOrderByOrderNumAsc(assessmentId);
+    boolean hasOutstanding = all.stream().anyMatch(i -> i.getAnsweredAt() == null);
+    long answered = all.stream().filter(i -> i.getAnsweredAt() != null).count();
+    if (hasOutstanding || answered < AdaptiveEngine.TOTAL_QUESTIONS) {
+      throw new IllegalStateException("15문항 응답 완료 후에만 complete 가능");
+    }
+```
+
+### R-B1-4 (P1 B-1): 회귀 테스트 + 시드 격리
+`AssessmentControllerTest`에 추가: ①같은 문항에 `GET /next` 2회 → 동일 questionId 반환(누적 없음) ②미응답 상태에서 임의 questionId `answer` → 400 ③15문항 미만 `complete` → 4xx. 시드는 테스트 간 잔존 영향을 줄이도록 `@Transactional`(롤백) 또는 고유 track 사용. (실 PG·non-embedded이므로 `@Sql` 시드 + `@Sql`(executionPhase=AFTER) cleanup 또는 테스트별 트랜잭션 롤백 명시.)
+
+### R-B1-5 (B-1 채점): answer_key 비교는 시드 형식 확정 후 구조 비교
+원안은 공백 제거 문자열 비교(시드 JSON 형식 단순 가정). B-2 시드 형식(`{"correct":N}`) 확정 후 `JsonMapper`로 파싱해 `correct` 값 비교로 정교화 권장(키 순서·공백 무관).
+
+---
+
 ## Self-Review (작성자 점검 결과)
 
 - **Spec coverage**: 설계서 §2 빌드B(엔진+회원 API), §3 데이터모델(엔티티 4종), §4 엔진 확정값(전이·종료·레벨), §5 회원 엔드포인트 5종, §10 Boot4 주의(test 슬라이스 모듈·flyway·@ActiveProfiles), 인증모델(§7 자체 JWT 검증) — 커버. guest/claim/이벤트/시드는 B-2로 명시 분리.

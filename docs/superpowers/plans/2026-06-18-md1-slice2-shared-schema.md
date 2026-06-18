@@ -405,6 +405,53 @@ learning-svc 로컬 빌드 시 shared 캐시 purge 후 `--refresh-dependencies` 
 
 ---
 
+## 검토 반영 보완 (2026-06-18 리뷰 — 구현 시 우선 적용)
+
+### R-A1: 데이터 품질 CHECK 제약 추가
+- `assessment_results`: `CONSTRAINT chk_ar_confidence CHECK (confidence_weight IS NULL OR (confidence_weight >= 0.0 AND confidence_weight <= 1.0))`
+- `assessment_items`: `CONSTRAINT chk_ai_order CHECK (order_num > 0)`, `CONSTRAINT chk_ai_time CHECK (time_spent_sec IS NULL OR time_spent_sec >= 0)`
+
+Task 2 두 마이그레이션 SQL의 닫는 `)` 앞에 위 CHECK를 각각 추가.
+
+### R-A2: 마이그레이션 테스트 강화(테이블 존재 → 계약 검증)
+`getTables`로 존재만 보는 대신, 핵심 제약을 INSERT 시도로 검증한다(실 PG). 예: 잘못된 enum/범위 INSERT가 거부되는지, 1:1 result PK·`uq_assessment_items_order` UNIQUE가 작동하는지, FK가 막는지. `FlywayMigrationTest`(또는 신규 `DiagnosticSchemaTest`)에 추가:
+
+```java
+  @Test
+  void questionBankRejectsBadEnumAndRange() throws Exception {
+    Flyway.configure().dataSource(dataSource()).locations("classpath:db/migration").load().migrate();
+    try (var c = dataSource().getConnection(); var st = c.createStatement()) {
+      // 잘못된 bloom_level → CHECK 위반
+      org.junit.jupiter.api.Assertions.assertThrows(java.sql.SQLException.class, () ->
+        st.execute("INSERT INTO question_bank(track,question_type,content,answer_key,bloom_level,difficulty) "
+          + "VALUES ('BACKEND_SPRING','MCQ','q','{}','NOPE',0.3)"));
+      // difficulty 범위 밖 → CHECK 위반
+      org.junit.jupiter.api.Assertions.assertThrows(java.sql.SQLException.class, () ->
+        st.execute("INSERT INTO question_bank(track,question_type,content,answer_key,bloom_level,difficulty) "
+          + "VALUES ('BACKEND_SPRING','MCQ','q','{}','APPLY',9.9)"));
+    }
+  }
+```
+(테스트는 멱등·정리 위해 BAD INSERT만 시도하므로 행을 남기지 않는다. 정상 INSERT/UNIQUE/FK 검증은 별도 메서드로 추가 권장.)
+
+### R-A3: 이벤트 직렬화 계약 테스트
+`AssessmentCompletedEventTest`의 `eventType` 검증만으로는 필드명·nullable 호환을 보장하지 못한다. shared 테스트 classpath에 Jackson(JsonMapper)이 있으면 직렬화→역직렬화 라운드트립 + JSON 키명(assessmentId/userId/diagnosedLevel/conceptScores/completedAt) 검증을 추가한다. **shared에 Jackson 의존이 없으면**(현 `UserRegisteredEventTest`가 직렬화 미검증인 점으로 보아 가능) 이 계약은 **B-2 `AssessmentEventPropagationIT`**(JsonMapper로 직렬화→Kafka→소비)와 **C 소비자 IT**(역직렬화)가 실효 검증하므로, A에는 "직렬화 계약은 B-2/C IT가 보증"을 명시하고 별도 의존 추가는 하지 않는다(YAGNI).
+
+### R-A4(선택): guest_claims 멱등 테이블 (B-2 R-B2-4 견고화 채택 시)
+B-2 claim 멱등을 DB 테이블로 견고화하려면 빌드 A에 `V202606181005__guest_claims.sql` 추가:
+
+```sql
+-- 슬라이스 #2: guest→회원 claim 멱등 매핑(중복 이행 방지).
+CREATE TABLE guest_claims (
+  guest_id      VARCHAR(64) PRIMARY KEY,
+  assessment_id BIGINT NOT NULL REFERENCES assessments(id) ON DELETE CASCADE,
+  claimed_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
+채택 여부는 B-2 R-B2-4 결정에 따른다(Redis SETNX 최소안이면 불요).
+
+---
+
 ## Self-Review (작성자 점검 결과)
 
 - **Spec coverage**: 설계서 §2 빌드A(스키마+이벤트), §3 데이터모델 4테이블, §7 이벤트(`learning.assessment.completed`)·main 릴리스 — 전부 Task 1~5로 커버. §3 `skipped` 추가 컬럼 반영(Task 2). track enum(§11) CHECK 제약에 반영.
