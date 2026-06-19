@@ -2,6 +2,8 @@
 
 > **버전**: v1.0
 > **DB 엔진**: PostgreSQL 17 (OLTP/SSOT) · pgvector (임베딩) · Redis (세션/캐시) · Elasticsearch (BM25)
+>
+> **문서 성격**: v1 목표 ERD. 현재 Flyway 구현 완료 범위는 사용자·인증·outbox·notifications·온보딩 진단까지이며, 전체 현황은 [37_전체_문서_전체_레포_정합성_점검](./37_전체_문서_전체_레포_정합성_점검.md)을 기준으로 확인한다.
 
 총 9개 도메인 — 사용자·인증, GitHub 프로필, 온보딩·진단, 학습 경로, 콘텐츠, Sandbox, AI 리뷰, 커뮤니티·멘토, 진척.
 
@@ -70,9 +72,11 @@ learning_paths ── path_milestones ── path_weekly_tasks
 |--------|-----------|
 | `learning_paths` | id(PK), user_id(FK), generated_at, track, total_weeks(default 12), claude_prompt_version, source_embedding_version, status(ACTIVE/ARCHIVED), ai_rationale(TEXT) — **1:N 관계** (사용자당 여러 경로 보유 가능, `status=ACTIVE`는 앱 레이어에서 1개로 제한) |
 | `path_milestones` | id, path_id(FK), week_num, title, goal_description, target_skills(JSON), estimated_hours, why_this_order(TEXT) |
-| `path_weekly_tasks` | id, milestone_id(FK), order_num, content_id(FK), task_type(READ/PRACTICE/AR/QUIZ), required(BOOL), completed_at |
+| `path_weekly_tasks` | id, milestone_id(FK), order_num, content_id(FK), task_type(READ/PRACTICE/QUIZ), required(BOOL), completed_at |
 
-**생성 플로우**: Assessment + GitHubProfile + LearningGoal → Claude API → JSON roadmap → pgvector로 콘텐츠 매칭 → `path_weekly_tasks` 생성.
+> AR task type은 v1 MVP에서 제외한다. AR 재활성화 시 [22_AR_아키텍처_체험_참고설계.md](./22_AR_아키텍처_체험_참고설계.md) 기준으로 v2 스키마 확장을 검토한다.
+
+**생성 플로우**: Assessment + GitHubProfile + LearningGoal → AI Gateway(개발: Ollama, 운영: Claude 등 provider 교체 가능) → JSON roadmap → pgvector로 콘텐츠 매칭 → `path_weekly_tasks` 생성.
 
 ---
 
@@ -82,7 +86,7 @@ learning_paths ── path_milestones ── path_weekly_tasks
 |--------|-----------|
 | `contents` | id(PK), slug(UK), title, track, content_md(TEXT), estimated_minutes, difficulty(FLOAT), bloom_level(ENUM), concept_tags(JSON), status(DRAFT/PUBLISHED), author_id, published_at |
 | `content_code_blocks` | id(PK), content_id(FK), order_num, language, starter_code(TEXT), test_cases(JSON), is_sandbox_runnable(BOOL) |
-| `content_embeddings` | id(PK), content_id(FK), chunk_index, chunk_text(TEXT), embedding VECTOR(1536), chunk_hash(SHA-256), metadata(JSONB), status(ACTIVE/INACTIVE) |
+| `content_embeddings` | id(PK), content_id(FK), chunk_index, chunk_text(TEXT), embedding VECTOR(768), chunk_hash(SHA-256), metadata(JSONB), status(ACTIVE/INACTIVE) |
 
 **인덱스**:
 - HNSW on `embedding` WHERE status = 'ACTIVE'

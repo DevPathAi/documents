@@ -3,6 +3,7 @@
 > **Base URL**: `https://api.devpath.ai/api/v1`
 > **인증**: JWT Bearer Token (`Authorization: Bearer <token>`)
 > **스펙 문서**: SpringDoc OpenAPI → `/swagger-ui.html`
+> **문서 성격**: v1 목표 API 계약. 현재 로컬 구현 완료 범위는 [36_현재_구현_프로토타입_스토리보드_문서_정합성_점검](./36_현재_구현_프로토타입_스토리보드_문서_정합성_점검.md)을 기준으로 확인한다.
 
 ---
 
