@@ -41,6 +41,9 @@
 | 13 | [테스트 보고서](./13_테스트_보고서.md) |
 | 24 | [선행 트러블슈팅 참고 (Synapse)](./24_선행_트러블슈팅_참고.md) |
 | 25 | [문서 정합성 점검 보고서](./25_문서_정합성_점검_보고서.md) |
+| 36 | [현재 구현·프로토타입·스토리보드·문서 정합성 점검](./36_현재_구현_프로토타입_스토리보드_문서_정합성_점검.md) |
+| 37 | [전체 문서·전체 레포 정합성 점검](./37_전체_문서_전체_레포_정합성_점검.md) |
+| 38 | [정합성 수정계획서](./38_정합성_수정계획서.md) |
 
 ### 🚀 배포 & 운영
 | # | 문서 |
@@ -60,7 +63,7 @@
 ### 💼 사업 & 대외 (모두의 창업 / 예비창업패키지)
 | # | 문서 |
 |---|------|
-| 27 | [MVP 설계서 (지원금 활용 계획)](./27_MVP_설계서.md) |
+| 27 | [MVP 설계서 (2026-04-23 멘토링 초안)](./27_MVP_설계서.md) |
 | 28 | [장기 전략 (90일 통합)](./28_장기_전략.md) |
 | 29 | [예비창업패키지 사업계획서](./29_예비창업패키지_사업계획서.md) |
 | 30 | [발표 평가 Q&A 스크립트](./30_발표_QA_스크립트.md) |
@@ -98,7 +101,7 @@
 - **Backend**: Spring Boot 4 + Java 21 (Virtual Threads) + OAuth2 + Outbox
 - **아키텍처**: 폴리레포 서비스 + 중앙집중 스키마 (distributed modular monolith)
 - **Data**: PostgreSQL (SSOT) + pgvector + Redis + Kafka + Elasticsearch
-- **AI**: Claude Sonnet 4.6 / Haiku 4.5 + text-embedding-3-small
+- **AI**: dev Ollama(`nomic-embed-text`, `qwen2.5:7b`) / 운영 목표 Claude 등 provider 교체
 - **Sandbox**: Docker + gVisor (runsc) + 네트워크 차단 + 30초 limit
 - **Web**: Flutter Web (Dart) + Riverpod 3 + go_router + dio + Monaco Editor(Sandbox)
 - **Mobile**: Flutter 3.x + Riverpod + drift
