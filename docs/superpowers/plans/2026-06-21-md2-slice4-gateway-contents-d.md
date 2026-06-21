@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **✅ 구현 완료(2026-06-21):** 본 플랜은 `devpath-gateway`에서 실행 완료됐다 — 커밋 `fe8e0ea` "feat: route content APIs through gateway" (PR #10 → develop 머지, merge commit `5bddd06`). 변경 4파일은 본 플랜 File Structure와 동일(main/test `application*.yml` + `RouteConfigTest`·`ContentRouteTest`), CI `build` 녹색, 스코프 클린. `RouteConfigTest`는 `learningRouteIsConfigured` 추가, `ContentRouteTest`는 미인증 401·인증 라우팅 + **선택 항목인 dashboard 드리프트 회귀 잠금(`authenticatedDashboardPathMatchesLearningRoute`)까지 포함**. 따라서 아래 "Global Constraints/현재 상태/Self-Review"의 *실행 전* 기술(특히 "test yml에 `/dashboard/**`가 빠져 있다")은 **이미 해소됨** — 두 yml 모두 `/onboarding/assessments/**,/learning-paths/**,/dashboard/**,/contents/**`이고 gateway 보안은 `.anyExchange().authenticated()`로 `/contents/**`를 자동 보호한다.
+
 **Goal:** `devpath-gateway`가 `/contents/**` 요청을 `devpath-learning-svc`로 프록시하도록 main/test route config를 정합화하고, 인증 보호 경로 테스트를 추가한다.
 
 **Architecture:** 기존 learning route(`Path=/onboarding/assessments/**,/learning-paths/**,/dashboard/**`)에 `/contents/**`를 추가한다. `/contents/**`는 private learning resource로 취급해 JWT 인증이 필요하다. public 콘텐츠 공개는 후속 결정이다.
