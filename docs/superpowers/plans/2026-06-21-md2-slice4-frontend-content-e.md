@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **✅ 구현 완료(2026-06-21):** 본 플랜은 `devpath-frontend`에서 실행 완료됐다 — 커밋 `90d26e1` "feat: MD2 slice4 content progress web flow" (PR #23 → develop 머지, merge commit `8345462`). 변경 17파일은 본 플랜 File Structure 범위 내(`dp_core` `LearningContent` 모델 + `apps/web` content feature + `path_plan_view` + 테스트), CI `analyze-test`(`melos run analyze`+`test`) 녹색, **무관 generated 노이즈 미포함**(Risk 경고 준수). 구현은 본 플랜과 정합 — `ContentProgress.completedAt: String?`, `ContentLoaded(LearningContent content)`, `path_plan_view`의 `task.contentSlug ?? task.contentId?.toString()` onTap 라우팅 확인. 따라서 아래 "Current source alignment"의 *실행 전* 기술(ContentController가 markdown만 읽음·PathPlanView onTap 없음)은 **이미 해소됨**.
+
 **Goal:** web 앱에서 Path task 클릭 -> `/content/:idOrSlug` 진입 -> 콘텐츠 상세 로드 -> scroll/dwell progress POST -> 완료 시 Path/Dashboard refresh 흐름을 완성한다.
 
 **Architecture:** `dp_core`에 `LearningContent`/`ContentProgress` 모델을 추가하고, web `ContentController`가 전체 API 응답을 파싱한다. `ContentPage`는 `ScrollController`와 dwell timer로 누적 progress를 계산하고 throttled POST를 보낸다. Path task는 `contentSlug ?? contentId`가 있으면 콘텐츠로 이동한다. 완료 응답을 받으면 path/dashboard controller를 재로딩한다.
