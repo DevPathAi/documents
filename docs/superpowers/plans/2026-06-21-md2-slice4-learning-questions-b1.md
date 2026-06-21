@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **✅ 구현 완료(2026-06-21):** 본 플랜은 `devpath-learning-svc`에서 실행 완료됐다 — PR #13(`feat/slice4-question-bank-seed` → develop, merge `39a1b01`), CI 녹색. 산출물이 본 플랜 File Structure와 정합: `tools/content-gen` 스캐폴드(schemas·prompts 5 track)·`QuestionValidator`+`QuestionValidatorTest`·`src/main/resources/db/seed/question_bank_md2_seed.sql`·승인 `questions.jsonl` **500줄(5 track×100, MCQ70/CODE_READING30, SHORT_ANSWER·Bloom CREATE 0)**·`QuestionBankSeeder` MD2 seed 전환(dev). origin/develop 실측 확인.
+
 **Goal:** `devpath-learning-svc`에 오프라인 문항 생성/검증 파이프라인을 추가하고, 5개 track x 100개 = 500개 승인 진단 문항을 `question_bank` seed로 적재 가능하게 만든다.
 
 **Architecture:** 생성은 런타임 기능이 아니다. `tools/content-gen`과 Gradle task는 로컬 Ollama 초안 생성, 자동 검증, seed SQL 생성을 담당한다. CI는 Ollama를 호출하지 않고 fixture와 승인 JSON/SQL만 검증한다. 기존 `QuestionBankSeeder`의 BACKEND_SPRING 17개 하드코딩은 MD2 seed SQL 로더로 대체한다.
