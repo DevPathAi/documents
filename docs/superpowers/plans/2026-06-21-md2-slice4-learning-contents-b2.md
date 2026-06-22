@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **✅ 구현 완료(2026-06-21):** 본 플랜은 `devpath-learning-svc`에서 실행 완료됐다 — PR #14(`feat/slice4-content-seed` → develop, merge `318fa46`), CI 녹색. 산출물이 본 플랜 File Structure와 정합: B1의 `tools/content-gen` 확장(content·embedding schema/prompt)·`ContentValidator`+`ContentValidatorTest`·`src/main/resources/db/seed/content_md2_seed.sql`·승인 `contents.jsonl` **150줄(5 track×30, 전부 PUBLISHED)**·`content_embeddings.jsonl`(768차원). origin/develop 실측 확인.
+
 **Goal:** `devpath-learning-svc`에 콘텐츠 생성/검증/임베딩 seed 파이프라인을 추가하고, 5개 track x 30편 = 150개 `PUBLISHED` 콘텐츠와 `content_embeddings` seed를 적재 가능하게 만든다.
 
 **Architecture:** B1의 `tools/content-gen` 구조를 확장한다. 콘텐츠 본문은 approved JSONL, DB 적재는 seed SQL, 임베딩은 실제 768차원 산출물 또는 JSONL+loader를 SSoT로 둔다. CI는 실제 Ollama/qwen/nomic 호출 없이 fixture embedding으로 chunking, validation, SQL/loader를 검증한다.
