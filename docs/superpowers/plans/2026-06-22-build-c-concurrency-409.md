@@ -1,5 +1,7 @@
 # 학습경로 동시 생성 충돌 409 처리 Implementation Plan
 
+> **✅ 구현·검증 완료 (2026-06-22)** — develop 머지(PR #19, CI `build` pass 1m35s). 산출물: `ActivePathConflictException` + `LearningPathPersistenceService` `saveAndFlush` 변환 + `GlobalExceptionHandler` 409 매핑(`PATH_GENERATION_CONFLICT`) + 테스트 3(persistence 단위·conflict 매핑 MockMvc·concurrency IT). **plan 대비 개선**: 변환을 **SQLState 23505(unique violation)로 한정**(광범위 `DataIntegrityViolationException` catch 회피, `b955083`). **잔여: develop→main 릴리스.**
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 동일 사용자의 동시 학습경로 생성이 `learning_paths` partial UNIQUE를 위반할 때, 이를 명시적 409 CONFLICT(`PATH_GENERATION_CONFLICT`)로 변환하고 최종 ACTIVE 경로가 항상 1개로 수렴함을 테스트로 보장한다.
