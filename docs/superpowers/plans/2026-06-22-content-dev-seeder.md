@@ -1,5 +1,7 @@
 # 콘텐츠 dev seeder Implementation Plan
 
+> **✅ 구현·검증 완료 (2026-06-22)** — develop 머지(PR #20, CI `build` pass 1m54s). 산출물: `ContentSeeder`(`@Profile("dev")` `CommandLineRunner`) + `ContentSeederTest`(분기 단위 2 + 적재 통합 1). **운영 적재(Task 3)도 완료**: dev DB(`devpath`) `contents` 150·`content_embeddings` 150·track별 30 실측 확인 — seeder는 `count≥150`이라 이후 기동 시 no-op. **잔여: develop→main 릴리스.**
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 검증된 `db/seed/content_md2_seed.sql`(콘텐츠 150 + 임베딩 150)을 `dev` 프로파일 기동 시 메인 개발 DB에 자동 적재하는 `ContentSeeder`를 `QuestionBankSeeder`와 동일한 패턴으로 추가한다.
