@@ -1,6 +1,6 @@
 # 핸드오프 — 슬라이스 #10(모바일) A·B·C 완료 / 다음 = Build D(FCM) (2026-06-27)
 
-> 다음 세션 이관용. **슬라이스 #10(모바일) Build A+B(PR #39→develop) · C(PR #40→core, 스택) 완료.** 빈 카운터 스캐폴드였던 `apps/mobile`이 실제 앱 골격(셸·인증·딥링크·오프라인 대시보드·학습 뷰어·퀵 캡처)으로. 남은 = **Build D(FCM)** + 모바일 실API 인증(백엔드) + 온보딩. **WSL+Bash 메인 직접 진행.**
+> 다음 세션 이관용. **슬라이스 #10(모바일) Build A+B+C 완료·develop 머지 완료**(PR #39·#40·#46 머지). 빈 카운터 스캐폴드였던 `apps/mobile`이 실제 앱 골격(셸·인증·딥링크·오프라인 대시보드·학습 뷰어·퀵 캡처)으로. 남은 = **Build D(FCM)** + 모바일 실API 인증(백엔드) + 온보딩. **WSL+Bash 메인 직접 진행.**
 
 ## 1. 종착점 — 슬라이스 #10 A/B/C ✅
 - **A 기반/셸/인증/딥링크**: dp_core 재사용 ApiClient+모바일 토큰 AuthInterceptor, AppConfig(목 기본), StatefulShellRoute 하단탭 셸(홈·학습·커뮤니티)+gateRedirect, SecureStorageTokenStore(+KeyValueStore 추상), OAuth 딥링크(devpath://callback 파서·DeepLinkService(app_links)·url_launcher·네이티브 intent-filter/URL scheme).
@@ -9,11 +9,11 @@
 - 검증: melos analyze/format 그린, test 그린(**mobile 45** = A+B 32 + C 13 · web 147 · dp_core 48 회귀 무변).
 - 보고서 `reports/2026-06-27-slice10-mobile-abc-build-report.md`.
 
-## 2. PR/머지 상태 (반드시 숙지)
-- **PR #39**: `feat/slice10-mobile-core`(A+B 커밋 `2cd58f3`) → **develop**.
-- **PR #40**: `feat/slice10-mobile-c`(C 커밋 `df080dc`) → **base `feat/slice10-mobile-core`**(스택). C는 A+B 코드(셸·providers)에 의존하므로 core에서 분기.
-- **머지 순서**: #40(C→core) 머지 → #39(core→develop)가 A+B+C 전체를 develop으로. 또는 #39 머지 후 #40 base를 develop으로 retarget. **CI(melos analyze/test) 그린 확인 후 머지**.
-- frontend는 deploy 잡 없음(릴리스만). gitops 주의는 [[gitops-deploy-bot-main-drift]] — 모바일 슬라이스엔 무관.
+## 2. PR/머지 상태 (머지 완료)
+- **머지 완료**: PR #40(C→core)·#39(core→develop)·docs #46 모두 머지. **frontend `develop` HEAD `11b32c1`**에 A+B+C 통합, **documents `develop` `f08276a`**에 리포트·핸드오프 통합. 기능/문서 브랜치 삭제됨.
+- 두 코드 PR 원격 CI(`analyze-test`) pass 후 머지. 결합 트리(A+B+C) 로컬 게이트(melos analyze/format/test)도 녹색.
+- **`main` 릴리스 미진행**(develop 통합까지만). frontend는 deploy 잡 없음(릴리스만). gitops 주의 [[gitops-deploy-bot-main-drift]] — 모바일 슬라이스엔 무관.
+- 다음 세션: develop 최신(`git pull`)에서 새 작업 브랜치(`feat/slice10-mobile-d` 등) 분기.
 
 ## 3. 남은 작업 (슬라이스 #10)
 - **Build D — FCM 푸시** (다음 진입점): NotificationService 추상 인터페이스 + firebase_messaging 배선 + 네이티브 설정(google-services.json 자리/APNs 권한) + **페이크 테스트**. **실 Firebase 프로젝트 연결(google-services.json/APNs 키)은 후속** — 사용자 승인 결정(추상화+네이티브+페이크로 구현, 실연동 deferred). 토큰 등록 시 백엔드 전달 엔드포인트는 계약 확인 필요.
