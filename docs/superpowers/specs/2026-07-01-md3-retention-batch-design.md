@@ -19,9 +19,10 @@ FR-PRO-004 "리텐션 트리거 3종"(일일 푸시 / 주간 리포트 / 정체 
 ## 현재 상태 (실측, 2026-07-01)
 
 - `/dashboard/me`(learning-svc)만 실제 구현. `DashboardSummary.streakDays`는 **하드코딩 0**, `badges`도 **하드코딩 문자열**이며 community-svc의 실제 배지 API와 연동돼 있지 않다(devpath-learning-svc `dashboard/DashboardService.java:25,39`, 별도 저장소라 링크 대신 경로로 표기).
-- `/progress/**`, `/notifications/**`는 gateway(devpath-gateway `src/main/resources/application.yml`)에 라우트가 없다 → 백엔드 전체 미구현.
-- API 명세서의 `user_learning_prefs`(ERD 초안)는 어떤 서비스의 Flyway 마이그레이션에도 없다 → DB 미생성. `timezone` 컬럼은 ERD에도 없다(신규 도입 필요).
-- 모바일은 `DeviceRegistrar` / `PushService`(FCM, Stub·Fcm 2종 구현)가 이미 구현되어 `POST /notifications/devices`를 호출 시도하지만 수신 서버가 없다.
+- `/progress/**`는 gateway(devpath-gateway `src/main/resources/application.yml`)에 라우트가 없다 → 백엔드 전체 미구현.
+- **[2026-07-01 정정]** `/notifications/**`는 "백엔드 전체 미구현"이 아니다 — `devpath-platform-svc`의 CLAUDE.md는 `notification: 알림(리텐션 루프)`를 이미 자신의 도메인으로 선언하고 있고, `ai.devpath.platform.notification` 패키지에 `DeviceController`(`POST/DELETE /notifications/devices`, 멱등 upsert+IDOR 방지 완비)·`DeviceToken`/`Notification` 엔티티·`WelcomeNotificationConsumer`(Kafka 컨슈머)가 **이미 동작 중**이다. `device_tokens`/`notifications` 테이블도 devpath-shared에 이미 마이그레이션되어 있다(`V202606271001`, `V202606171005`). 실제 문제는 게이트웨이에 `/notifications/**` 라우트가 없어 이 기존 코드가 외부에서 도달 불가능하다는 것뿐이다. Build 1은 "신규 생성"이 아니라 이 기존 코드를 platform-svc에서 notification-svc로 **이관**하는 작업으로 조정됨 — 상세는 [2026-07-01-md3-retention-batch-build1.md](../plans/2026-07-01-md3-retention-batch-build1.md) 참조.
+- API 명세서의 `user_learning_prefs`(ERD 초안)는 어떤 서비스의 Flyway 마이그레이션에도 없다 → DB 미생성. `timezone` 컬럼은 ERD에도 없다(신규 도입 필요). (스트릭/주간리포트/정체탐지/timezone-prefs 관련해서는 이 발견이 적용되지 않는다 — 재확인 결과 여전히 그린필드가 맞다.)
+- 모바일은 `DeviceRegistrar` / `PushService`(FCM, Stub·Fcm 2종 구현)가 이미 구현되어 `POST /notifications/devices`를 호출하며, 이 요청을 받아줄 컨트롤러 자체는 platform-svc에 이미 있다(위 정정 참조) — 다만 게이트웨이 라우트가 없어 요청이 닿지 못한다.
 - ai-svc는 Claude 연동 인터페이스 + Mock/Ollama/Claude 구현 패턴(`ClaudeAiReviewClient`, `ClaudeMentorClient`, `AiSeedClient`)이 이미 3개 도메인(review/mentor/community-seed)에 있으나, 재참여 제안 전용 클라이언트는 없다.
 - 이메일 발송 인프라(JavaMailSender/SES 등)가 전체 미존재.
 - 5개 서비스(learning/community/ai/sandbox/platform-svc) 전부에 Kafka 기반 outbox(`OutboxRelay` + `OutboxRelayScheduler`, `@Scheduled(fixedDelay=2000)`, 토픽=eventType, key=aggregateId) 패턴이 이미 확립되어 있다 — 이 설계는 그대로 재사용한다.
