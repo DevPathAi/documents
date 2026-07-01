@@ -19,7 +19,7 @@
 
 ## devpath-shared
 
-### Flyway 마이그레이션 전체 목록 (origin/main, `src/main/resources/db/migration`) — 23개 파일
+### Flyway 마이그레이션 전체 목록 (origin/main, `src/main/resources/db/migration`) — 24개 파일
 
 ```
 V202606150900__init_common.sql
