@@ -3,7 +3,7 @@
 > **Base URL**: `https://api.devpath.ai/api/v1`
 > **인증**: JWT Bearer Token (`Authorization: Bearer <token>`)
 > **스펙 문서**: SpringDoc OpenAPI → `/swagger-ui.html`
-> **문서 성격**: v1 목표 API 계약. 현재 로컬 구현 완료 범위는 [36_현재_구현_프로토타입_스토리보드_문서_정합성_점검](./36_현재_구현_프로토타입_스토리보드_문서_정합성_점검.md)을 기준으로 확인한다.
+> **문서 성격**: v1 목표 API 계약. 현재 로컬 구현 완료 범위는 [42_전체_정합성_점검_2차](./42_전체_정합성_점검_2차.md)를 기준으로 확인한다(36번은 2026-06-19 시점 스냅샷).
 
 ---
 
@@ -363,13 +363,15 @@ data: {"done": true, "message_id": 9001, "references": [
 
 ## 9. 알림
 
-| Method | Endpoint | 설명 | 권한 |
-|--------|----------|------|------|
-| GET | `/notifications/me` | 전체 알림 목록 (커뮤니티 + 학습 + 시스템) | AUTHENTICATED |
-| PUT | `/notifications/{id}/read` | 읽음 처리 | OWNER |
-| PUT | `/notifications/read-all` | 전체 읽음 | AUTHENTICATED |
-| POST | `/notifications/devices` | FCM 토큰 등록 (모바일 푸시) | AUTHENTICATED |
-| DELETE | `/notifications/devices/{deviceId}` | FCM 토큰 삭제 | OWNER |
+> 소유 서비스: `devpath-notification-svc` (2026-07-01 platform-svc에서 이관). 현재 구현: 디바이스 토큰 등록/삭제 2종. 알림 목록·읽음 처리는 TARGET(미구현).
+
+| Method | Endpoint | 설명 | 권한 | 상태 |
+|--------|----------|------|------|------|
+| GET | `/notifications/me` | 전체 알림 목록 (커뮤니티 + 학습 + 시스템) | AUTHENTICATED | TARGET |
+| PUT | `/notifications/{id}/read` | 읽음 처리 | OWNER | TARGET |
+| PUT | `/notifications/read-all` | 전체 읽음 | AUTHENTICATED | TARGET |
+| POST | `/notifications/devices` | FCM 토큰 등록 (모바일 푸시) | AUTHENTICATED | 구현됨 |
+| DELETE | `/notifications/devices` | FCM 토큰 삭제 | OWNER | 구현됨 |
 
 ---
 
