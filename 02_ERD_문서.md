@@ -3,7 +3,7 @@
 > **버전**: v1.0
 > **DB 엔진**: PostgreSQL 17 (OLTP/SSOT) · pgvector (임베딩) · Redis (세션/캐시) · Elasticsearch (BM25)
 >
-> **문서 성격**: v1 목표 ERD. 현재 Flyway 구현 완료 범위는 사용자·인증·outbox·notifications·온보딩 진단까지이며, 전체 현황은 [37_전체_문서_전체_레포_정합성_점검](./37_전체_문서_전체_레포_정합성_점검.md)을 기준으로 확인한다.
+> **문서 성격**: v1 목표 ERD. 현재 Flyway 구현 완료 범위는 사용자·인증·outbox·notifications·온보딩 진단·학습경로·콘텐츠(임베딩 포함)·Sandbox·AI 리뷰·AI 멘토·커뮤니티(Q&A·평판·배지)·LCS·디바이스 토큰·남용방지(마이그레이션 24파일)까지이며, 전체 현황은 [42_전체_문서_전체_레포_정합성_점검_2차](./42_전체_정합성_점검_2차.md)를 기준으로 확인한다.
 
 총 9개 도메인 — 사용자·인증, GitHub 프로필, 온보딩·진단, 학습 경로, 콘텐츠, Sandbox, AI 리뷰, 커뮤니티·멘토, 진척.
 
@@ -146,12 +146,12 @@ learning_paths ── path_milestones ── path_weekly_tasks
 | `community_tags` | id(PK), name(UK), description, wiki_md, post_count, watcher_count |
 | `community_post_tags` | post_id(FK), tag_id(FK) — UNIQUE 페어 |
 | `user_tag_reputation` | user_id(FK), tag_id(FK), reputation(INT) — UNIQUE 페어 |
-| `user_reputation_events` | id, user_id(FK), action(ANSWER_UPVOTED/ACCEPTED/DOWNVOTED/BOUNTY_PAID 등), points(INT), source_id, created_at |
+| `reputation_events` | id, user_id(FK), action(ANSWER_UPVOTED/ACCEPTED/DOWNVOTED/BOUNTY_PAID 등), points(INT), source_id, created_at |
 | `badges` | id(PK), code(UK), name, tier(BRONZE/SILVER/GOLD), criteria(JSONB) |
 | `user_badges` | user_id(FK), badge_id(FK), awarded_at — UNIQUE 페어 |
 
 **평판 남용 방지**
-- `user_reputation_events` 집계로 같은 `source_id` 중복 점수 차단
+- `reputation_events` 집계로 같은 `source_id` 중복 점수 차단
 - 일일 합산 +40 상한 (하루 가산 한도)
 - 7일 신규 계정은 투표 제한 (`users.created_at` 기준 트리거)
 
@@ -217,8 +217,8 @@ ALTER TABLE community_ai_answers ADD COLUMN
 | `community_questions` | `(is_solved, created_at DESC)` | 미답변 큐 조회 |
 | `community_votes` | `(target_type, target_id)` | 투표 집계 |
 | `community_votes` | `(user_id, target_type, target_id)` UNIQUE | 중복 투표 방지 |
-| `user_reputation_events` | `(user_id, created_at DESC)` | 평판 이력 조회 |
-| `user_reputation_events` | `(user_id, source_id)` | 중복 점수 방지 |
+| `reputation_events` | `(user_id, created_at DESC)` | 평판 이력 조회 |
+| `reputation_events` | `(user_id, source_id)` | 중복 점수 방지 |
 | `learning_context_snapshots` | `(linked_question_id)` | 질문별 맥락 조회 |
 | `moderation_queue` | `(ai_severity, created_at)` | 모더레이션 큐 정렬 |
 
