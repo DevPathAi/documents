@@ -194,6 +194,8 @@ public record WeeklyReportGeneratedEvent(
 - **Build 4**: 정체 탐지(learning-svc) + ai-svc `/ai/re-engagement` + notification-svc 구독·푸시.
 - **Build 5**: 주간 리포트(learning-svc 집계 + community-svc 배지 enrich) + notification-svc 이메일 발송 + 이력 테이블.
 
+> **[2026-07-02 Build 2 착수 정정]** Build 2의 `StreakRolloverScheduler`(시간대 윈도우 스캔)는 위 "스케줄러 설계" 절대로 유저별 `timezone`을 조회해야 하는데, 그 조회 API(`GET /notifications/internal/users/{id}/prefs`)는 원안대로면 Build 3에서 만들어져 순서가 거꾸로였다. Build 2에 **notification-svc의 `user_notification_prefs` 테이블(timezone 필드, 기본값 `Asia/Seoul`)과 내부 bulk 조회 API만** 선당김한다. 사용자 대면 `GET/PUT /notifications/prefs/me`, `preferred_time_slot`/`reminder_enabled` 컬럼의 실사용, `PreferredTimeReminderScheduler`는 원안대로 Build 3에 남긴다 — "시간대 윈도우 스캔" 핵심 원칙(전체 유저 일괄 롤오버는 틀린 설계)을 지키면서 추가 범위를 최소화하는 선택.
+
 ## 리스크 / 후속
 
 - 정체 탐지 "정확히 3일째 1회만 발행" 조건은 배치가 시간 단위로 도는 특성상 중복 발행 위험이 있다 — `user_stagnation_notified_at` 같은 플래그 또는 `daysInactive == 3` 정확 일치 체크로 방지(구현 계획 단계에서 확정).
