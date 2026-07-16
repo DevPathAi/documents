@@ -6,6 +6,8 @@
 >
 > **주의(정합성 규칙)**: 상태 표기는 2026-07-04 코드 실측 기준. 착수 전 각 레포 `origin/develop` 실측으로 재확인한다(문서가 코드보다 뒤처질 수 있음).
 
+> **갱신(2026-07-17, fresh `git fetch` 실측)**: 아래 2026-07-04 스냅샷 이후 **④·②·③이 전부 2026-07-05 develop 머지 완료**됨(④ platform #24·frontend #69 / ② 선행 스토리지 shared #44·platform #25/#26·learning #33·community #23·frontend #70 / ③ platform #27·frontend #71). **남은 MVP 필수는 ① 결제뿐**: 마스터 spec(platform #28 머지) + P1 하위 spec/plan 초안(platform 로컬 브랜치 `feat/payment-p1-backend`, 미푸시·미머지)까지 준비됐고 **P1~P3 구현은 미착수**. 실배포(AWS k3s)는 spec/plan이 gitops #14로 머지됨(프로비저닝 실행은 AWS 계정·도메인 게이팅). 아래 표의 ❌/⚠️는 2026-07-04 시점 표기이며 현재는 ① 외 해소됨.
+
 ## 현재 상태 요약 (실측 2026-07-04)
 
 **완성된 MVP 코어**: 15문항 적응형 진단(learning `/onboarding/assessments/**`), AI 로드맵 생성(learning `/learning-paths/me/generate`→ai `/ai/path/generate`), AI 멘토(ai `/ai-mentor/**`), 학습맥락 자동첨부 LCS(lcs-svc), Q&A 게시판(community-svc), GitHub OAuth 로그인(platform), 랜딩 페이지(devpath-landing-page 별도 레포). 부가로 평판·배지·sandbox·참여촉진(리텐션)도 구현 완료.
