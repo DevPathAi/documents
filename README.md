@@ -122,6 +122,6 @@
 | 레포 | 용도 |
 |------|------|
 | [devpath-shared](https://github.com/DevPathAi/devpath-shared) | 공유 스키마 + 공통 라이브러리 + 중앙 Flyway |
-| [devpath-gateway](https://github.com/DevPathAi/devpath-gateway) · [*-svc](https://github.com/DevPathAi) | API Gateway + 도메인 서비스 5개 |
+| [devpath-gateway](https://github.com/DevPathAi/devpath-gateway) · [*-svc](https://github.com/DevPathAi) | API Gateway + 도메인 서비스 7개(platform·learning·community·sandbox·ai·lcs·notification) |
 | [devpath-frontend](https://github.com/DevPathAi/devpath-frontend) · [devpath-gitops](https://github.com/DevPathAi/devpath-gitops) | 프론트엔드 + GitOps |
 | [storyboard](https://github.com/DevPathAi/storyboard) · [prototype](https://github.com/DevPathAi/prototype) · [templates](https://github.com/DevPathAi/templates) | 스토리보드 · 프로토타입 · 템플릿 |
