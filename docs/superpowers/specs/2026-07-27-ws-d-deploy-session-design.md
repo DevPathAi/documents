@@ -42,7 +42,7 @@ WS-B(데모 웹 이미지)·WS-C(베타 게이팅)가 완결되어 다음 착수
 - **1b. documents 미커밋 3건 보존**: `.tier1-baseline.md` + 6/24 office-hours 랜딩 검증 spec/plan 2건을 `docs:` 커밋으로 보존(WS-A 자산).
 - **1c. svc-template PR #4 머지** (build SUCCESS 확인됨).
 - **1d. 로컬 위생**: 5개 레포 develop 체크아웃+pull, learning `.jqwik-database` 삭제. `.omc/` untracked·home-page `.gitignore` 수정은 범위 외(보류).
-- **1f. `.github` CLAUDE.md 수정 폐기**: `git checkout -- CLAUDE.md` + develop pull(behind 4 해소).
+- **1e. `.github` CLAUDE.md 수정 폐기**: `git checkout -- CLAUDE.md` + develop pull(behind 4 해소).
 
 ## 섹션 2 — 릴리스 컷 (develop→main)
 
@@ -90,4 +90,4 @@ WS-B(데모 웹 이미지)·WS-C(베타 게이팅)가 완결되어 다음 착수
 - **R2 Job immutable sync 실패**(조정 1) — Replace 절차로 흡수.
 - **R3 대량 릴리스 컷의 CI 동시 실행** — GitHub Actions 동시성 한도로 대기 발생 가능(기능 리스크 아님, 시간 리스크).
 - **R4 실 비용 발생** — 건별 확인 게이트 + 중단 시 정리 runbook으로 통제.
-- **R5 admin 이미지 신규 경로 초회 검증** — web과 달리 로컬 docker build 검증을 develop PR 단계에서 수행해 흡수.
+- **R5 admin 이미지 신규 경로 초회 검증** — 초회 경로이므로 develop PR 단계에서 로컬 docker build 검증으로 흡수(WS-B web 검증 방식 재사용).
