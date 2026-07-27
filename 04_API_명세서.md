@@ -502,7 +502,33 @@ data: {"done": true, "message_id": 9001, "references": [
 
 ---
 
-## 11. Rate Limit · 사용량 한도
+## 11. 베타 광고 (Ads)
+
+> **상태(2026-07-27 실측)**: 전 항목 **구현 완료**(2026-07-22 develop 머지 — shared #47·platform #35/#36·gateway #25). 소유 = platform-svc `ads` 모듈, gateway `platform-auth` 라우트(`/ads/**`) 경유. 슬롯 3종 = `DASHBOARD_TOP`·`COMMUNITY_FEED`·`CONTENT_PAGE`. 베타 무료기간 하우스/스폰서 광고로, 전역 토글(`ad_settings`) OFF 시 전 슬롯 204.
+
+### 11.1 서빙 · 이벤트 (로그인 사용자)
+
+| Method | Endpoint | 설명 | 응답 |
+|--------|----------|------|------|
+| GET | `/ads?slot={슬롯}` | 슬롯별 적격 광고 1건 (ACTIVE·게재기간 내·가중치 랜덤) | 200 `{id,title,imageUrl,linkUrl,slot}` / 204 없음·전역 OFF |
+| POST | `/ads/{id}/events` | 노출/클릭 기록 `{"type":"IMPRESSION"\|"CLICK"}` — `ad_daily_stats` UPSERT, 유실 허용 | 202 / 404 광고 미존재 |
+
+### 11.2 관리 (Admin — `/admin/**` hasRole(ADMIN))
+
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/admin/ads?slot=&status=` | 광고 목록 (슬롯·상태 필터) |
+| POST | `/admin/ads` | 생성 `{title,imageUrl,linkUrl,slot,weight≥1,status,startsAt,endsAt}` → 201 |
+| PUT | `/admin/ads/{id}` | 수정 (생성과 동일 본문) |
+| DELETE | `/admin/ads/{id}` | 삭제 → 204 (`ad_daily_stats` CASCADE) |
+| POST | `/admin/ads/{id}/image` | 이미지 업로드 (multipart `file`, 기존 S3ObjectStorage 재사용) |
+| GET | `/admin/ads/settings` | 전역 설정 조회 `{enabled}` |
+| PUT | `/admin/ads/settings` | 전역 토글 `{enabled}` |
+| GET | `/admin/ads/{id}/stats?from=&to=` | 일별 통계 `[{date,impressions,clicks}]` (ISO 날짜) |
+
+---
+
+## 12. Rate Limit · 사용량 한도
 
 | 범위 | 기본 한도 |
 |------|----------|
@@ -516,7 +542,7 @@ data: {"done": true, "message_id": 9001, "references": [
 
 ---
 
-## 12. 관련 문서
+## 13. 관련 문서
 
 - Swagger UI: `/swagger-ui.html`
 - [03_프로젝트_아키텍처_정의서.md](./03_프로젝트_아키텍처_정의서.md)
