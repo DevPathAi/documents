@@ -38,12 +38,19 @@
 | 10 | [환경 설정 템플릿](./10_환경_설정_템플릿.md) |
 | 11 | [테스트 전략서](./11_테스트_전략서.md) |
 | 12 | [코드 리뷰 규칙](./12_코드_리뷰_규칙.md) |
-| 13 | [테스트 보고서](./13_테스트_보고서.md) |
+| 13 | [테스트 보고서](./13_테스트_보고서.md) (양식, TARGET — 실측 아님) |
 | 24 | [선행 트러블슈팅 참고 (Synapse)](./24_선행_트러블슈팅_참고.md) |
 | 25 | [문서 정합성 점검 보고서](./25_문서_정합성_점검_보고서.md) |
 | 36 | [현재 구현·프로토타입·스토리보드·문서 정합성 점검](./36_현재_구현_프로토타입_스토리보드_문서_정합성_점검.md) |
 | 37 | [전체 문서·전체 레포 정합성 점검](./37_전체_문서_전체_레포_정합성_점검.md) |
 | 38 | [정합성 수정계획서](./38_정합성_수정계획서.md) |
+| 42 | [전체 정합성 점검 2차](./42_전체_정합성_점검_2차.md) |
+| 43 | [정합성 리팩토링 실행계획서](./43_정합성_리팩토링_실행계획서.md) |
+| 46 | [전체 정합성 점검 3차](./46_전체_정합성_점검_3차.md) — 현재 기준(코드 품질 축 포함) |
+| 47 | [품질 리팩토링 실행계획서](./47_품질_리팩토링_실행계획서.md) |
+| 39 | [E2E 수동검증 보고서 2026-06-20](./39_E2E_수동검증_보고서_2026-06-20.md) |
+| 40 | [E2E 수동검증 보고서 2026-06-21 슬라이스4](./40_E2E_수동검증_보고서_2026-06-21_슬라이스4.md) |
+| 41 | [study-documents 연계 카탈로그](./41_study-documents_연계_카탈로그.md) |
 
 ### 🚀 배포 & 운영
 | # | 문서 |
@@ -115,6 +122,6 @@
 | 레포 | 용도 |
 |------|------|
 | [devpath-shared](https://github.com/DevPathAi/devpath-shared) | 공유 스키마 + 공통 라이브러리 + 중앙 Flyway |
-| [devpath-gateway](https://github.com/DevPathAi/devpath-gateway) · [*-svc](https://github.com/DevPathAi) | API Gateway + 도메인 서비스 5개 |
+| [devpath-gateway](https://github.com/DevPathAi/devpath-gateway) · [*-svc](https://github.com/DevPathAi) | API Gateway + 도메인 서비스 7개(platform·learning·community·sandbox·ai·lcs·notification) |
 | [devpath-frontend](https://github.com/DevPathAi/devpath-frontend) · [devpath-gitops](https://github.com/DevPathAi/devpath-gitops) | 프론트엔드 + GitOps |
 | [storyboard](https://github.com/DevPathAi/storyboard) · [prototype](https://github.com/DevPathAi/prototype) · [templates](https://github.com/DevPathAi/templates) | 스토리보드 · 프로토타입 · 템플릿 |

@@ -1,8 +1,8 @@
 # 09. Git 규칙 정의서
 
 > **저장소**: `Public-Project-Area-Oragans/devpath-ai` (예시)
-> **기본 브랜치**: `main`
-> **개발 흐름**: GitHub Flow + Release 태그
+> **기본 브랜치**: `main` (보호 브랜치) · 통합 브랜치: `develop`
+> **개발 흐름**: `develop` 통합 브랜치 + 2단계 PR(작업 브랜치→develop, develop→main 릴리즈 시)
 
 ---
 
@@ -12,16 +12,17 @@
 
 | 브랜치 | 용도 | 수명 |
 |--------|------|------|
-| `main` | 항상 배포 가능 (GitHub Flow 기본) | 영구 |
-| `feature/*` | 신규 기능 | main에서 분기, 머지 후 삭제 |
-| `fix/*` | 버그 수정 | main에서 분기, 머지 후 삭제 |
-| `refactor/*` | 리팩터링 | 머지 후 삭제 |
-| `chore/*` | 빌드/의존성 | 머지 후 삭제 |
-| `docs/*` | 문서 전용 | 머지 후 삭제 |
-| `hotfix/*` | 프로덕션 긴급 | main에서 분기, **main에만 머지** |
+| `main` | 항상 배포 가능 (보호 브랜치, 직접 push·머지 금지) | 영구 |
+| `develop` | 통합 브랜치. 모든 작업 브랜치는 여기서 분기·머지 | 영구 |
+| `feature/*` | 신규 기능 | develop에서 분기, 머지 후 삭제 |
+| `fix/*` | 버그 수정 | develop에서 분기, 머지 후 삭제 |
+| `refactor/*` | 리팩터링 | develop에서 분기, 머지 후 삭제 |
+| `chore/*` | 빌드/의존성 | develop에서 분기, 머지 후 삭제 |
+| `docs/*` | 문서 전용 | develop에서 분기, 머지 후 삭제 |
+| `hotfix/*` | 프로덕션 긴급 | main에서 분기, **main과 develop 양쪽에 머지** |
 | `release/v*` | 릴리즈 안정화 (큰 릴리즈 시 선택적 사용) | 태그 후 삭제 |
 
-> **브랜치 전략**: GitHub Flow 기반. `develop` 브랜치는 사용하지 않음. 모든 작업 브랜치는 `main`에서 분기하고 `main`으로 머지한다.
+> **브랜치 전략**: `main`은 보호 브랜치로 직접 push·직접 머지를 금지한다. `develop`을 통합 브랜치로 두고, 모든 작업 브랜치(`feature/*`·`fix/*`·`refactor/*`·`chore/*`·`docs/*`)는 `develop`에서 분기해 `develop`으로 PR한다(CI 통과 후 머지). `main`에는 릴리즈 시점에만 `develop`→`main` PR로 들어간다(2단계 PR). `develop`이 없는 레포는 `main`에서 생성해 푸시한 뒤 이 흐름을 시작한다.
 
 ### 1.2 브랜치 명명 규칙
 
@@ -156,9 +157,9 @@ Closes #142
 
 ### 3.4 머지 정책
 
-- **Squash Merge** 기본
-- 연속 커밋 서사 보존 시 **Rebase Merge**
-- **Merge Commit** 금지
+- **Merge Commit** 기본(작업 브랜치→develop, develop→main 모두)
+- Squash·Rebase 머지는 명시적으로 요청된 경우에만
+- 머지 전 CI(build/test/lint 등)가 **녹색**임을 확인 — 실패 시 머지 금지
 - 머지 후 브랜치 즉시 삭제
 
 ---
@@ -167,11 +168,17 @@ Closes #142
 
 ### 4.1 `main` 보호
 
-- 직접 push 금지
+- 직접 push·직접 머지 금지 — `develop`→`main` PR(릴리즈 시점)로만 반영
 - 필수 상태 체크: `build`, `test`, `lint`, `security`, `coverage`, `sonar`
 - 리뷰 승인 2건
 - 새 커밋 푸시 시 승인 무효화
 - Signed Commits 권장
+- `--force-push` 금지
+
+### 4.1a `develop` 보호
+
+- 직접 push 금지 — 모든 변경은 작업 브랜치→develop PR로만 반영
+- CI 필수 상태 체크 통과 후 머지
 - `--force-push` 금지
 
 ### 4.2 `release/*` 보호

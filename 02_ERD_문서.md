@@ -3,7 +3,7 @@
 > **버전**: v1.0
 > **DB 엔진**: PostgreSQL 17 (OLTP/SSOT) · pgvector (임베딩) · Redis (세션/캐시) · Elasticsearch (BM25)
 >
-> **문서 성격**: v1 목표 ERD. 현재 Flyway 구현 완료 범위는 사용자·인증·outbox·notifications·온보딩 진단까지이며, 전체 현황은 [37_전체_문서_전체_레포_정합성_점검](./37_전체_문서_전체_레포_정합성_점검.md)을 기준으로 확인한다.
+> **문서 성격**: v1 목표 ERD. 현재 Flyway 구현 완료 범위는 사용자·인증·outbox·notifications·온보딩 진단·학습경로·콘텐츠(임베딩 포함)·Sandbox·AI 리뷰·AI 멘토·커뮤니티(Q&A·평판·배지)·LCS·디바이스 토큰·남용방지·베타 광고(마이그레이션 34파일, shared 중앙집중)까지이며, 전체 현황은 [46_전체_정합성_점검_3차](./46_전체_정합성_점검_3차.md)를 기준으로 확인한다.
 
 총 9개 도메인 — 사용자·인증, GitHub 프로필, 온보딩·진단, 학습 경로, 콘텐츠, Sandbox, AI 리뷰, 커뮤니티·멘토, 진척.
 
@@ -146,12 +146,12 @@ learning_paths ── path_milestones ── path_weekly_tasks
 | `community_tags` | id(PK), name(UK), description, wiki_md, post_count, watcher_count |
 | `community_post_tags` | post_id(FK), tag_id(FK) — UNIQUE 페어 |
 | `user_tag_reputation` | user_id(FK), tag_id(FK), reputation(INT) — UNIQUE 페어 |
-| `user_reputation_events` | id, user_id(FK), action(ANSWER_UPVOTED/ACCEPTED/DOWNVOTED/BOUNTY_PAID 등), points(INT), source_id, created_at |
+| `reputation_events` | id, user_id(FK), action(ANSWER_UPVOTED/ACCEPTED/DOWNVOTED/BOUNTY_PAID 등), points(INT), source_id, created_at |
 | `badges` | id(PK), code(UK), name, tier(BRONZE/SILVER/GOLD), criteria(JSONB) |
 | `user_badges` | user_id(FK), badge_id(FK), awarded_at — UNIQUE 페어 |
 
 **평판 남용 방지**
-- `user_reputation_events` 집계로 같은 `source_id` 중복 점수 차단
+- `reputation_events` 집계로 같은 `source_id` 중복 점수 차단
 - 일일 합산 +40 상한 (하루 가산 한도)
 - 7일 신규 계정은 투표 제한 (`users.created_at` 기준 트리거)
 
@@ -217,8 +217,8 @@ ALTER TABLE community_ai_answers ADD COLUMN
 | `community_questions` | `(is_solved, created_at DESC)` | 미답변 큐 조회 |
 | `community_votes` | `(target_type, target_id)` | 투표 집계 |
 | `community_votes` | `(user_id, target_type, target_id)` UNIQUE | 중복 투표 방지 |
-| `user_reputation_events` | `(user_id, created_at DESC)` | 평판 이력 조회 |
-| `user_reputation_events` | `(user_id, source_id)` | 중복 점수 방지 |
+| `reputation_events` | `(user_id, created_at DESC)` | 평판 이력 조회 |
+| `reputation_events` | `(user_id, source_id)` | 중복 점수 방지 |
 | `learning_context_snapshots` | `(linked_question_id)` | 질문별 맥락 조회 |
 | `moderation_queue` | `(ai_severity, created_at)` | 모더레이션 큐 정렬 |
 
@@ -258,6 +258,9 @@ ALTER TABLE community_ai_answers ADD COLUMN
 | `admin_audit_logs` | id, admin_user_id(FK), action(SANCTION/RESTORE/KILL_SWITCH/PROMPT_ROLLBACK/CONTENT_DELETE 등), target_type, target_id, details(JSON), ip_address, created_at |
 | `golden_test_runs` | id(PK), prompt_version, total_cases, passed, failed, accuracy(DECIMAL), triggered_by(FK), started_at, completed_at |
 | `sandbox_abuse_logs` | id, user_id(FK), session_id(FK), abuse_type(NETWORK_ATTEMPT/FS_ACCESS/TIMEOUT_REPEAT/RATE_LIMIT), details(JSON), ip_address, auto_banned(BOOL), created_at |
+| `advertisement` | id(PK IDENTITY), title, image_url, link_url, slot(CHECK: DASHBOARD_TOP/COMMUNITY_FEED/CONTENT_PAGE), weight(CHECK ≥1), status(CHECK: ACTIVE/PAUSED), starts_at, ends_at, created_at, updated_at — 베타 광고(2026-07-22 구현) |
+| `ad_settings` | id(=1 싱글턴 CHECK), enabled(BOOL, 기본 TRUE), updated_at — 광고 전역 토글(시드 1행) |
+| `ad_daily_stats` | ad_id(FK advertisement, ON DELETE CASCADE), stat_date(DATE), impressions, clicks, PK(ad_id, stat_date) — 일별 집계(직접 UPSERT) |
 
 > `user_sanctions` 테이블은 커뮤니티 도메인(§8.4)에 정의됨. 관리자 제재도 동일 테이블 사용.
 
@@ -302,6 +305,7 @@ ALTER TABLE community_ai_answers ADD COLUMN
 | `sandbox_abuse_logs` | `(user_id, created_at DESC)` | 악용 사용자 조회 |
 | `announcements` | `(is_active, publish_at)` | 활성 공지 조회 |
 | `community_reports` | `(status, ai_severity)` | 미처리 신고 우선순위 |
+| `advertisement` | `(slot, status)` | 슬롯별 활성 광고 서빙 조회 |
 
 ---
 
@@ -323,6 +327,7 @@ erDiagram
     users ||--o{ ai_mentor_sessions : "멘토"
     users ||--o{ community_questions : "질문"
     community_questions ||--o{ community_answers : "답변"
+    advertisement ||--o{ ad_daily_stats : "일별 통계"
 ```
 
 ---

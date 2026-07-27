@@ -3,7 +3,7 @@
 > **Base URL**: `https://api.devpath.ai/api/v1`
 > **인증**: JWT Bearer Token (`Authorization: Bearer <token>`)
 > **스펙 문서**: SpringDoc OpenAPI → `/swagger-ui.html`
-> **문서 성격**: v1 목표 API 계약. 현재 로컬 구현 완료 범위는 [36_현재_구현_프로토타입_스토리보드_문서_정합성_점검](./36_현재_구현_프로토타입_스토리보드_문서_정합성_점검.md)을 기준으로 확인한다.
+> **문서 성격**: v1 목표 API 계약. 현재 로컬 구현 완료 범위는 [46_전체_정합성_점검_3차](./46_전체_정합성_점검_3차.md)를 기준으로 확인한다(2026-07-18 실측 70 엔드포인트). 표의 **상태** 열: `구현`=실측 존재 / `TARGET`=목표 계약(미구현). 상태 열이 없는 섹션은 섹션 상단 배너를 따른다.
 
 ---
 
@@ -68,18 +68,29 @@
 
 ## 1. 인증 (OAuth2)
 
-| Method | Endpoint | 설명 | 권한 |
-|--------|----------|------|------|
-| GET | `/oauth2/authorization/{provider}` | OAuth 리다이렉트 (github/google/kakao) | PUBLIC |
-| GET | `/login/oauth2/code/{provider}` | OAuth 콜백 (Spring Security 처리) | PUBLIC |
-| POST | `/auth/refresh` | 토큰 갱신 | AUTHENTICATED |
-| POST | `/auth/logout` | 로그아웃 (refresh 무효화) | AUTHENTICATED |
-| GET | `/users/me` | 내 프로필 | AUTHENTICATED |
-| PUT | `/users/me` | 프로필 수정 | AUTHENTICATED |
-| DELETE | `/users/me` | 계정 삭제 (14일 grace) | AUTHENTICATED |
-| POST | `/users/me/restore` | 계정 복구 (14일 grace 기간 내) | AUTHENTICATED |
-| GET | `/users/me/github-profile` | GitHub 수집 결과 | AUTHENTICATED |
-| POST | `/users/me/github-profile/refresh` | GitHub 재수집 | AUTHENTICATED |
+| Method | Endpoint | 설명 | 권한 | 상태 |
+|--------|----------|------|------|------|
+| GET | `/oauth2/authorization/{provider}` | OAuth 리다이렉트 (**github/google**) | PUBLIC | 구현 |
+| GET | `/login/oauth2/code/{provider}` | OAuth 콜백 (Spring Security 처리) | PUBLIC | 구현 |
+| POST | `/auth/oauth/token` | 토큰 교환 | PUBLIC | 구현 |
+| POST | `/auth/refresh` | 토큰 갱신 | AUTHENTICATED | 구현 |
+| POST | `/auth/logout` | 로그아웃 (refresh 무효화) | AUTHENTICATED | 구현 |
+| GET | `/users/me` | 내 프로필 | AUTHENTICATED | 구현 |
+| DELETE | `/users/me` | 계정 삭제 | AUTHENTICATED | 구현 |
+| GET | `/users/me/profile` | 프로필 조회 (bio·목표·트랙·경력) | AUTHENTICATED | 구현 |
+| PUT | `/users/me/profile` | 프로필 수정 | AUTHENTICATED | 구현 |
+| POST | `/users/me/avatar` | 아바타 업로드 (마이페이지) | AUTHENTICATED | 구현 |
+| DELETE | `/users/me/avatar` | 아바타 삭제 | AUTHENTICATED | 구현 |
+| POST | `/consents` | 개인정보/약관 동의 저장 | AUTHENTICATED | 구현 |
+| GET | `/consents/me` | 내 동의 현황 | AUTHENTICATED | 구현 |
+| POST | `/consents/{type}/revoke` | 동의 철회 | AUTHENTICATED | 구현 |
+| GET | `/beta/status` | 베타 승인 상태 폴링 (쿠키 기반) | PUBLIC | 구현 |
+| PUT | `/users/me` | 프로필 수정 (구 계약) | AUTHENTICATED | TARGET → `/users/me/profile` |
+| POST | `/users/me/restore` | 계정 복구 (14일 grace) | AUTHENTICATED | TARGET |
+| GET | `/users/me/github-profile` | GitHub 수집 결과 | AUTHENTICATED | TARGET |
+| POST | `/users/me/github-profile/refresh` | GitHub 재수집 | AUTHENTICATED | TARGET |
+
+> **역류 반영(2026-07-18)**: 베타 게이팅(`/beta/status`·admin은 §10.2)·설정/동의(`/consents`)·마이페이지(`/users/me/profile`·`/avatar`)·Google OAuth는 42번 이후 머지된 실구현이다. `/auth/oauth/token`은 리다이렉트 외 토큰 교환 경로.
 
 ### 1.1 로그인 성공 응답
 ```json
@@ -160,6 +171,8 @@ data: {"stage": "done", "path_id": 1234, "first_week_tasks": [...]}
 
 ## 5. Sandbox Runner
 
+> **상태 배너(2026-07-18 실측)**: 구현 = `POST /sandbox/run`(SSE, 코드 실행) + 내부 `/internal/sandbox/sessions/**`(svc-to-svc). 아래 표의 `/sandbox/sessions`·`/{id}/stream`·`/{id}/kill`·`/quotas/me`는 **TARGET(미구현)** — 실측은 단일 run(SSE) 계약이다.
+
 | Method | Endpoint | 설명 | 권한 |
 |--------|----------|------|------|
 | POST | `/sandbox/sessions` | 실행 세션 시작 (코드 + 언어 + 테스트) | LEARNER |
@@ -215,6 +228,8 @@ data: {"stage": "done", "path_id": 1234, "first_week_tasks": [...]}
 
 ## 7. AI 멘토
 
+> **상태 배너(2026-07-18 실측)**: 구현 = `POST /ai-mentor/sessions`(세션 생성) 단일. 아래 `/{id}/messages`(SSE)·`GET /sessions`·`/{id}/messages`(히스토리)·`/messages/{id}/feedback`는 **TARGET(미구현)**.
+
 | Method | Endpoint | 설명 | 권한 |
 |--------|----------|------|------|
 | POST | `/ai-mentor/sessions` | 세션 생성 (컨텍스트 스냅샷 포함) | LEARNER |
@@ -247,6 +262,8 @@ data: {"done": true, "message_id": 9001, "references": [
 ## 8. 커뮤니티
 
 > 5개 게시판 + 스택오버플로 평판. 상세: [20_커뮤니티_기능_설계서.md](./20_커뮤니티_기능_설계서.md)
+>
+> **상태 배너(2026-07-18 실측, community-svc grep 교차확정)**: 구현(11종) = `posts`(조회)·`questions`(작성)·`questions/{id}/answers`·`answers/{id}/vote`·`answers/{id}/accept`·`questions/similar`·`questions/{id}`·`posts/{id}/vote`·`tags`(조회)·`users/{userId}/badges`·`me/activity`. **TARGET(미구현, src/main grep 0)** = bounty(8.2)·ai-answer·bookmark·report(8.1)·자유게시판/프로젝트(8.3)·leaderboard/reputation-events(8.4)·팔로우/알림(8.5)·모더레이션(8.6)·피어매칭(8.7)·에스컬레이션. 아래 8.2~8.7·에스컬레이션 표는 대부분 목표 계약이다(20 설계서 헤더의 TARGET 분류와 일치).
 
 ### 8.1 게시판 공통
 
@@ -363,13 +380,15 @@ data: {"done": true, "message_id": 9001, "references": [
 
 ## 9. 알림
 
-| Method | Endpoint | 설명 | 권한 |
-|--------|----------|------|------|
-| GET | `/notifications/me` | 전체 알림 목록 (커뮤니티 + 학습 + 시스템) | AUTHENTICATED |
-| PUT | `/notifications/{id}/read` | 읽음 처리 | OWNER |
-| PUT | `/notifications/read-all` | 전체 읽음 | AUTHENTICATED |
-| POST | `/notifications/devices` | FCM 토큰 등록 (모바일 푸시) | AUTHENTICATED |
-| DELETE | `/notifications/devices/{deviceId}` | FCM 토큰 삭제 | OWNER |
+> 소유 서비스: `devpath-notification-svc` (2026-07-01 platform-svc에서 이관). 현재 구현: 디바이스 토큰 등록/삭제 2종. 알림 목록·읽음 처리는 TARGET(미구현).
+
+| Method | Endpoint | 설명 | 권한 | 상태 |
+|--------|----------|------|------|------|
+| GET | `/notifications/me` | 전체 알림 목록 (커뮤니티 + 학습 + 시스템) | AUTHENTICATED | TARGET |
+| PUT | `/notifications/{id}/read` | 읽음 처리 | OWNER | TARGET |
+| PUT | `/notifications/read-all` | 전체 읽음 | AUTHENTICATED | TARGET |
+| POST | `/notifications/devices` | FCM 토큰 등록 (모바일 푸시) | AUTHENTICATED | 구현됨 |
+| DELETE | `/notifications/devices` | FCM 토큰 삭제 | OWNER | 구현됨 |
 
 ---
 
@@ -399,8 +418,8 @@ data: {"done": true, "message_id": 9001, "references": [
 
 ## 10. Admin
 
-| Method | Endpoint | 설명 | 권한 |
-|--------|----------|------|------|
+> **상태 배너(2026-07-18 실측)**: 구현 = `GET /admin/users`·`POST /admin/users/{id}/approve`·`POST /admin/allowlist`(베타 게이팅 3종, 10.2 일부). **그 외 10.1·10.3~10.8 전부 TARGET(미구현)** — platform admin 실측은 위 3종뿐이다.
+
 ### 10.1 콘텐츠 관리
 
 | Method | Endpoint | 설명 | 권한 |
@@ -483,7 +502,33 @@ data: {"done": true, "message_id": 9001, "references": [
 
 ---
 
-## 11. Rate Limit · 사용량 한도
+## 11. 베타 광고 (Ads)
+
+> **상태(2026-07-27 실측)**: 전 항목 **구현 완료**(2026-07-22 develop 머지 — shared #47·platform #35/#36·gateway #25). 소유 = platform-svc `ads` 모듈, gateway `platform-auth` 라우트(`/ads/**`) 경유. 슬롯 3종 = `DASHBOARD_TOP`·`COMMUNITY_FEED`·`CONTENT_PAGE`. 베타 무료기간 하우스/스폰서 광고로, 전역 토글(`ad_settings`) OFF 시 전 슬롯 204.
+
+### 11.1 서빙 · 이벤트 (로그인 사용자)
+
+| Method | Endpoint | 설명 | 응답 |
+|--------|----------|------|------|
+| GET | `/ads?slot={슬롯}` | 슬롯별 적격 광고 1건 (ACTIVE·게재기간 내·가중치 랜덤) | 200 `{id,title,imageUrl,linkUrl,slot}` / 204 없음·전역 OFF |
+| POST | `/ads/{id}/events` | 노출/클릭 기록 `{"type":"IMPRESSION"\|"CLICK"}` — `ad_daily_stats` UPSERT, 유실 허용 | 202 / 404 광고 미존재 |
+
+### 11.2 관리 (Admin — `/admin/**` hasRole(ADMIN))
+
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/admin/ads?slot=&status=` | 광고 목록 (슬롯·상태 필터) |
+| POST | `/admin/ads` | 생성 `{title,imageUrl,linkUrl,slot,weight≥1,status,startsAt,endsAt}` → 201 |
+| PUT | `/admin/ads/{id}` | 수정 (생성과 동일 본문) |
+| DELETE | `/admin/ads/{id}` | 삭제 → 204 (`ad_daily_stats` CASCADE) |
+| POST | `/admin/ads/{id}/image` | 이미지 업로드 (multipart `file`, 기존 S3ObjectStorage 재사용) |
+| GET | `/admin/ads/settings` | 전역 설정 조회 `{enabled}` |
+| PUT | `/admin/ads/settings` | 전역 토글 `{enabled}` |
+| GET | `/admin/ads/{id}/stats?from=&to=` | 일별 통계 `[{date,impressions,clicks}]` (ISO 날짜) |
+
+---
+
+## 12. Rate Limit · 사용량 한도
 
 | 범위 | 기본 한도 |
 |------|----------|
@@ -497,7 +542,7 @@ data: {"done": true, "message_id": 9001, "references": [
 
 ---
 
-## 12. 관련 문서
+## 13. 관련 문서
 
 - Swagger UI: `/swagger-ui.html`
 - [03_프로젝트_아키텍처_정의서.md](./03_프로젝트_아키텍처_정의서.md)
