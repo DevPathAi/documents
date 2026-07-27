@@ -1,5 +1,7 @@
 # Handoff — WS-D 실배포 (2026-07-27): 인프라 100% 가동, E2E 1건 OPEN
 
+> ⚠️ **이 문서의 🔴 OPEN은 2026-07-27 저녁 세션에서 종결됨**(결함 3겹: 서버 회전경쟁·클라 부팅 교착·동의화면 검증부재). 최신 착수점: [handoff-2026-07-27-auth-3defects-resolved-e2e-pending.md](handoff-2026-07-27-auth-3defects-resolved-e2e-pending.md). 아래 진단 순서는 역사 기록으로만 남긴다.
+
 > 다음 세션 착수용. 상세 SSoT: devpath-gitops `docs/runbook-k3s-bootstrap.md`(확정값·트러블슈팅 18건·**🔴 OPEN 섹션**) + documents `docs/superpowers/{specs,plans}/2026-07-27-ws-d-deploy-session*`.
 
 ## 완료 (이 세션)
