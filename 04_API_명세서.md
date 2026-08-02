@@ -263,7 +263,7 @@ data: {"done": true, "message_id": 9001, "references": [
 
 > 5개 게시판 + 스택오버플로 평판. 상세: [20_커뮤니티_기능_설계서.md](./20_커뮤니티_기능_설계서.md)
 >
-> **상태 배너(2026-08-02 갱신)**: 구현(13종) = `posts`(조회·작성)·`questions`(작성)·`questions/{id}/answers`·`answers/{id}/vote`·`answers/{id}/accept`·`questions/similar`·`questions/{id}`·`posts/{id}/vote`·`posts/{id}/comments`·`tags`(조회)·`users/{userId}/badges`·`me/activity`·**`search`(8.1.1)**·**`admin/reindex`(8.1.1)**. **TARGET(미구현, src/main grep 0)** = bounty(8.2)·ai-answer·bookmark·report(8.1)·자유게시판/프로젝트(8.3)·leaderboard/reputation-events(8.4)·팔로우/알림(8.5)·모더레이션(8.6)·피어매칭(8.7)·에스컬레이션. 아래 8.2~8.7·에스컬레이션 표는 대부분 목표 계약이다(20 설계서 헤더의 TARGET 분류와 일치).
+> **상태 배너(2026-08-02 갱신)**: 구현(16종) = `posts`(조회·작성)·`questions`(작성)·`questions/{id}/answers`·`answers/{id}/vote`·`answers/{id}/accept`·`questions/similar`·`questions/{id}`·`posts/{id}/vote`·`posts/{id}/comments`·`tags`(조회)·`users/{userId}/badges`·`me/activity`·**`search`(8.1.1)**·**`admin/reindex`(8.1.1)**·**`reports`(8.1.2)**·**`admin/reports`·`admin/reports/{id}/resolve`(8.1.2)**. **TARGET(미구현, src/main grep 0)** = bounty(8.2)·ai-answer·bookmark·자유게시판/프로젝트(8.3)·leaderboard/reputation-events(8.4)·팔로우/알림(8.5)·모더레이션(8.6)·피어매칭(8.7)·에스컬레이션. 아래 8.2~8.7·에스컬레이션 표는 대부분 목표 계약이다(20 설계서 헤더의 TARGET 분류와 일치).
 
 ### 8.1 게시판 공통
 
@@ -276,7 +276,7 @@ data: {"done": true, "message_id": 9001, "references": [
 | DELETE | `/community/posts/{id}` | 삭제 (soft) | OWNER |
 | POST | `/community/posts/{id}/vote` | `{value: 1 or -1}` | LEARNER (upvote 평판 15+, downvote 125+) |
 | POST | `/community/posts/{id}/bookmark` | 북마크 | LEARNER |
-| POST | `/community/posts/{id}/report` | 신고 (category/reason) | LEARNER |
+| ~~POST~~ | ~~`/community/posts/{id}/report`~~ | **구현은 §8.1.2 `POST /community/reports`로 대체됨**(대상이 글·답변·댓글 3종이라 `targetType`+`targetId`로 일반화) | — |
 
 #### 8.1.1 검색 (구현됨, 2026-08-02)
 
@@ -326,6 +326,77 @@ Elasticsearch(nori 한국어 형태소 분석기) 기반 키워드 검색. 색�
 > 🔴 **`highlight` 렌더 시 주의** — ES 하이라이터는 매칭 토큰만 `<em>`으로 감쌀 뿐 **사용자 본문의 `<`·`>`를 이스케이프하지 않는다.** 본문에 `<img src=x onerror=…>`가 있으면 그대로 실려 온다. **HTML로 해석해 렌더하지 말고** `<em>`만 화이트리스트로 파싱할 것.
 
 > ⚠️ 재색인 경로가 `/admin/community/reindex`가 아니라 **`/community/admin/reindex`**인 이유: 게이트웨이의 `platform-auth` 라우트가 `/admin/**`를 선점해 platform-svc로 보내기 때문에, 그 경로로 두면 community-svc에 도달하지 못한다.
+
+#### 8.1.2 신고 (구현됨, 2026-08-02)
+
+글·답변·댓글을 신고하고 관리자가 판정한다. 신고 데이터는 **community-svc**가 소유한다(대상 콘텐츠와 같은 DB라 관리자 목록을 단일 쿼리로 조립한다).
+
+| Method | Endpoint | 설명 | 권한 |
+|--------|----------|------|------|
+| POST | `/community/reports` | 글·답변·댓글 신고 | LEARNER |
+| GET | `/community/admin/reports?status=&page=&size=` | 신고 목록 | ADMIN |
+| POST | `/community/admin/reports/{id}/resolve` | 판정(처리완료/기각) | ADMIN |
+
+> ⚠️ **관리자 경로가 `/admin/reports`가 아닌 이유**: 게이트웨이의 `platform-auth` 라우트가 `Path=…,/admin/**,…`로 **`/admin/**`를 선점**해 platform-svc(8081)로 보낸다. community-svc에는 Ingress도 없다. `/admin/reports`로 두면 **어떤 클라이언트도 도달할 수 없다**(검색 재색인 API에서 같은 함정을 겪었다). "일관성" 명목으로 되돌리지 말 것.
+
+**enum**
+
+| 항목 | 값 |
+|---|---|
+| `targetType` | `POST` · `ANSWER` · `COMMENT` |
+| `category` | `SPAM`(스팸) · `ABUSE`(욕설) · `AD`(광고) · `DUPLICATE`(중복) · `INAPPROPRIATE`(부적절) · `ETC`(기타) |
+| `status` | `OPEN` · `RESOLVED` · `REJECTED` |
+| `action` | `RESOLVE` · `REJECT` |
+
+**`POST /community/reports`**
+
+```json
+{ "targetType": "POST", "targetId": 1, "category": "SPAM", "reason": "광고글입니다" }
+→ 201 { "id": 5, "status": "OPEN" }
+```
+
+`reason`은 선택(최대 500자).
+
+| 상황 | 응답 |
+|---|---|
+| 이미 신고한 대상 | **409** `CONFLICT` |
+| 본인이 작성한 콘텐츠 | **400** `VALIDATION_FAILED` |
+| 대상 없음 | **404** `RESOURCE_NOT_FOUND` |
+| enum 밖 값 · 사유 500자 초과 | **400** `VALIDATION_FAILED` |
+
+**`GET /community/admin/reports`** — 검색 API와 같은 envelope
+
+```json
+{
+  "items": [{
+    "id": 5, "targetType": "POST", "targetId": 1,
+    "targetTitle": "async/await가 헷갈려요", "targetExcerpt": "…", "targetAuthorId": 7,
+    "targetPath": "/community/1",
+    "reporterId": 3, "category": "SPAM", "reason": "광고글입니다",
+    "reportCount": 3, "status": "OPEN", "createdAt": "2026-08-02T09:00:00Z"
+  }],
+  "total": 12, "page": 0, "size": 20
+}
+```
+
+**`POST /community/admin/reports/{id}/resolve`**
+
+```json
+{ "action": "RESOLVE" }  → 200 { "id": 5, "status": "RESOLVED" }
+```
+
+이미 처리된 신고를 다시 처리하면 **409**(두 관리자가 엇갈려 판정하는 것을 막는다).
+
+**계약**
+
+- **1인 1회** — `UNIQUE (reporter_id, target_type, target_id)`. 이 제약이 있어야 `reportCount`가 곧 **신고자 수 = 심각도 신호**가 된다.
+- `reportCount`는 **status 무관 총합**이다. 처리된 신고도 세야 "이 글이 그동안 몇 번 신고됐는가"를 볼 수 있다.
+- `targetPath`는 **서버가 조립해 준다** — 프론트가 QNA(`/community/{id}`)와 일반글(`/community/post/{id}`) 경로 규칙을 중복 구현하지 않게 하기 위해서다. 답변·댓글은 부모 글 경로를 준다.
+- 신고는 **다형 참조라 FK가 없다.** 대상이 지워져도 신고 기록은 남으며, 그 경우 `targetTitle`·`targetExcerpt`·`targetPath`가 **null**로 나간다(클라이언트는 "삭제된 콘텐츠"로 표시).
+- `size` 상한 **100 클램프**(검색 API와 동일).
+- AI 시드 답변은 작성자가 없어(`authorId=null`) **신고 가능**하다.
+
+> **이번 범위의 한계**: 관리자는 **판정만 기록**하며 콘텐츠를 내리는 수단이 없다(community-svc에 글 수정·삭제 기능 자체가 없다). 제재(경고·쓰기 정지)·AI 자동 모더레이션·이의제기는 [20_커뮤니티_기능_설계서 §7](./20_커뮤니티_기능_설계서.md)의 TARGET으로 남아 있다.
 
 ### 8.2 Q&A
 
