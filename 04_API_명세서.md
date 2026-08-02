@@ -263,7 +263,7 @@ data: {"done": true, "message_id": 9001, "references": [
 
 > 5개 게시판 + 스택오버플로 평판. 상세: [20_커뮤니티_기능_설계서.md](./20_커뮤니티_기능_설계서.md)
 >
-> **상태 배너(2026-07-18 실측, community-svc grep 교차확정)**: 구현(11종) = `posts`(조회)·`questions`(작성)·`questions/{id}/answers`·`answers/{id}/vote`·`answers/{id}/accept`·`questions/similar`·`questions/{id}`·`posts/{id}/vote`·`tags`(조회)·`users/{userId}/badges`·`me/activity`. **TARGET(미구현, src/main grep 0)** = bounty(8.2)·ai-answer·bookmark·report(8.1)·자유게시판/프로젝트(8.3)·leaderboard/reputation-events(8.4)·팔로우/알림(8.5)·모더레이션(8.6)·피어매칭(8.7)·에스컬레이션. 아래 8.2~8.7·에스컬레이션 표는 대부분 목표 계약이다(20 설계서 헤더의 TARGET 분류와 일치).
+> **상태 배너(2026-08-02 갱신)**: 구현(13종) = `posts`(조회·작성)·`questions`(작성)·`questions/{id}/answers`·`answers/{id}/vote`·`answers/{id}/accept`·`questions/similar`·`questions/{id}`·`posts/{id}/vote`·`posts/{id}/comments`·`tags`(조회)·`users/{userId}/badges`·`me/activity`·**`search`(8.1.1)**·**`admin/reindex`(8.1.1)**. **TARGET(미구현, src/main grep 0)** = bounty(8.2)·ai-answer·bookmark·report(8.1)·자유게시판/프로젝트(8.3)·leaderboard/reputation-events(8.4)·팔로우/알림(8.5)·모더레이션(8.6)·피어매칭(8.7)·에스컬레이션. 아래 8.2~8.7·에스컬레이션 표는 대부분 목표 계약이다(20 설계서 헤더의 TARGET 분류와 일치).
 
 ### 8.1 게시판 공통
 
@@ -277,6 +277,55 @@ data: {"done": true, "message_id": 9001, "references": [
 | POST | `/community/posts/{id}/vote` | `{value: 1 or -1}` | LEARNER (upvote 평판 15+, downvote 125+) |
 | POST | `/community/posts/{id}/bookmark` | 북마크 | LEARNER |
 | POST | `/community/posts/{id}/report` | 신고 (category/reason) | LEARNER |
+
+#### 8.1.1 검색 (구현됨, 2026-08-02)
+
+Elasticsearch(nori 한국어 형태소 분석기) 기반 키워드 검색. 색인 대상은 `status='PUBLISHED'`인 글의 **제목·본문·태그**다.
+
+| Method | Endpoint | 설명 | 권한 |
+|--------|----------|------|------|
+| GET | `/community/search?q=&board=&tag=&solved=&sort=&page=&size=` | 글 검색 (BM25 + 필터 + 하이라이트) | LEARNER |
+| POST | `/community/admin/reindex` | 전체 재색인 → `{"indexed": N}` | ADMIN |
+
+**요청 파라미터**
+
+| 이름 | 필수 | 설명 |
+|---|---|---|
+| `q` | ✅ | 검색어. 빈 값·공백뿐이면 **400**(`VALIDATION_FAILED`) |
+| `board` | | `QNA`/`FREE`/`FEEDBACK`. `ALL` 또는 생략은 **무필터** |
+| `tag` | | 태그명 정확 일치 |
+| `solved` | | `true`/`false`. Q&A 해결 여부 |
+| `sort` | | `relevance`(기본)·`latest` |
+| `page` | | 0부터. 음수는 400 |
+| `size` | | 기본 20, **상한 100**(초과 시 100으로 클램프하며 응답 `size`는 실적용값) |
+
+**응답** — 목록 API(bare 배열)와 달리 envelope다.
+
+```json
+{
+  "items": [
+    {
+      "id": 79, "boardType": "QNA", "title": "리액트 상태관리 질문",
+      "authorId": 1, "solved": false, "upvoteCount": 0, "replyCount": 0,
+      "excerpt": "리액트에서 상태관리는 …",
+      "highlight": "리액트에서 <em>상태관리</em>는 …"
+    }
+  ],
+  "total": 1, "page": 0, "size": 20
+}
+```
+
+**계약**
+
+- 표시 데이터는 **DB에서 조립**한다(ES에서는 id·하이라이트·총건수만 받는다). 색인이 stale해도 화면에 나가는 값은 정확하다.
+- `status='PUBLISHED'`가 **항상 강제**된다(우회 파라미터 없음).
+- 본문 매칭이 없으면 `highlight`는 빈 문자열이며 클라이언트는 `excerpt`로 폴백한다.
+- **ES 장애 시 빈 결과가 아니라 5xx**로 응답한다. 목록·글쓰기는 ES와 무관하게 계속 동작한다.
+- 색인 반영은 **Outbox 릴레이(2초 주기) → Kafka `community.post.changed` → 컨슈머** 경로라 **최대 2초 지연**된다.
+
+> 🔴 **`highlight` 렌더 시 주의** — ES 하이라이터는 매칭 토큰만 `<em>`으로 감쌀 뿐 **사용자 본문의 `<`·`>`를 이스케이프하지 않는다.** 본문에 `<img src=x onerror=…>`가 있으면 그대로 실려 온다. **HTML로 해석해 렌더하지 말고** `<em>`만 화이트리스트로 파싱할 것.
+
+> ⚠️ 재색인 경로가 `/admin/community/reindex`가 아니라 **`/community/admin/reindex`**인 이유: 게이트웨이의 `platform-auth` 라우트가 `/admin/**`를 선점해 platform-svc로 보내기 때문에, 그 경로로 두면 community-svc에 도달하지 못한다.
 
 ### 8.2 Q&A
 
