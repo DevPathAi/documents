@@ -331,6 +331,8 @@ Elasticsearch(nori 한국어 형태소 분석기) 기반 키워드 검색. 색�
 
 글·답변·댓글을 신고하고 관리자가 판정한다. 신고 데이터는 **community-svc**가 소유한다(대상 콘텐츠와 같은 DB라 관리자 목록을 단일 쿼리로 조립한다).
 
+> 서비스 자체의 오류·문의는 이 경로가 아니라 **§12 오류 신고·문의(platform-svc)**다. 대상이 콘텐츠가 아니라 서비스라 스키마가 다르다(`target_type` CHECK·1인 1회 UNIQUE·콘텐츠 위반 `category`가 모두 맞지 않는다).
+
 | Method | Endpoint | 설명 | 권한 |
 |--------|----------|------|------|
 | POST | `/community/reports` | 글·답변·댓글 신고 | LEARNER |
@@ -648,7 +650,117 @@ Elasticsearch(nori 한국어 형태소 분석기) 기반 키워드 검색. 색�
 
 ---
 
-## 12. Rate Limit · 사용량 한도
+## 12. 오류 신고·문의 (Support) — 구현됨, 2026-08-03
+
+사용자가 어느 화면에서든 서비스 오류·문의를 접수하고 관리자가 처리한다. 소유 서비스는 **platform-svc**이며, 게이트웨이는 `/support/**`와 `/admin/**`를 모두 platform-svc로 라우팅한다.
+
+§8.1.2 커뮤니티 신고와는 **별개 기능**이다 — 대상이 콘텐츠가 아니라 서비스 자체라 `community_reports` 스키마를 재사용하지 않는다(`target_type` CHECK · 1인 1회 UNIQUE · 콘텐츠 위반 `category` 가 모두 맞지 않는다).
+
+| 항목 | 값 |
+|---|---|
+| 유형 | `ERROR` · `INQUIRY` |
+| 상태 | `OPEN` · `IN_PROGRESS` · `RESOLVED` · `WONTFIX` |
+| 인증 | 접수·조회 모두 로그인 필수. 관리자 경로는 `hasRole("ADMIN")` |
+
+| Method | Path | 설명 | 권한 |
+|--------|------|------|------|
+| POST | `/support/requests` | 오류·문의 접수 | LEARNER |
+| GET | `/admin/support-requests?status=&type=&cursor=&limit=` | 목록(keyset) | ADMIN |
+| GET | `/admin/support-requests/{id}` | 상세 | ADMIN |
+| POST | `/admin/support-requests/{id}/status` | 상태 전이 | ADMIN |
+
+### 12.1 접수
+
+`reporter_id`는 요청 본문이 아니라 **JWT `sub`**에서 취한다.
+
+```jsonc
+// 요청
+{
+  "type": "ERROR",
+  "title": "학습 경로 화면이 빈 채로 멈춰요",   // 1–200자, 공백만이면 400
+  "body": "생성 버튼을 누르면 40%에서 멈춥니다.", // 1–5000자, 공백만이면 400
+  "context": {
+    "pagePath": "/path",          // 쿼리스트링 제거
+    "appVersion": "0.1.0+42",     // APP_VERSION dart-define, 미주입 시 "dev"
+    "userAgent": "Mozilla/5.0 ...",
+    "viewport": "1920x1080",
+    "traceId": null,              // 서버가 항상 null (분산 트레이싱 미도입)
+    "errorCode": "PATH_GENERATION_FAILED",
+    "occurredAt": "2026-08-03T10:11:12Z",
+    "failures": [                 // 최대 10건. 초과분은 거부가 아니라 앞 10건만 저장
+      {
+        "method": "POST",
+        "path": "/learning-paths",
+        "statusCode": 500,        // 네트워크 실패면 null
+        "errorCode": "INTERNAL_ERROR",
+        "traceId": null,
+        "message": "문의: [EMAIL]", // 클라·서버 2중 마스킹 후 500자 절단
+        "occurredAt": "2026-08-03T10:11:09Z"
+      }
+    ]
+  }
+}
+
+// 201 Created
+{ "id": 42 }
+```
+
+**검증 정책**: 본문(`type`·`title`·`body`)만 엄격 검증해 400을 낸다. 부가 정보(`failures` 개수·컬럼 길이)는 **거절이 아니라 절단**이다 — 제보는 사용자가 이미 문제를 겪은 뒤의 마지막 행동이라 형식 문제로 잃게 하면 안 된다. `occurredAt` 파싱 실패도 null로 흡수한다.
+
+| 상황 | 응답 |
+|---|---|
+| `type`이 2종 밖 / `title`·`body` 공백·길이 초과 | **400** `VALIDATION_FAILED` |
+| 미인증 | **401** `UNAUTHORIZED` |
+
+### 12.2 관리자 목록
+
+keyset 페이지네이션 — **id 내림차순(최신순)**. `cursor`가 있으면 `id < cursor`인 행만. `nextCursor`는 **꽉 찬 페이지일 때만** 마지막 행 id, 아니면 null. `limit` 기본 20 · 최대 100.
+
+```jsonc
+{
+  "data": [
+    { "id": 42, "type": "ERROR", "title": "...", "status": "OPEN",
+      "pagePath": "/path", "reporterId": 7, "failureCount": 3,
+      "createdAt": "2026-08-03T10:11:12Z" }
+  ],
+  "nextCursor": "42",
+  "limit": 20
+}
+```
+
+> `GET /admin/users`(§Admin)는 가입 순이 자연스러워 id **오름차순**이다. 제보 목록만 방향이 반대이고, 봉투 계약(`{data,nextCursor,limit}` = dp_core `Page`)은 동일하다.
+
+### 12.3 관리자 상세
+
+목록 필드 전체 + `body` + 수집 컨텍스트 전체 + `failures[]`(**seq 오름차순**, 0 = 가장 최근) + `adminNote` · `handledBy` · `handledAt`. 없는 id는 **404** `RESOURCE_NOT_FOUND`.
+
+### 12.4 상태 전이
+
+```jsonc
+// 요청
+{ "status": "IN_PROGRESS", "adminNote": "재현 확인함" }
+// 200 — 갱신된 상세(§12.3과 동일 형태)
+```
+
+- `status`가 4종 밖이면 **400** `VALIDATION_FAILED`.
+- `adminNote`는 선택. 주어지면 **덮어쓴다**(누적 이력이 아니다 — 이력이 필요해지면 별도 테이블이 맞다).
+- `handled_by` = JWT `sub`, `handled_at` = now. **`OPEN`으로 되돌리면 둘 다 NULL로 초기화**한다.
+
+### 12.5 마스킹
+
+`message`·`body`·`page_path`는 클라이언트(dp_core)와 서버(platform-svc)가 **같은 규칙·같은 순서**로 2중 마스킹한다: 키=값 비밀 → JWT → DSN → 이메일 → 카드 → 주민번호 → 전화 → 홈 경로(윈도·POSIX) → IPv4.
+
+서버 단독이면 원문이 네트워크와 접근 로그를 지나고, 클라 단독이면 조작된 클라이언트가 원문을 밀어넣을 수 있다. 규칙 순서와 12케이스 표는 `devpath-frontend/docs/superpowers/specs/2026-08-02-support-request-design.md` §6이 SSoT이며, Java·Dart 양쪽 테스트가 **같은 표**를 쓴다.
+
+### 12.6 범위 밖 (후속)
+
+자동 오류 리포팅 · 관리자 답변을 사용자가 확인하는 흐름 · 스크린샷 첨부 · 비로그인 접수(게이트웨이 미인증 라우트 + IP 레이트리밋 선행 필요).
+
+> **알려진 한계**: 로그인 필수라 **로그인 자체가 실패하는 오류는 이 경로로 제보할 수 없다.** 이메일 안내로 대체한다.
+
+---
+
+## 13. Rate Limit · 사용량 한도
 
 | 범위 | 기본 한도 |
 |------|----------|
@@ -662,7 +774,7 @@ Elasticsearch(nori 한국어 형태소 분석기) 기반 키워드 검색. 색�
 
 ---
 
-## 13. 관련 문서
+## 14. 관련 문서
 
 - Swagger UI: `/swagger-ui.html`
 - [03_프로젝트_아키텍처_정의서.md](./03_프로젝트_아키텍처_정의서.md)
