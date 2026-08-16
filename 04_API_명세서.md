@@ -263,7 +263,7 @@ data: {"done": true, "message_id": 9001, "references": [
 
 > 5개 게시판 + 스택오버플로 평판. 상세: [20_커뮤니티_기능_설계서.md](./20_커뮤니티_기능_설계서.md)
 >
-> **상태 배너(2026-07-18 실측, community-svc grep 교차확정)**: 구현(11종) = `posts`(조회)·`questions`(작성)·`questions/{id}/answers`·`answers/{id}/vote`·`answers/{id}/accept`·`questions/similar`·`questions/{id}`·`posts/{id}/vote`·`tags`(조회)·`users/{userId}/badges`·`me/activity`. **TARGET(미구현, src/main grep 0)** = bounty(8.2)·ai-answer·bookmark·report(8.1)·자유게시판/프로젝트(8.3)·leaderboard/reputation-events(8.4)·팔로우/알림(8.5)·모더레이션(8.6)·피어매칭(8.7)·에스컬레이션. 아래 8.2~8.7·에스컬레이션 표는 대부분 목표 계약이다(20 설계서 헤더의 TARGET 분류와 일치).
+> **상태 배너(2026-08-02 갱신)**: 구현(16종) = `posts`(조회·작성)·`questions`(작성)·`questions/{id}/answers`·`answers/{id}/vote`·`answers/{id}/accept`·`questions/similar`·`questions/{id}`·`posts/{id}/vote`·`posts/{id}/comments`·`tags`(조회)·`users/{userId}/badges`·`me/activity`·**`search`(8.1.1)**·**`admin/reindex`(8.1.1)**·**`reports`(8.1.2)**·**`admin/reports`·`admin/reports/{id}/resolve`(8.1.2)**. **TARGET(미구현, src/main grep 0)** = bounty(8.2)·ai-answer·bookmark·자유게시판/프로젝트(8.3)·leaderboard/reputation-events(8.4)·팔로우/알림(8.5)·모더레이션(8.6)·피어매칭(8.7)·에스컬레이션. 아래 8.2~8.7·에스컬레이션 표는 대부분 목표 계약이다(20 설계서 헤더의 TARGET 분류와 일치).
 
 ### 8.1 게시판 공통
 
@@ -276,7 +276,129 @@ data: {"done": true, "message_id": 9001, "references": [
 | DELETE | `/community/posts/{id}` | 삭제 (soft) | OWNER |
 | POST | `/community/posts/{id}/vote` | `{value: 1 or -1}` | LEARNER (upvote 평판 15+, downvote 125+) |
 | POST | `/community/posts/{id}/bookmark` | 북마크 | LEARNER |
-| POST | `/community/posts/{id}/report` | 신고 (category/reason) | LEARNER |
+| ~~POST~~ | ~~`/community/posts/{id}/report`~~ | **구현은 §8.1.2 `POST /community/reports`로 대체됨**(대상이 글·답변·댓글 3종이라 `targetType`+`targetId`로 일반화) | — |
+
+#### 8.1.1 검색 (구현됨, 2026-08-02)
+
+Elasticsearch(nori 한국어 형태소 분석기) 기반 키워드 검색. 색인 대상은 `status='PUBLISHED'`인 글의 **제목·본문·태그**다.
+
+| Method | Endpoint | 설명 | 권한 |
+|--------|----------|------|------|
+| GET | `/community/search?q=&board=&tag=&solved=&sort=&page=&size=` | 글 검색 (BM25 + 필터 + 하이라이트) | LEARNER |
+| POST | `/community/admin/reindex` | 전체 재색인 → `{"indexed": N}` | ADMIN |
+
+**요청 파라미터**
+
+| 이름 | 필수 | 설명 |
+|---|---|---|
+| `q` | ✅ | 검색어. 빈 값·공백뿐이면 **400**(`VALIDATION_FAILED`) |
+| `board` | | `QNA`/`FREE`/`FEEDBACK`. `ALL` 또는 생략은 **무필터** |
+| `tag` | | 태그명 정확 일치 |
+| `solved` | | `true`/`false`. Q&A 해결 여부 |
+| `sort` | | `relevance`(기본)·`latest` |
+| `page` | | 0부터. 음수는 400 |
+| `size` | | 기본 20, **상한 100**(초과 시 100으로 클램프하며 응답 `size`는 실적용값) |
+
+**응답** — 목록 API(bare 배열)와 달리 envelope다.
+
+```json
+{
+  "items": [
+    {
+      "id": 79, "boardType": "QNA", "title": "리액트 상태관리 질문",
+      "authorId": 1, "solved": false, "upvoteCount": 0, "replyCount": 0,
+      "excerpt": "리액트에서 상태관리는 …",
+      "highlight": "리액트에서 <em>상태관리</em>는 …"
+    }
+  ],
+  "total": 1, "page": 0, "size": 20
+}
+```
+
+**계약**
+
+- 표시 데이터는 **DB에서 조립**한다(ES에서는 id·하이라이트·총건수만 받는다). 색인이 stale해도 화면에 나가는 값은 정확하다.
+- `status='PUBLISHED'`가 **항상 강제**된다(우회 파라미터 없음).
+- 본문 매칭이 없으면 `highlight`는 빈 문자열이며 클라이언트는 `excerpt`로 폴백한다.
+- **ES 장애 시 빈 결과가 아니라 5xx**로 응답한다. 목록·글쓰기는 ES와 무관하게 계속 동작한다.
+- 색인 반영은 **Outbox 릴레이(2초 주기) → Kafka `community.post.changed` → 컨슈머** 경로라 **최대 2초 지연**된다.
+
+> 🔴 **`highlight` 렌더 시 주의** — ES 하이라이터는 매칭 토큰만 `<em>`으로 감쌀 뿐 **사용자 본문의 `<`·`>`를 이스케이프하지 않는다.** 본문에 `<img src=x onerror=…>`가 있으면 그대로 실려 온다. **HTML로 해석해 렌더하지 말고** `<em>`만 화이트리스트로 파싱할 것.
+
+> ⚠️ 재색인 경로가 `/admin/community/reindex`가 아니라 **`/community/admin/reindex`**인 이유: 게이트웨이의 `platform-auth` 라우트가 `/admin/**`를 선점해 platform-svc로 보내기 때문에, 그 경로로 두면 community-svc에 도달하지 못한다.
+
+#### 8.1.2 신고 (구현됨, 2026-08-02)
+
+글·답변·댓글을 신고하고 관리자가 판정한다. 신고 데이터는 **community-svc**가 소유한다(대상 콘텐츠와 같은 DB라 관리자 목록을 단일 쿼리로 조립한다).
+
+> 서비스 자체의 오류·문의는 이 경로가 아니라 **§12 오류 신고·문의(platform-svc)**다. 대상이 콘텐츠가 아니라 서비스라 스키마가 다르다(`target_type` CHECK·1인 1회 UNIQUE·콘텐츠 위반 `category`가 모두 맞지 않는다).
+
+| Method | Endpoint | 설명 | 권한 |
+|--------|----------|------|------|
+| POST | `/community/reports` | 글·답변·댓글 신고 | LEARNER |
+| GET | `/community/admin/reports?status=&page=&size=` | 신고 목록 | ADMIN |
+| POST | `/community/admin/reports/{id}/resolve` | 판정(처리완료/기각) | ADMIN |
+
+> ⚠️ **관리자 경로가 `/admin/reports`가 아닌 이유**: 게이트웨이의 `platform-auth` 라우트가 `Path=…,/admin/**,…`로 **`/admin/**`를 선점**해 platform-svc(8081)로 보낸다. community-svc에는 Ingress도 없다. `/admin/reports`로 두면 **어떤 클라이언트도 도달할 수 없다**(검색 재색인 API에서 같은 함정을 겪었다). "일관성" 명목으로 되돌리지 말 것.
+
+**enum**
+
+| 항목 | 값 |
+|---|---|
+| `targetType` | `POST` · `ANSWER` · `COMMENT` |
+| `category` | `SPAM`(스팸) · `ABUSE`(욕설) · `AD`(광고) · `DUPLICATE`(중복) · `INAPPROPRIATE`(부적절) · `ETC`(기타) |
+| `status` | `OPEN` · `RESOLVED` · `REJECTED` |
+| `action` | `RESOLVE` · `REJECT` |
+
+**`POST /community/reports`**
+
+```json
+{ "targetType": "POST", "targetId": 1, "category": "SPAM", "reason": "광고글입니다" }
+→ 201 { "id": 5, "status": "OPEN" }
+```
+
+`reason`은 선택(최대 500자).
+
+| 상황 | 응답 |
+|---|---|
+| 이미 신고한 대상 | **409** `CONFLICT` |
+| 본인이 작성한 콘텐츠 | **400** `VALIDATION_FAILED` |
+| 대상 없음 | **404** `RESOURCE_NOT_FOUND` |
+| enum 밖 값 · 사유 500자 초과 | **400** `VALIDATION_FAILED` |
+
+**`GET /community/admin/reports`** — 검색 API와 같은 envelope
+
+```json
+{
+  "items": [{
+    "id": 5, "targetType": "POST", "targetId": 1,
+    "targetTitle": "async/await가 헷갈려요", "targetExcerpt": "…", "targetAuthorId": 7,
+    "targetPath": "/community/1",
+    "reporterId": 3, "category": "SPAM", "reason": "광고글입니다",
+    "reportCount": 3, "status": "OPEN", "createdAt": "2026-08-02T09:00:00Z"
+  }],
+  "total": 12, "page": 0, "size": 20
+}
+```
+
+**`POST /community/admin/reports/{id}/resolve`**
+
+```json
+{ "action": "RESOLVE" }  → 200 { "id": 5, "status": "RESOLVED" }
+```
+
+이미 처리된 신고를 다시 처리하면 **409**(두 관리자가 엇갈려 판정하는 것을 막는다).
+
+**계약**
+
+- **1인 1회** — `UNIQUE (reporter_id, target_type, target_id)`. 이 제약이 있어야 `reportCount`가 곧 **신고자 수 = 심각도 신호**가 된다.
+- `reportCount`는 **status 무관 총합**이다. 처리된 신고도 세야 "이 글이 그동안 몇 번 신고됐는가"를 볼 수 있다.
+- `targetPath`는 **서버가 조립해 준다** — 프론트가 QNA(`/community/{id}`)와 일반글(`/community/post/{id}`) 경로 규칙을 중복 구현하지 않게 하기 위해서다. 답변·댓글은 부모 글 경로를 준다.
+- 신고는 **다형 참조라 FK가 없다.** 대상이 지워져도 신고 기록은 남으며, 그 경우 `targetTitle`·`targetExcerpt`·`targetPath`가 **null**로 나간다(클라이언트는 "삭제된 콘텐츠"로 표시).
+- `size` 상한 **100 클램프**(검색 API와 동일).
+- AI 시드 답변은 작성자가 없어(`authorId=null`) **신고 가능**하다.
+
+> **이번 범위의 한계**: 관리자는 **판정만 기록**하며 콘텐츠를 내리는 수단이 없다(community-svc에 글 수정·삭제 기능 자체가 없다). 제재(경고·쓰기 정지)·AI 자동 모더레이션·이의제기는 [20_커뮤니티_기능_설계서 §7](./20_커뮤니티_기능_설계서.md)의 TARGET으로 남아 있다.
 
 ### 8.2 Q&A
 
@@ -528,7 +650,117 @@ data: {"done": true, "message_id": 9001, "references": [
 
 ---
 
-## 12. Rate Limit · 사용량 한도
+## 12. 오류 신고·문의 (Support) — 구현됨, 2026-08-03
+
+사용자가 어느 화면에서든 서비스 오류·문의를 접수하고 관리자가 처리한다. 소유 서비스는 **platform-svc**이며, 게이트웨이는 `/support/**`와 `/admin/**`를 모두 platform-svc로 라우팅한다.
+
+§8.1.2 커뮤니티 신고와는 **별개 기능**이다 — 대상이 콘텐츠가 아니라 서비스 자체라 `community_reports` 스키마를 재사용하지 않는다(`target_type` CHECK · 1인 1회 UNIQUE · 콘텐츠 위반 `category` 가 모두 맞지 않는다).
+
+| 항목 | 값 |
+|---|---|
+| 유형 | `ERROR` · `INQUIRY` |
+| 상태 | `OPEN` · `IN_PROGRESS` · `RESOLVED` · `WONTFIX` |
+| 인증 | 접수·조회 모두 로그인 필수. 관리자 경로는 `hasRole("ADMIN")` |
+
+| Method | Path | 설명 | 권한 |
+|--------|------|------|------|
+| POST | `/support/requests` | 오류·문의 접수 | LEARNER |
+| GET | `/admin/support-requests?status=&type=&cursor=&limit=` | 목록(keyset) | ADMIN |
+| GET | `/admin/support-requests/{id}` | 상세 | ADMIN |
+| POST | `/admin/support-requests/{id}/status` | 상태 전이 | ADMIN |
+
+### 12.1 접수
+
+`reporter_id`는 요청 본문이 아니라 **JWT `sub`**에서 취한다.
+
+```jsonc
+// 요청
+{
+  "type": "ERROR",
+  "title": "학습 경로 화면이 빈 채로 멈춰요",   // 1–200자, 공백만이면 400
+  "body": "생성 버튼을 누르면 40%에서 멈춥니다.", // 1–5000자, 공백만이면 400
+  "context": {
+    "pagePath": "/path",          // 쿼리스트링 제거
+    "appVersion": "0.1.0+42",     // APP_VERSION dart-define, 미주입 시 "dev"
+    "userAgent": "Mozilla/5.0 ...",
+    "viewport": "1920x1080",
+    "traceId": null,              // 서버가 항상 null (분산 트레이싱 미도입)
+    "errorCode": "PATH_GENERATION_FAILED",
+    "occurredAt": "2026-08-03T10:11:12Z",
+    "failures": [                 // 최대 10건. 초과분은 거부가 아니라 앞 10건만 저장
+      {
+        "method": "POST",
+        "path": "/learning-paths",
+        "statusCode": 500,        // 네트워크 실패면 null
+        "errorCode": "INTERNAL_ERROR",
+        "traceId": null,
+        "message": "문의: [EMAIL]", // 클라·서버 2중 마스킹 후 500자 절단
+        "occurredAt": "2026-08-03T10:11:09Z"
+      }
+    ]
+  }
+}
+
+// 201 Created
+{ "id": 42 }
+```
+
+**검증 정책**: 본문(`type`·`title`·`body`)만 엄격 검증해 400을 낸다. 부가 정보(`failures` 개수·컬럼 길이)는 **거절이 아니라 절단**이다 — 제보는 사용자가 이미 문제를 겪은 뒤의 마지막 행동이라 형식 문제로 잃게 하면 안 된다. `occurredAt` 파싱 실패도 null로 흡수한다.
+
+| 상황 | 응답 |
+|---|---|
+| `type`이 2종 밖 / `title`·`body` 공백·길이 초과 | **400** `VALIDATION_FAILED` |
+| 미인증 | **401** `UNAUTHORIZED` |
+
+### 12.2 관리자 목록
+
+keyset 페이지네이션 — **id 내림차순(최신순)**. `cursor`가 있으면 `id < cursor`인 행만. `nextCursor`는 **꽉 찬 페이지일 때만** 마지막 행 id, 아니면 null. `limit` 기본 20 · 최대 100.
+
+```jsonc
+{
+  "data": [
+    { "id": 42, "type": "ERROR", "title": "...", "status": "OPEN",
+      "pagePath": "/path", "reporterId": 7, "failureCount": 3,
+      "createdAt": "2026-08-03T10:11:12Z" }
+  ],
+  "nextCursor": "42",
+  "limit": 20
+}
+```
+
+> `GET /admin/users`(§Admin)는 가입 순이 자연스러워 id **오름차순**이다. 제보 목록만 방향이 반대이고, 봉투 계약(`{data,nextCursor,limit}` = dp_core `Page`)은 동일하다.
+
+### 12.3 관리자 상세
+
+목록 필드 전체 + `body` + 수집 컨텍스트 전체 + `failures[]`(**seq 오름차순**, 0 = 가장 최근) + `adminNote` · `handledBy` · `handledAt`. 없는 id는 **404** `RESOURCE_NOT_FOUND`.
+
+### 12.4 상태 전이
+
+```jsonc
+// 요청
+{ "status": "IN_PROGRESS", "adminNote": "재현 확인함" }
+// 200 — 갱신된 상세(§12.3과 동일 형태)
+```
+
+- `status`가 4종 밖이면 **400** `VALIDATION_FAILED`.
+- `adminNote`는 선택. 주어지면 **덮어쓴다**(누적 이력이 아니다 — 이력이 필요해지면 별도 테이블이 맞다).
+- `handled_by` = JWT `sub`, `handled_at` = now. **`OPEN`으로 되돌리면 둘 다 NULL로 초기화**한다.
+
+### 12.5 마스킹
+
+`message`·`body`·`page_path`는 클라이언트(dp_core)와 서버(platform-svc)가 **같은 규칙·같은 순서**로 2중 마스킹한다: 키=값 비밀 → JWT → DSN → 이메일 → 카드 → 주민번호 → 전화 → 홈 경로(윈도·POSIX) → IPv4.
+
+서버 단독이면 원문이 네트워크와 접근 로그를 지나고, 클라 단독이면 조작된 클라이언트가 원문을 밀어넣을 수 있다. 규칙 순서와 12케이스 표는 `devpath-frontend/docs/superpowers/specs/2026-08-02-support-request-design.md` §6이 SSoT이며, Java·Dart 양쪽 테스트가 **같은 표**를 쓴다.
+
+### 12.6 범위 밖 (후속)
+
+자동 오류 리포팅 · 관리자 답변을 사용자가 확인하는 흐름 · 스크린샷 첨부 · 비로그인 접수(게이트웨이 미인증 라우트 + IP 레이트리밋 선행 필요).
+
+> **알려진 한계**: 로그인 필수라 **로그인 자체가 실패하는 오류는 이 경로로 제보할 수 없다.** 이메일 안내로 대체한다.
+
+---
+
+## 13. Rate Limit · 사용량 한도
 
 | 범위 | 기본 한도 |
 |------|----------|
@@ -542,7 +774,7 @@ data: {"done": true, "message_id": 9001, "references": [
 
 ---
 
-## 13. 관련 문서
+## 14. 관련 문서
 
 - Swagger UI: `/swagger-ui.html`
 - [03_프로젝트_아키텍처_정의서.md](./03_프로젝트_아키텍처_정의서.md)
