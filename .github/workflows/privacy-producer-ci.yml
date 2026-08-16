@@ -1,0 +1,38 @@
+---
+name: Privacy Producer CI
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: privacy-producer-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  privacy-producer-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: '24.12.0'
+
+      - name: Validate the privacy producer contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tools/mission_spine_privacy_approval.mjs
+          node --check tools/mission_spine_privacy_approval.test.mjs
+          node --test tools/mission_spine_privacy_approval.test.mjs
