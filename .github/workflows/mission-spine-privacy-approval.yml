@@ -1,0 +1,204 @@
+---
+# Immutable action pins and authenticated artifact URLs exceed 80 columns.
+# yamllint disable rule:line-length
+# yamllint disable rule:truthy
+name: Mission Spine Privacy Approval
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_id:
+        description: Immutable release identifier from the canonical candidate
+        required: true
+        type: string
+      candidate_spec_sha256:
+        description: SHA-256 of the exact raw canonical candidate-spec bytes
+        required: true
+        type: string
+      approval_source_sha:
+        description: Exact protected main Documents source SHA from the candidate
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: mission-spine-privacy-approval-${{ inputs.release_id }}-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  approve-analytics-privacy-release:
+    name: Approve analytics privacy release
+    environment: mission-spine-privacy-approval
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: '24.12.0'
+
+      - name: Reject source, candidate, and rerun ambiguity
+        shell: bash
+        env:
+          RELEASE_ID: ${{ inputs.release_id }}
+          CANDIDATE_SPEC_SHA256: ${{ inputs.candidate_spec_sha256 }}
+          APPROVAL_SOURCE_SHA: ${{ inputs.approval_source_sha }}
+        run: |
+          set -euo pipefail
+          test "${GITHUB_RUN_ATTEMPT}" = 1 || {
+            echo 'Privacy approval retries require a fresh workflow_dispatch' >&2
+            exit 1
+          }
+          test "${GITHUB_EVENT_NAME}" = workflow_dispatch
+          test "${GITHUB_REPOSITORY}" = DevPathAi/documents
+          test "${GITHUB_REF}" = refs/heads/main
+          [[ "${RELEASE_ID}" =~ ^ms-[0-9]{8}-[a-z0-9][a-z0-9-]{2,40}$ ]]
+          [[ "${CANDIDATE_SPEC_SHA256}" =~ ^[0-9a-f]{64}$ ]]
+          test "${CANDIDATE_SPEC_SHA256}" != "$(printf '0%.0s' {1..64})"
+          [[ "${APPROVAL_SOURCE_SHA}" =~ ^[0-9a-f]{40}$ ]]
+          test "${APPROVAL_SOURCE_SHA}" != "$(printf '0%.0s' {1..40})"
+          test "${GITHUB_SHA}" = "${APPROVAL_SOURCE_SHA}"
+          test "$(git rev-parse HEAD)" = "${APPROVAL_SOURCE_SHA}"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+      - name: Mint read-only GitOps and organization token
+        id: gitops-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3.2.0
+        with:
+          app-id: ${{ secrets.GITOPS_APP_ID }}
+          private-key: ${{ secrets.GITOPS_APP_PRIVATE_KEY }}
+          owner: DevPathAi
+          repositories: |
+            documents
+            devpath-gitops
+          permission-actions: read
+          permission-contents: read
+          permission-members: read
+
+      - name: Authenticate protected environment approval
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          ORG_TOKEN: ${{ steps.gitops-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          test -n "${ORG_TOKEN}"
+          root="${RUNNER_TEMP}/mission-spine-privacy-approval"
+          test ! -e "${root}"
+          mkdir "${root}"
+          node tools/mission_spine_privacy_approval.mjs authenticate-approval \
+            --repository-root=. \
+            --source-sha="${GITHUB_SHA}" \
+            --run-id="${GITHUB_RUN_ID}" \
+            --run-attempt="${GITHUB_RUN_ATTEMPT}" \
+            --output="${root}/approval.json"
+
+      - name: Authenticate exact canonical candidate bytes
+        shell: bash
+        env:
+          GITOPS_TOKEN: ${{ steps.gitops-token.outputs.token }}
+          RELEASE_ID: ${{ inputs.release_id }}
+          CANDIDATE_SPEC_SHA256: ${{ inputs.candidate_spec_sha256 }}
+          APPROVAL_SOURCE_SHA: ${{ inputs.approval_source_sha }}
+        run: |
+          set -euo pipefail
+          test -n "${GITOPS_TOKEN}"
+          root="${RUNNER_TEMP}/mission-spine-privacy-approval"
+          node tools/mission_spine_privacy_approval.mjs fetch-candidate \
+            --release-id="${RELEASE_ID}" \
+            --candidate-spec-sha256="${CANDIDATE_SPEC_SHA256}" \
+            --approval-source-sha="${APPROVAL_SOURCE_SHA}" \
+            --output="${root}/candidate-spec.json"
+
+      - name: Generate and revalidate exact privacy evidence
+        shell: bash
+        env:
+          RELEASE_ID: ${{ inputs.release_id }}
+          CANDIDATE_SPEC_SHA256: ${{ inputs.candidate_spec_sha256 }}
+          APPROVAL_SOURCE_SHA: ${{ inputs.approval_source_sha }}
+        run: |
+          set -euo pipefail
+          root="${RUNNER_TEMP}/mission-spine-privacy-approval"
+          node tools/mission_spine_privacy_approval.mjs create-evidence \
+            --candidate="${root}/candidate-spec.json" \
+            --approval="${root}/approval.json" \
+            --package-root="${root}/package" \
+            --release-id="${RELEASE_ID}" \
+            --candidate-spec-sha256="${CANDIDATE_SPEC_SHA256}" \
+            --approval-source-sha="${APPROVAL_SOURCE_SHA}" \
+            --producer-run-id="${GITHUB_RUN_ID}" \
+            --producer-run-attempt="${GITHUB_RUN_ATTEMPT}"
+          node tools/mission_spine_privacy_approval.mjs validate-evidence \
+            --candidate="${root}/candidate-spec.json" \
+            --approval="${root}/approval.json" \
+            --package-root="${root}/package" \
+            --release-id="${RELEASE_ID}" \
+            --candidate-spec-sha256="${CANDIDATE_SPEC_SHA256}" \
+            --approval-source-sha="${APPROVAL_SOURCE_SHA}" \
+            --producer-run-id="${GITHUB_RUN_ID}" \
+            --producer-run-attempt="${GITHUB_RUN_ATTEMPT}"
+
+      - name: Upload exact run-scoped privacy evidence
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: ${{ inputs.release_id }}-privacy-approval-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/mission-spine-privacy-approval/package/evidence.json
+          if-no-files-found: error
+          compression-level: 0
+          overwrite: false
+          include-hidden-files: false
+          retention-days: 30
+
+      - name: Re-authenticate uploaded ZIP envelope and evidence bytes
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_ID: ${{ inputs.release_id }}
+          APPROVAL_SOURCE_SHA: ${{ inputs.approval_source_sha }}
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+        run: |
+          set -euo pipefail
+          [[ "${ARTIFACT_ID}" =~ ^[1-9][0-9]*$ ]]
+          [[ "${ARTIFACT_DIGEST}" =~ ^(sha256:)?[0-9a-f]{64}$ ]]
+          root="${RUNNER_TEMP}/mission-spine-privacy-approval"
+          artifact_name="${RELEASE_ID}-privacy-approval-run-${GITHUB_RUN_ID}-attempt-1"
+          test ! -e "${root}/artifact.json"
+          test ! -e "${root}/artifact.zip"
+          curl --fail --silent --show-error --location \
+            --retry 5 --retry-all-errors --retry-delay 1 --remove-on-error \
+            --proto '=https' --proto-redir '=https' \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            --max-filesize 1048576 \
+            "https://api.github.com/repos/DevPathAi/documents/actions/artifacts/${ARTIFACT_ID}" \
+            --output "${root}/artifact.json"
+          node tools/mission_spine_privacy_approval.mjs validate-artifact-metadata \
+            --metadata="${root}/artifact.json" \
+            --artifact-id="${ARTIFACT_ID}" \
+            --artifact-name="${artifact_name}" \
+            --artifact-digest="${ARTIFACT_DIGEST}" \
+            --run-id="${GITHUB_RUN_ID}" \
+            --source-sha="${APPROVAL_SOURCE_SHA}"
+          curl --fail --silent --show-error --location \
+            --retry 5 --retry-all-errors --retry-delay 1 --remove-on-error \
+            --proto '=https' --proto-redir '=https' \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            --max-filesize 1048576 \
+            "https://api.github.com/repos/DevPathAi/documents/actions/artifacts/${ARTIFACT_ID}/zip" \
+            --output "${root}/artifact.zip"
+          node tools/mission_spine_privacy_approval.mjs validate-artifact-zip \
+            --zip="${root}/artifact.zip" \
+            --evidence="${root}/package/evidence.json" \
+            --expected-zip-sha256="${ARTIFACT_DIGEST}"
