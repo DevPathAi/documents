@@ -830,3 +830,40 @@ test('workflow is dispatch-only, pinned, protected, and has no deploy or write a
     assert.match(use[3], /^v\d+(?:\.\d+){0,2}$/);
   }
 });
+
+test('CI always runs the privacy producer contract with read-only pinned actions', () => {
+  const workflow = readFileSync(
+    join(root, '.github', 'workflows', 'privacy-producer-ci.yml'),
+    'utf8',
+  );
+  assert.match(workflow, /^name: Privacy Producer CI$/m);
+  const triggers = workflow.match(/\non:\n([\s\S]*?)\npermissions:/)?.[1];
+  assert.ok(triggers);
+  assert.match(triggers, /^  push:\n/m);
+  assert.match(triggers, /^  pull_request:\n/m);
+  assert.doesNotMatch(triggers, /\n\s+paths(?:-ignore)?:/);
+  assert.match(workflow, /\n  privacy-producer-contract:\n/);
+  assert.match(workflow, /permissions:\n  contents: read/);
+  assert.match(workflow, /node-version: '24\.12\.0'/);
+  assert.match(
+    workflow,
+    /node --check tools\/mission_spine_privacy_approval\.mjs/,
+  );
+  assert.match(
+    workflow,
+    /node --check tools\/mission_spine_privacy_approval\.test\.mjs/,
+  );
+  assert.match(
+    workflow,
+    /node --test tools\/mission_spine_privacy_approval\.test\.mjs/,
+  );
+  assert.match(
+    workflow,
+    /actions\/checkout@d23441a48e516b6c34aea4fa41551a30e30af803\s+# v6\.1\.0/,
+  );
+  assert.match(
+    workflow,
+    /actions\/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020\s+# v4\.4\.0/,
+  );
+  assert.doesNotMatch(workflow, /(?:secrets\.|git\s+push|upload-artifact|deploy\b)/i);
+});
