@@ -137,6 +137,7 @@
 | Method | Endpoint | 설명 | 권한 |
 |--------|----------|------|------|
 | POST | `/learning-paths/me/generate` | 경로 생성 (SSE 진행 스트리밍) | LEARNER |
+| GET | `/learning-paths/me/generation` | 생성 작업 상태 조회 (스트림 단절 후 복구) | LEARNER |
 | GET | `/learning-paths/me` | 현재 활성 경로 | LEARNER |
 | GET | `/learning-paths/me/this-week` | 이번 주 과제 3개 | LEARNER |
 | POST | `/learning-paths/me/regenerate` | 재생성 (이유 입력) | LEARNER |
@@ -153,6 +154,32 @@ data: {"stage": "generating", "progress": 0.3, "message": "AI가 12주 로드맵
 data: {"stage": "matching", "progress": 0.7, "message": "콘텐츠를 매칭하고 있어요"}
 data: {"stage": "done", "path_id": 1234, "first_week_tasks": [...]}
 ```
+
+> **생성은 이 스트림의 수명에 묶이지 않는다(2026-08-17 구현).** 생성 작업은 사용자당 하나로 유지되며,
+> 스트림이 끊기거나 클라이언트가 사라져도 계속 진행돼 결과가 저장된다. 같은 사용자가 요청을 다시 보내면
+> 새 생성을 시작하지 않고 **실행 중인 작업에 합류**한다. 스트림이 끊긴 뒤에는 아래 3.2 로 결과를 되찾는다.
+
+### 3.2 `GET /learning-paths/me/generation`
+
+```http
+GET /api/v1/learning-paths/me/generation
+
+// 200 — 생성 이력이 없을 때
+{"state": "NONE", "pathId": null, "errorMessage": null}
+
+// 200 — 생성 중
+{"state": "RUNNING", "pathId": null, "errorMessage": null}
+
+// 200 — 완료 (GET /learning-paths/me 로 본문을 읽는다)
+{"state": "SUCCEEDED", "pathId": 1234, "errorMessage": null}
+
+// 200 — 실패 (재요청으로 다시 시도할 수 있다)
+{"state": "FAILED", "pathId": null, "errorMessage": "ai-svc path generate failed"}
+```
+
+`state` = `NONE` · `RUNNING` · `SUCCEEDED` · `FAILED`. **없음도 404 가 아니라 200 + `NONE`** 으로 응답한다 —
+매핑 부재로 인한 404 와 구분하기 위해서다. 작업 상태는 서비스 프로세스 안에 사용자당 최신 1건만 유지되므로
+재기동 후에는 `NONE` 이 될 수 있다. 경로 자체는 DB 에 남으므로 `GET /learning-paths/me` 가 최종 근거다.
 
 ---
 
