@@ -18,16 +18,44 @@
 - 예외는 **새로 만들지 않는다.** 기존 `ai.devpath.community.post.ForbiddenException`(403) · `NotFoundException`(404) · `ai.devpath.community.report.ConflictException`(409) 을 재사용한다. 렌더링은 shared `ApiExceptionHandler`(스펙 §3.4 envelope)가 한다.
 - 인증 주체는 `CommunityController.uid(Jwt)` = `Long.parseLong(jwt.getSubject())` 로 얻는다.
 - 테스트는 `@SpringBootTest @AutoConfigureMockMvc @ActiveProfiles("test")` + `jwt().jwt(j -> j.subject("<id>"))` 패턴을 따른다.
-- **테스트 실행 전제**: Postgres 와 Redis 컨테이너가 둘 다 떠 있어야 한다.
+- **★테스트 실행 전제 — 2026-08-20 실행 중 정정됨★**
+
+  초판은 "Postgres 와 Redis" 라고 적었다. **둘 다 틀렸다.** 실측한 CI 구성
+  (`.github/workflows/ci.yml`)은 **Postgres + Elasticsearch(nori)** 이고, **Redis 는
+  community-svc 가 쓰지 않는다**(`build.gradle.kts` 에 "redis는 미사용").
+
   ```bash
-  docker run -d --name devpath-pg -e POSTGRES_DB=devpath -e POSTGRES_USER=devpath \
-    -e POSTGRES_PASSWORD=localdev -p 5432:5432 pgvector/pgvector:pg16
-  docker run -d --name devpath-redis -p 6379:6379 redis:7-alpine
+  # Postgres
+  docker run -d --name devpath-pg -e POSTGRES_DB=devpath -e POSTGRES_USER=devpath     -e POSTGRES_PASSWORD=localdev -p 5432:5432 pgvector/pgvector:pg16
+
+  # Elasticsearch + nori — CI 와 같은 이미지를 레포에서 빌드한다(공식 이미지엔 nori 가 없다)
+  cd /d/workspace/dpa/devpath-community-svc
+  docker build -t devpath-es:ci docker/elasticsearch
+  docker run -d --name devpath-es -p 9200:9200     -e discovery.type=single-node -e xpack.security.enabled=false     -e ES_JAVA_OPTS="-Xms512m -Xmx512m" devpath-es:ci
+  until curl -sf http://localhost:9200 >/dev/null; do sleep 3; done
   ```
-  community-svc 테스트 DB 는 `devpath_citest` 다(`application-test.yml`). 없으면 만든다:
-  `docker exec devpath-pg psql -U devpath -d devpath -c "CREATE DATABASE devpath_citest OWNER devpath"`
-- **Gradle 은 `UP-TO-DATE` 로 테스트를 건너뛴다.** 통과를 확인할 때는 실행 건수를 근거로 삼는다 —
-  `build/test-results/test/*.xml` 의 `tests=` 합계가 늘었는지 본다.
+
+- **★DB 는 `devpath` 를 쓴다. `devpath_citest` 를 새로 만들지 말 것★**
+
+  `application-test.yml` 의 기본값은 `devpath_citest` 지만 **CI 는 `DB_URL` 로 `devpath` 를
+  준다.** 빈 DB 에서 마이그레이션을 처음부터 돌리면 **`V202608161002__sandbox_execution_indexes`
+  의 `CREATE INDEX CONCURRENTLY` 가 자기 교착에 걸린다** — Flyway 자신의 다른 세션이
+  `idle in transaction` 으로 열려 있어 `CONCURRENTLY` 가 영원히 기다린다(2026-08-20 에
+  실제로 두 번, 합쳐 2시간 이상 멈췄다. `pg_blocking_pids` 로 확인).
+
+  ```bash
+  DB_URL=jdbc:postgresql://localhost:5432/devpath DB_USER=devpath DB_PASSWORD=localdev   GITHUB_ACTOR=$(gh api user --jq .login) GITHUB_TOKEN=$(gh auth token)     timeout 600 ./gradlew test --tests '...'
+  ```
+
+  `devpath` 는 Task 1 의 shared `FlywayMigrationTest` 가 이미 전부 마이그레이션해 둔다
+  (그 경로는 Hikari 풀이 아니라 `PGSimpleDataSource` 를 써서 교착이 없다).
+
+- **★긴 명령에는 `timeout` 을 건다. 종료 코드는 파이프 앞에서 잡는다★**
+
+  인프라가 없으면 테스트는 **깨끗하게 실패하지 않고 매달린다.** `timeout 600` 을 걸면
+  `GRADLE_EXIT=124` 로 드러난다. 그리고 `./gradlew ... | tail` 의 `$?` 는 **`tail` 것**이다 —
+  `./gradlew ... > log 2>&1; echo "GRADLE_EXIT=$?"` 로 잡고 로그를 따로 읽는다.
+
 - ★**각 태스크의 가드는 임시로 지워 red 가 나는지 실제로 돌린다.**★ "테스트가 green" 은 "가드가 동작한다" 의 증거가 아니다. 각 태스크에 그 절차가 단계로 들어 있다.
 
 ---
@@ -123,14 +151,24 @@
         assertTrue(rs.next());
         long postId = rs.getLong(1);
         st.execute("INSERT INTO community_questions(post_id) VALUES (" + postId + ")");
-        assertThrows(java.sql.SQLException.class, () -> st.execute(
-            "INSERT INTO community_answers(question_id,author_id,body_md,status) "
-                + "VALUES (" + postId + ",900002,'답변','DRAFT')"));
-        assertThrows(java.sql.SQLException.class, () -> st.execute(
-            "INSERT INTO community_comments(post_id,author_id,body_md,status) "
-                + "VALUES (" + postId + ",900002,'댓글','GONE')"));
-        st.execute("DELETE FROM community_questions WHERE post_id=" + postId);
-        st.execute("DELETE FROM community_posts WHERE id=" + postId);
+      final long qid = postId;
+      // ★대조군을 먼저 세운다★ — 이 삽입이 성공해야 아래의 "거부" 관측이 CHECK 때문이라고
+      // 말할 수 있다. status 컬럼 자체가 없어도 assertThrows 는 통과하므로, 이것이 없으면
+      // 판별력이 0이다(2026-08-20 실행에서 실제로 red 가 2건밖에 안 나와 드러났다).
+      st.execute("INSERT INTO community_answers(question_id,author_id,body_md,status) "
+          + "VALUES (" + qid + ",900002,'답변','HIDDEN')");
+      st.execute("INSERT INTO community_comments(post_id,author_id,body_md,status) "
+          + "VALUES (" + qid + ",900002,'댓글','DELETED')");
+      assertThrows(java.sql.SQLException.class, () -> st.execute(
+          "INSERT INTO community_answers(question_id,author_id,body_md,status) "
+              + "VALUES (" + qid + ",900002,'답변','DRAFT')"));
+      assertThrows(java.sql.SQLException.class, () -> st.execute(
+          "INSERT INTO community_comments(post_id,author_id,body_md,status) "
+              + "VALUES (" + qid + ",900002,'댓글','GONE')"));
+      st.execute("DELETE FROM community_comments WHERE post_id=" + postId);
+      st.execute("DELETE FROM community_answers WHERE question_id=" + postId);
+      st.execute("DELETE FROM community_questions WHERE post_id=" + postId);
+      st.execute("DELETE FROM community_posts WHERE id=" + postId);
       }
     }
   }
@@ -153,11 +191,8 @@
   }
 ```
 
-파일 상단 import 에 `assertEquals` 가 없다면 추가한다:
-
-```java
-import static org.junit.jupiter.api.Assertions.assertEquals;
-```
+파일 상단 import 는 `assertEquals`·`assertThrows`·`assertTrue` 를 **이미 갖고 있다**
+(2026-08-20 실행에서 확인). 추가할 import 가 없다.
 
 - [ ] **Step 2: 실패를 확인한다**
 
@@ -352,10 +387,9 @@ val devpathSharedVersion =
 
 ```bash
 cd /d/workspace/dpa/devpath-community-svc
-docker exec devpath-pg psql -U devpath -d postgres -c "DROP DATABASE IF EXISTS devpath_citest"
-docker exec devpath-pg psql -U devpath -d postgres -c "CREATE DATABASE devpath_citest OWNER devpath"
-./gradlew test --tests '*CommunityContextTest*' --refresh-dependencies 2>&1 | tail -8
-docker exec devpath-pg psql -U devpath -d devpath_citest -c "\d community_answers" | grep status
+DB_URL=jdbc:postgresql://localhost:5432/devpath DB_USER=devpath DB_PASSWORD=localdev \nGITHUB_ACTOR=$(gh api user --jq .login) GITHUB_TOKEN=$(gh auth token) \n  timeout 600 ./gradlew test --tests '*CommunityContextTest*' --refresh-dependencies > /tmp/t2s4.log 2>&1
+echo "GRADLE_EXIT=$?"; tail -8 /tmp/t2s4.log
+docker exec devpath-pg psql -U devpath -d devpath -c "\d community_answers" | grep status
 ```
 
 Expected: 테스트 통과, 그리고 마지막 명령이 `status | character varying(16) | not null` 을 낸다.
@@ -1407,7 +1441,7 @@ Expected: BUILD SUCCESSFUL, 3 개 통과.
 - [ ] **Step 5: 색인 삭제 이벤트가 실제로 나가는지 확인한다**
 
 ```bash
-docker exec devpath-pg psql -U devpath -d devpath_citest -c \
+docker exec devpath-pg psql -U devpath -d devpath -c \
   "SELECT event_type, payload FROM outbox WHERE aggregate_type='community_post' \
    AND payload LIKE '%\"deleted\":true%' ORDER BY id DESC LIMIT 3"
 ```
@@ -2594,7 +2628,7 @@ Expected: BUILD SUCCESSFUL, 3 개 통과.
 
 ```bash
 ./gradlew test --tests '*ContentAdminMockMvcTest*'
-docker exec devpath-pg psql -U devpath -d devpath_citest -c \
+docker exec devpath-pg psql -U devpath -d devpath -c \
   "SELECT count(*) FROM outbox WHERE aggregate_type='community_post' \
    AND payload LIKE '%\"deleted\":false%'"
 ```
