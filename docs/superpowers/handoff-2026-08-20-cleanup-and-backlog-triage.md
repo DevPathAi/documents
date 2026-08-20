@@ -25,6 +25,41 @@ Mission Spine 구현이 이 머신에만 있었다. 원래 설계대로 지웠�
 
 조직은 `DevPathAi`다(`leva-devpath` 아님 — `gh api` 호출 시 주의).
 
+### 왜 초대 수락 없이는 못 푸는가 — 게이트가 둘이고 둘 다 자기 승인을 막는다
+
+08-20에 차단 메커니즘을 직접 조회했다. "사람이 해야 한다"는 절차 문제가 아니라 **구조**다.
+
+**게이트 A — main 브랜치 보호(PR 승인)**. `devpath-shared` main:
+
+```
+required_approving_review_count: 1
+enforce_admins:                  true      ← 소유자 권한 우회도 닫혀 있다
+require_last_push_approval:      true
+required_status_checks:          ["build"]
+```
+
+#67 작성자 = `VelkaressiaBlutkrone`, 리뷰 `[]`, 결정 `REVIEW_REQUIRED`. **GitHub 는 PR 작성자의
+자기 승인을 구조적으로 막는다**(설정이 아니라 규칙). 조직 멤버가 1명이라 승인 가능한 사람이 0명이다.
+`devpath-gitops` #59 도 **완전히 같은 구조**다(작성자 동일 · `count: 1` · `enforce_admins: true`).
+
+**게이트 B — 보호 환경 배포 승인(마이그레이션 실행·패키지 게시)**:
+
+```
+mission-spine-migration-release      : required_reviewers, prevent_self_review: true, reviewers=[VelkaressiaBlutkrone]
+mission-spine-shared-package-publish : required_reviewers, prevent_self_review: true, reviewers=[VelkaressiaBlutkrone]
+```
+
+워크플로를 트리거하는 사람이 곧 유일한 reviewer라 `prevent_self_review: true` 가 승인을 막는다.
+**게시가 SNAPSHOT 에 멈춰 있고 서비스 8개 PR build 가 전부 실패하는 근본 원인이 여기다.**
+
+★**두 게이트는 독립이고 해소 주체가 다르다**★ — A 는 사람(qahnaarin 이 #67 승인), B 는 에이전트
+(환경 reviewer 목록에 qahnaarin 추가). 그런데 **B 는 A 의 선행 조건인 조직 멤버십이 있어야 먹는다**
+(멤버가 아니면 PUT 이 200 을 반환하고도 조용히 버려진다 — 08-17 핸드오프 §5). 그래서 순서가 고정이다.
+
+**완화 경로도 있다**(선택지로만 적어 둔다, 이번엔 쓰지 않았다): `prevent_self_review` 를 `false` 로,
+`required_approving_review_count` 를 0 으로, 또는 `enforce_admins` 를 끄는 것. 릴리스 통제를 스스로
+해체하는 셈이라 기본값은 아니다. 다만 **게이트 B 만 완화하고 A 는 유지**하는 부분 완화도 가능하다.
+
 ---
 
 ## 2. ★정리 대상 안에 미푸시 실작업 11건이 있었다★
@@ -132,6 +167,22 @@ HOLD 걸린 Mission Spine 범위라 푸시·PR·머지는 하지 않았다.
   작업트리 5개(`{ai-svc,shared,gitops,frontend,learning-svc}-codexreview`, HEAD
   `f39c54b`·`a8ab541`·`cfe5e3d`·`0c35edb`·`e9671e0`) · `codexreview-base`(learning-svc `a4da1c4` ·
   ai-svc `47031c0`) 전부 살아 있다. 지시문만 재작성하면 된다.
+
+**왜 위임했고 왜 첫 시도가 죽었는지 — 재개 전에 반드시 읽을 것**(원문은 08-19 핸드오프 §4):
+
+- **위임 근거**: 사용자 지시. 1인 조직이라 부계정 승인엔 독립 검토의 실질이 없다 →
+  **실질 리뷰 = Codex / 형식 승인 = 별도 계정**으로 분리한다. 즉 `qahnaarin` 은 §1 게이트를
+  형식적으로 충족시키는 쪽이고, 내용 검토를 대신하지 않는다.
+- ★**첫 시도가 전량 실패한 원인 = 5건을 동시에, reasoning `max` 로 돌려 계정 한도를 소진한 것**★
+  (측정된 4건만 986K 토큰 → `try again at Aug 21st, 2026 6:59 AM`). **「직렬로, 작은 것부터」는
+  취향이 아니라 이 사고의 재발 방지책이다.** 재개할 때 같은 방식으로 다시 돌리면 또 날아간다.
+- ★**산출 0건을 「산출됨」으로 오판했다**★ — `grep -c "## 판정"` 이 5건 모두 `1` 을 반환했는데,
+  그 1건은 **내가 준 프롬프트의 출력 형식 예시가 에코된 것**이었다. 프롬프트 길이 이후 구간만
+  다시 세니 전부 0. 재개 후 결과 판정은 **프롬프트 에코를 제외하고** 세야 한다.
+- **대체재 없음**(실측): `gemini 0.42.0` + 무료 Code Assist OAuth =
+  `IneligibleTierError: ... migrate to the Antigravity suite`, `GEMINI_API_KEY` 미설정이라 우회 불가.
+- 그 밖의 Codex 함정은 08-19 핸드오프 §7 — `codex exec review --base` 는 커스텀 프롬프트와 병용
+  불가 · `... | codex ... | tail` 의 `$?` 는 `tail` 것이라 즉사한 5건이 `EXIT=0` 으로 보였다.
 
 ### 릴리스 후
 
