@@ -11,8 +11,12 @@
 전부 추월당한 초안이다(§2).
 
 진짜 고유했던 것은 **shared 미커밋 23줄 하나**였고, 그 안에 **보안 강화 둘과 보안 완화 하나가 섞여**
-있어 셋으로 분리했다(§2-B). 그 과정에서 **릴리스 통제에 실재하는 구멍**이 드러났다 — 보호 환경
-두 곳 모두 `can_admins_bypass=true` 다.
+있어 셋으로 분리했다(§2-B, 완화분은 사용자 결정으로 폐기 → 최종 2커밋). 그 과정에서 **릴리스 통제에
+실재하는 구멍**이 드러났다 — 보호 환경 **15곳 중 13곳**이 `can_admins_bypass=true` 였다.
+**12곳을 닫았다**(§2-C). 열어 둔 하나는 비상 롤백 경로다.
+
+★**그 대가로 shared 게시가 이제 기술적으로도 불가능하다**★ — 관리자 우회가 마지막 escape hatch 였다.
+재개 순서 1번(초대 수락)의 무게가 커졌다.
 
 ---
 
@@ -56,6 +60,10 @@ mission-spine-shared-package-publish : required_reviewers, prevent_self_review: 
 
 워크플로를 트리거하는 사람이 곧 유일한 reviewer라 `prevent_self_review: true` 가 승인을 막는다.
 **게시가 SNAPSHOT 에 멈춰 있고 서비스 8개 PR build 가 전부 실패하는 근본 원인이 여기다.**
+
+★**2026-08-20 갱신**★ — 이 두 환경은 당시 `can_admins_bypass=true` 라 **관리자 우회로는 통과할 수
+있었다.** 그 우회를 닫았다(§2-C). 이제 게이트 B 는 **정책상으로도 기술적으로도** 초대 수락 없이는
+통과 불가다.
 
 ★**두 게이트는 독립이고 해소 주체가 다르다**★ — A 는 사람(qahnaarin 이 #67 승인), B 는 에이전트
 (환경 reviewer 목록에 qahnaarin 추가). 그런데 **B 는 A 의 선행 조건인 조직 멤버십이 있어야 먹는다**
@@ -152,12 +160,14 @@ Mission Spine 문서가 "관리자 우회는 대체 수단이 아니다"라고 �
 ★**채택 순서가 있다**★ — 게이트를 먼저 넣으면 `can_admins_bypass=true` 인 현 상태에서 **릴리스가 즉시
 실패**한다. **환경 설정을 `false` 로 먼저 바꾼 뒤** 게이트를 반영해야 한다.
 
-### `3c196a0` 은 채택 전 판단이 필요하다
+### `3c196a0` 은 폐기했다 (사용자 결정)
 
-`repositories: devpath-gitops` 를 없애면 토큰이 `devpath-gitops` 한 곳이 아니라 **App 이 설치된 전
-저장소**를 덮는다(권한은 `contents: write` 그대로). 워크플로가 런타임에
-`/installation/repositories?per_page=100` 로 설치 범위를 검증하는 스텝을 이미 갖고 있어 정적 고정을
-그것으로 대체하려던 것일 수는 있으나, **코드만으로는 의도를 단정할 수 없다.** 작성자 확인 필요.
+`repositories: devpath-gitops` 고정 제거의 의도를 사용자가 기억하지 못했다 — 실험 잔여물로 판단.
+**의도를 모르면 범위가 좁은 쪽이 기본값**이므로 커밋을 드롭하고 고정을 유지한다. 드롭 후
+`repositories: devpath-gitops` 1건 복원 · 테스트 단언이 `assertIn` 으로 환원 · 44건 통과.
+폐기한 패치는 근거로 `.artifacts/shared-gate-split-20260820/0003-*.patch` 에 남긴다.
+
+**따라서 이 브랜치의 최종 커밋은 둘이다** — `041a2c3` · `0ec0c2f`.
 
 ### 검증
 
@@ -185,6 +195,60 @@ Mission Spine 문서가 "관리자 우회는 대체 수단이 아니다"라고 �
   learning-svc `.gitignore` 를 "다름 1건" 으로도 만들었다(실제 차이 0).
 - ★**Windows Python 의 `write_text` 가 `\n` 을 `\r\n` 으로 바꿔 `git apply` 가 거부한다**★ —
   `patch does not apply`. 원본은 LF 였다. `open(..., newline="")` 로 써야 한다.
+
+---
+
+## 2-C. ★관리자 우회를 13곳 중 12곳에서 닫았다★ (2026-08-20 실행)
+
+`041a2c3` 을 반영하려면 환경 설정이 선행이므로 먼저 처리했다. 그 과정에서 **같은 구멍이 조직 전체에
+퍼져 있었다**는 것이 드러났다.
+
+### 실행 전 실측 — 보호 환경 15개 중 13개가 열려 있었다
+
+| 레포 | 환경 | 비고 |
+|---|---|---|
+| shared | `mission-spine-migration-release` · `mission-spine-shared-package-publish` | 게이트 대상 |
+| gitops | `production-on` · `production-off` · `production-rollback` · `production-landing` · `staging` | 운영 배포 |
+| frontend | `mobile-signing-android` · `mobile-signing-ios` · `et13-baseline-approval` · `manual-at-nvda`/`talkback`/`voiceover` | 서명·접근성 |
+| ai-svc | `mission-spine-ai-release-eval` | |
+| documents | `mission-spine-privacy-approval` | |
+
+**13곳 전부 `prevent_self_review=true` + reviewer 본인 1명**이었다. 즉 정책상으로는 승인이 막혀
+있는데 **관리자 우회로 전부 통과 가능한 상태**였다.
+
+### 결과 — 12곳 닫음, `production-rollback` 하나만 열어 둠
+
+★**`mission-spine-production-rollback` 은 의도적으로 열어 뒀다**★ — 비상 롤백 경로다. 여기까지 닫으면
+운영이 깨졌을 때 **초대 수락 전까지 롤백 승인이 불가능**해진다. 보안 강화와 가용성이 부딪히는
+자리여서 사용자 결정으로 남겨 뒀다. **「빠뜨린 곳」이 아니다.**
+
+최종: 보호 환경 15개 중 관리자 우회 열림 **1개**(`gitops/mission-spine-production-rollback`).
+
+### ★이 변경의 대가 — shared 게시가 이제 기술적으로도 불가능하다★
+
+닫기 전에는 초대가 pending 이어도 관리자 우회로 게시할 여지가 있었다. 지금은 없다.
+`prevent_self_review=true` + reviewer 1명 + 우회 차단 = **승인 가능자 0명**.
+되돌리는 것은 API 한 번(`can_admins_bypass: true`)이지만, **재개 순서 1번의 무게가 커졌다.**
+
+### API 실측 — 문서와 다르다
+
+★**`can_admins_bypass` 는 「Create or update an environment」 PUT 의 문서화된 파라미터가 아닌데
+실제로는 설정된다**★(문서상 파라미터는 `wait_timer`·`prevent_self_review`·`reviewers`·
+`deployment_branch_policy` 넷뿐).
+
+★**생략한 파라미터는 지워지지 않고 보존된다**★ — 문서가 명시하지 않아 **운영 레포가 아닌
+`devpath-svc-template` 에 실험용 환경을 만들어 재고 지웠다.** `reviewers` 를 생략한 PUT 후에도
+`prevent_self_review` · reviewer 1명이 그대로였다. 그래서 운영에는 `{"can_admins_bypass": false}`
+**한 필드만** 보냈고, 15개 환경 전부 전후 대조로 `deployment_branch_policy` · `protection_rules` ·
+`deployment-branch-policies`(각 `main` 1건)가 **무변경**임을 확인했다.
+
+### 남는 백로그 — 게이트 커버리지 비대칭
+
+`scripts/release/` 세 스크립트 중 **`migration_release_gate.py` 만 환경 보호를 검증**한다
+(`prevent_self_review` 1건 · 이제 `can_admins_bypass` 1건). `immutable_migration_image.py` ·
+`immutable_shared_package.py` 는 **환경 보호를 아예 보지 않는다**(각 0건).
+`041a2c3` 은 `prevent_self_review` 가 이미 검증되던 자리에 붙였으므로 범위는 일관되지만,
+**게시 경로에는 등가 게이트가 없다**는 사실은 그대로 남는다. 이건 기존 문제다.
 
 ---
 
@@ -223,10 +287,11 @@ Mission Spine 문서가 "관리자 우회는 대체 수단이 아니다"라고 �
    파일: `apps/web/lib/src/features/common/application/track_catalog.dart` + 같은 이름 테스트.
 2. **글 수정·삭제 구현.** community-svc develop에 `@Put/@DeleteMapping` **0건** 확정.
 3. **문항 사실 정확성 검수** 800문항. 구조·분포만 검증됐다.
-4. ~~미푸시 11건 처리 방향 결정~~ — **완료. 11건 전부 「버린다」**(§2). 대신 **shared 게이트 3커밋의
-   채택 판단**이 남았다(§2-B) — `041a2c3`·`0ec0c2f` 는 릴리스 후 PR, `3c196a0` 은 의도 확인 필요.
-   그리고 **보호 환경 `can_admins_bypass` 를 `false` 로 바꾸는 것은 지금 가능하고 지금 하는 게 맞다**
-   — 구멍이 열려 있는 상태이므로.
+4. ~~미푸시 11건 처리 방향 결정~~ · ~~관리자 우회 차단~~ — **둘 다 완료.** 11건 전부 「버린다」(§2),
+   보호 환경 12곳 차단(§2-C). 남은 것은 **`041a2c3`·`0ec0c2f` 를 릴리스 후 shared develop 에 PR 하는
+   것뿐**이다(로컬 `fix/migration-gate-split`, 푸시 안 함). `3c196a0` 은 폐기했다.
+5. **게이트 커버리지 비대칭**(신규) — `immutable_migration_image.py`·`immutable_shared_package.py` 는
+   환경 보호를 아예 검증하지 않는다. 게시 경로에 등가 게이트가 없다. 기존 문제이나 기록해 둔다.
 
 ### 사람 대기
 
@@ -294,14 +359,25 @@ Mission Spine 문서가 "관리자 우회는 대체 수단이 아니다"라고 �
 ## 6. 재개 순서
 
 1. **[사람] `qahnaarin` 으로 조직 초대 + devpath-shared 저장소 초대 수락**
+   ★**08-20 이후 이 단계는 우회 불가다**★ — 관리자 우회를 닫았으므로(§2-C) 승인 가능자가 0명이다.
 2. **[에이전트] 보호 환경 reviewer 에 `qahnaarin` 추가 후 재조회로 확인**(PUT 이 200 을 반환하고도
-   조용히 버려진다 — 08-17 핸드오프 §5)
+   조용히 버려진다 — 08-17 핸드오프 §5). 대상은 **15개 환경 전체**를 훑을 것 —
+   `can_admins_bypass` 를 닫은 12곳 모두 reviewer 가 본인 1명뿐이라 같은 교착에 걸려 있다.
 3. **[사람] `qahnaarin` 으로 shared #67 승인**
 4. **[에이전트] #67 merge commit 병합 → 게시 승인·검증 → 서비스 8개 PR fresh rerun**
 5. **[에이전트] GPU 노드 기동 → gitops #59 게이트 확인 → 릴리스**
-6. **[8/21 06:59 이후] Codex 리뷰 재개**
+6. **[릴리스 후] `fix/migration-gate-split` 의 2커밋(`041a2c3`·`0ec0c2f`)을 shared develop 에 PR**
+   — 지금 하면 릴리스 PR #67 의 head 가 바뀐다. **브랜치 upstream 은 끊어 뒀다.**
+7. **[8/21 06:59 이후] Codex 리뷰 재개**
 
-1번이 막혀 있는 동안 릴리스 통제와 무관하게 진행 가능한 것은 §4 「지금 가능」 4건이다.
+1번이 막혀 있는 동안 릴리스 통제와 무관하게 진행 가능한 것은 §4 「지금 가능」 의 **①②③** 이다
+(④는 완료, ⑤는 기록용). 사용자가 정한 순서는 **④→①→③→②** 이고 ④까지 끝났으므로
+**다음은 ① `track_catalog.dart` 2트랙 노출**이다.
+
+### 되돌리는 법 (필요해질 경우)
+
+관리자 우회를 다시 열려면 환경별로 `gh api -X PUT repos/DevPathAi/<repo>/environments/<env>`
+바디 `{"can_admins_bypass": true}`. **한 필드만 보내도 나머지 설정은 보존된다**(§2-C 실측).
 
 ## 7. 참고
 
