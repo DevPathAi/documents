@@ -281,10 +281,7 @@ Mission Spine 문서가 "관리자 우회는 대체 수단이 아니다"라고 �
 
 ### 지금 가능 — 릴리스 통제와 무관
 
-1. **`track_catalog.dart`에 2트랙 노출.** 현재 노출 6개(`BACKEND_SPRING`·`DEVOPS`·`FRONTEND_REACT`·
-   `FULLSTACK`·`MOBILE_FLUTTER`·`PYTHON_BACKEND`) — `NODE_TYPESCRIPT`·`DATA_AI` 없음. DB CHECK와
-   문항 800개는 이미 8트랙을 갖췄다.
-   파일: `apps/web/lib/src/features/common/application/track_catalog.dart` + 같은 이름 테스트.
+1. ~~`track_catalog.dart`에 2트랙 노출~~ — **완료**(frontend PR #135, `d793598`). 상세는 §4-B.
 2. **글 수정·삭제 구현.** community-svc develop에 `@Put/@DeleteMapping` **0건** 확정.
 3. **문항 사실 정확성 검수** 800문항. 구조·분포만 검증됐다.
 4. ~~미푸시 11건 처리 방향 결정~~ · ~~관리자 우회 차단~~ — **둘 다 완료.** 11건 전부 「버린다」(§2),
@@ -292,6 +289,37 @@ Mission Spine 문서가 "관리자 우회는 대체 수단이 아니다"라고 �
    것뿐**이다(로컬 `fix/migration-gate-split`, 푸시 안 함). `3c196a0` 은 폐기했다.
 5. **게이트 커버리지 비대칭**(신규) — `immutable_migration_image.py`·`immutable_shared_package.py` 는
    환경 보호를 아예 검증하지 않는다. 게시 경로에 등가 게이트가 없다. 기존 문제이나 기록해 둔다.
+
+### 4-B. ★2트랙 노출 완료 — 그리고 이것이 릴리스 순서를 구속한다★
+
+frontend PR #135 머지(`d793598`). `NODE_TYPESCRIPT` = `Node.js 백엔드 (TypeScript)` ·
+`DATA_AI` = `데이터·AI (분석/ML)`. 변경은 **두 파일 11줄**뿐이다.
+
+**소비처 셋은 손대지 않았다** — `diagnostic_page`·`mypage_page` 는 `entries` 순회,
+`sandbox_page` 는 단순 조회. 두 화면 위젯이 `DropdownButtonFormField` 라 항목이 늘어도
+**메뉴가 자체 스크롤**하므로 레이아웃이 넘치지 않는다(확인함). `apps/mobile`·`apps/admin`
+에는 트랙 카탈로그가 없다.
+
+**검증**: 계약 테스트를 6→8 로 **먼저** 고쳐 red 확인(`at location [6] ... which shorter than
+expected` — 올바른 이유) → 카탈로그 채워 green → **web 전체 834건 통과** · `flutter analyze`
+0건 · CI 4 pass / 4 skipping / 실패 0.
+
+★**릴리스 순서 제약 — 코드 주석으로 박아 뒀다**★
+
+`origin/main` 의 learning-svc 시드에는 두 트랙 문항이 **0건**이다(대조군 `BACKEND_SPRING` 은
+양쪽 100건이라 측정법 유효). develop 에만 100건씩 있다.
+
+문항 0건 트랙을 고르면 진단이 **깨끗하게 실패하지 않는다**:
+`NextQuestionSelector` 가 null → `next()` 가 `Optional.empty()` 반환 → **그것은 「진단 완료」와
+같은 신호다.** 그런데 `complete` 는 15문항 응답을 요구해 `IllegalStateException` 을 던진다.
+결과는 **이용자가 빠져나올 수 없는 진단 세션**이다.
+
+**⇒ frontend #133 은 learning-svc 릴리스보다 먼저 나가면 안 된다.**
+
+**머지가 안전한지 먼저 쟀다** — frontend `develop` 도 릴리스 PR #133 의 head 라 gitops #59 와
+같은 위험이 있는지 확인했다. 결과: frontend 에는 home-page 식 **제품 트리 해시 고정이 없고**
+(`tree_sha256`·`rendered_product_sha` 0건), #133 은 **리뷰 0건**이라 무효화할 승인도 없다.
+gitops #59 처럼 candidate 계약을 깨는 구조가 아니다. #133 이 담는 커밋은 147 → **149**.
 
 ### 사람 대기
 
