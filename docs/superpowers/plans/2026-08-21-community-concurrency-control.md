@@ -834,6 +834,60 @@ Task 5 의 글 락이 덤으로 닫았으므로 락을 findById 로 되돌려 re
 
 ---
 
+### Task 6b: 평판 가산을 원자적으로 만든다 (R6 — 실행 중 발견, 완료됨)
+
+**Files:**
+- Modify: `src/main/java/ai/devpath/community/reputation/UserReputationRepository.java`
+- Modify: `src/main/java/ai/devpath/community/reputation/UserTagReputationRepository.java`
+- Modify: `src/main/java/ai/devpath/community/reputation/ReputationService.java`
+- Modify: `src/test/java/ai/devpath/community/post/ContentMutationRaceTest.java`
+
+★**이 태스크는 계획에 없었다.** Task 6 의 되돌림 관측이 집계 유실을 보러 갔다가 그 앞에서
+`duplicate key ... user_reputation_pkey` 로 죽으며 드러났다. 되돌림 단계를 넣지 않았다면 못 찾았다.★
+
+**경쟁**: 같은 작성자의 **서로 다른** 콘텐츠에 동시 투표가 들어오면 서로 다른 행을 잠그므로
+콘텐츠 행 락이 무력하다. 그런데 `addTotal` 이 find-then-save 다:
+
+```java
+reputations.findByUserId(userId).orElseGet(() -> new UserReputation(userId))
+```
+
+행이 없으면 둘 다 INSERT 해 PK 위반(→ M2 트랩 → 500), 행이 있으면 둘 다 옛 총점을 읽어
+나중 것이 앞의 가산을 덮는다. `addTag` 도 같은 모양이다.
+
+**기각한 대안**: "행을 `ON CONFLICT DO NOTHING` 으로 미리 seed 한 뒤 JPA 로 갱신" — PK 위반은
+막지만 **총점 lost update 를 남긴다**(둘 다 같은 옛 값을 읽는다). 더 조용해질 뿐 더 나쁘다.
+
+- [x] **Step 1: 실패하는 테스트** — `twoContentsOfTheSameAuthorCanRaceToCreateTheFirstReputationRow`.
+  같은 작성자의 글 두 개를 만들고, 첫 투표 트랜잭션을 쥔 채 **다른 글**에 두 번째 투표를 던진다.
+  단언은 `repOf(author) == -4`(누적이지 덮어쓰기가 아니다).
+- [x] **Step 2: red 확인** — `duplicate key value violates unique constraint "user_reputation_pkey"`
+- [x] **Step 3: 두 리포지토리에 원자적 가산 쿼리를 더한다**
+
+```java
+@Modifying(flushAutomatically = true, clearAutomatically = true)
+@Query(value = "INSERT INTO user_reputation(user_id, total) VALUES (:userId, :delta) "
+    + "ON CONFLICT (user_id) DO UPDATE SET total = user_reputation.total + EXCLUDED.total",
+    nativeQuery = true)
+void addTotalAtomically(@Param("userId") long userId, @Param("delta") int delta);
+```
+
+`user_tag_reputation` 은 `ON CONFLICT (user_id, tag_id)` 로 같은 모양. `ReputationService` 의
+`addTotal`·`addTag` 는 이 쿼리를 부르기만 한다.
+
+★`clearAutomatically` 가 필요하다★ — 이 갱신은 JPA 를 우회하므로 같은 트랜잭션에서 이미 로드한
+`UserReputation` 이 낡는다. **배지 판정이 그 값을 읽는다**(`awardPhilanthropistIfReached`).
+
+- [x] **Step 4: 부작용을 잰다** — `clearAutomatically` 는 영속성 컨텍스트 **전체**를 비운다.
+  평판 호출 **뒤에** 앞서 로드한 엔티티를 `save` 하는 곳이 있으면 detach 된 채 저장된다.
+  메서드 단위로 확인했고(유일한 후보인 `hideAnswer` 의 `questions.save` 는 회수 **뒤에** 로드하므로
+  안전), 전체 스위트 **189 tests / 0 failures** 로 재확인했다.
+- [x] **Step 5: R5 를 다시 관측한다** — R6 이 앞을 가리고 있었으므로, 고친 뒤 글 락을 다시
+  되돌려 원래 목표였던 집계 유실을 확인했다: `expected: 2 but was: 1`.
+- [x] **Step 6: 커밋** — `2d91ee7`, `228e97e`
+
+---
+
 ### Task 7: 회수 소요를 재고, 락 유지 시간이 타임아웃 안에 있음을 확인한다
 
 **Files:**
@@ -1011,10 +1065,11 @@ community-svc 의 경쟁 네 건을 닫으며 정한 방식이다. 근거는 전
 
 ## 완료 기준 (스펙 §9)
 
-- [ ] 경쟁 테스트 **5 건**이 green
-- [ ] Task 4·6 의 **되돌림 관측**이 실제로 red 를 냈고 그 사유가 커밋 메시지에 남았다
-- [ ] community-svc 전체 스위트 **189 건**, failures 0 · errors 0
-      (기존 182 + 프로브 1 + 경쟁 5 + 회수 소요 1. ★Task 1 이 대체 경로로 갔다면 **190**★)
+- [x] 경쟁 테스트 **6 건**(R6 포함)이 green
+- [x] Task 4·6 의 **되돌림 관측**이 실제로 red 를 냈고 그 사유가 커밋 메시지에 남았다
+      (`uq_community_votes` 위반 / `expected: 2 but was: 1`)
+- [ ] community-svc 전체 스위트 **190 건**, failures 0 · errors 0
+      (기존 182 + 프로브 1 + 경쟁 6 + 회수 소요 1. 회수 소요 전 시점은 **189**, 실측 확인함)
 - [ ] `lock_timeout` 이 유한하다는 **실측 증거**가 있다 (Task 1)
 - [ ] 락을 쥐고 도는 최장 경로의 **실측 소요**가 타임아웃 안에 있다 (Task 7)
 - [ ] `documents/48_동시성_제어_관례.md` 가 존재한다
