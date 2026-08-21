@@ -58,8 +58,13 @@
     build/test-results/test/TEST-<FQCN>.xml
   ```
 
-- 브랜치: `devpath-community-svc` 는 `develop` 에서 `fix/content-mutation-concurrency` 를 뗀다.
-  `documents` 는 `develop` 에서 `docs/concurrency-convention` 을 뗀다. `main` 직접 커밋 금지.
+- 브랜치: `devpath-community-svc` 는 ★`develop` 이 아니라 **`feat/content-edit-delete`**★ 에서
+  `fix/content-mutation-concurrency` 를 뗀다. 이 계획은 그 브랜치에만 있는 것에 의존한다 —
+  Task 2 는 `ContentAdminService.takedownable(...)`, Task 5 는 `VoteService.publishedPost(...)`
+  를 쓰는데, **`origin/develop` 에는 `ContentAdminService.java` 파일 자체가 없다**(수정·삭제
+  기능 전체가 미머지·미푸시). develop 에서 뗐다면 두 태스크가 컴파일되지 않는다.
+  `documents` 는 스펙·계획이 올라간 `docs/community-concurrency-control-spec` 를 이어 쓴다.
+  `main` 직접 커밋 금지.
 
 ---
 
@@ -427,9 +432,19 @@ grep -oE 'message="[^"]{0,200}' \
   build/test-results/test/TEST-ai.devpath.community.post.ContentMutationRaceTest.xml
 ```
 
-기대: `expected: 0 but was: 10` 또는 그에 준하는 평판 단언 실패.
-★`TimeoutException`(인터리빙 단언 실패)이 나오면 red 의 이유가 다르다★ — 워커가 아예 안 떴거나
-락 없이도 안 막히는 것이므로, 그 원인을 먼저 규명한다.
+★**실측 결과(2026-08-21, `8a4bdee`): 예상과 달랐다.**★ red 는 평판 단언이 아니라
+**`assertStillInFlight`** 에서 났다 — 투표가 막히기는커녕 500ms 안에 성공적으로 끝났다.
+
+원인은 JPA 다. `hideAnswer` 의 `save()` 는 SQL 을 내지 않고, 뒤이은 `revokeAllForSource` 의
+JPQL 질의도 ★Hibernate 의 AUTO flush 가 **테이블 범위로 판단**★하므로(`ReputationEvent` 질의는
+`CommunityAnswer` 더티 상태와 안 겹친다) flush 를 건너뛴다. `UPDATE` 는 커밋까지 미뤄지고
+**그동안 행 락이 하나도 없다.**
+
+따라서 이 태스크의 기대 red 는 **`Expecting code to raise a throwable` at `assertStillInFlight`** 다.
+
+★**이 발견은 Task 4·6 의 「락 없으면」 예측도 검증되지 않았다는 뜻이다**★ — 그 예측들도 같은
+"쓰기가 알아서 락을 잡는다" 가정 위에 있었다. 각 태스크에서 **실측한 사유를 그대로 기록**하고,
+예측과 다르면 계획을 고친다.
 
 - [ ] **Step 3: 두 경로를 잠금 조회로 바꾼다**
 
