@@ -906,3 +906,8 @@ x, x_val, y, y_val = train_test_split(df.drop(columns=[''target'']), df[''target
 scaler = StandardScaler()
 x_scaled = scaler.fit_transform(pd.concat([x, x_val]))', options = '["스케일러 학습(fit)에 검증 데이터까지 포함되어 데이터 누수가 발생한다.", "검증 데이터에는 새로운 스케일러를 별도로 fit해서 적용하는 것이 올바른 방법이다.", "이 방식은 검증 점수를 실제 성능보다 비관적으로(낮게) 측정하게 만든다.", "훈련 데이터와 검증 데이터에 서로 다른 기준의 스케일이 적용되어 비교가 불가능해진다."]', answer_key = '{"correct":0}' WHERE id = 1300 AND md5(content) = '02d1030b9000c251b42cb6093783c204';
 COMMIT;
+-- 후속(2026-08-22, 사실 검증 게이트 도입이 적발): 재작성 811 의 보기 집합이
+-- 기존 823 과 동일해진 충돌 교정(Summary -> Untyped). 운영 적용 완료(UPDATE 1).
+BEGIN;
+UPDATE question_bank SET options = '["Counter","Gauge","Histogram","Untyped"]' WHERE id = 811 AND md5(content) = 'faccd9ed45fc72344ee9f1f61268e33d' AND options = '["Counter","Gauge","Histogram","Summary"]';
+COMMIT;

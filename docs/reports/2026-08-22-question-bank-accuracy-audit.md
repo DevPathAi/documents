@@ -82,12 +82,27 @@ AMBIGUOUS 26)을 전량 재작성해 운영 DB 에 적용했다.
 per-file `eol=lf` 핀 필수(선례 V202608161009·1011). 그리고 스테이지드 마이그레이션
 테스트의 부분 스키마 때문에 데이터 마이그레이션은 `to_regclass` 가드 필수.★
 
+## 생성 게이트 사실 검증 축 (2026-08-22 완료)
+
+learning-svc PR #57 로 구현·머지. 요지:
+
+- **검증 장부** `question_verifications.jsonl` — 문항별 fingerprint(track·content·
+  options·정답의 sha256) + PASS 판정 + 검증 축(FACT/SINGLE_KEY/SELF_CONTAINED) +
+  리뷰어. 채점 필드가 바뀌면 fingerprint 가 어긋나 **리뷰 루프 없는 추가·수정이
+  구조적으로 불가**(`stampQuestionVerifications` 로만 갱신, git diff 로 감사).
+- **CI 강제** `ApprovedQuestionsGateTest` — ①전 게이트+사실 검증 ②커밋된 시드 SQL
+  4곳 == 승인 JSONL 결정적 재생성본. 종전에는 validateQuestions 가 수동 태스크뿐이라
+  「CI validates committed JSONL」이 선언만 있었다.
+- **승인 JSONL 에 검수 교정 237건 반영** 후 정식 경로로 시드 재생성 — 시드 직접
+  교정(#56)이 남겼던 「재생성 시 교정 되돌아감」 회귀 경로를 닫음.
+- 리뷰 프롬프트를 적대(반박 우선) 프레임으로 강화(복수 정답 논증·코드 실행 검증·자립성).
+- **게이트 실효 실증**: 도입 즉시 duplicate-option-set 게이트가 재작성 1건(id 811)과
+  기존 823의 보기 집합 충돌을 적발 → Summary→Untyped 교정(운영 UPDATE 1건 적중,
+  shared V202608221001 도 동기 갱신 = shared PR #74).
+
 ## 잔여 작업
 
-1. **생성 게이트에 사실 검증 축 추가** — 구조·분포 게이트만으로는 29.6% 결함율이
-   재발한다(PYTHON_BACKEND 3건 vs 미검수 트랙 21~47건). 이후 문항 생성 시 적대
-   검증 에이전트를 게이트에 포함할 것.
-2. 전체 결함 목록: `2026-08-22-question-bank-defects.json` (237건, id·트랙·유형·근거)
+1. 전체 결함 목록: `2026-08-22-question-bank-defects.json` (237건, id·트랙·유형·근거)
 
 ## 자료
 
