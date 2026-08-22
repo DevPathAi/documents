@@ -821,7 +821,10 @@ test('workflow is dispatch-only, pinned, protected, and has no deploy or write a
   assert.match(workflow, /permission-actions: read/);
   assert.match(workflow, /permission-contents: read/);
   assert.match(workflow, /permission-members: read/);
-  assert.match(workflow, /repositories: \|\n            documents\n            devpath-gitops/);
+  // 2026-08-22: evidence-reader 설치는 devpath-gitops 단독 — documents 자기 레포는
+  // github.token 이 담당하므로 민팅 대상에서 제외됐다.
+  assert.match(workflow, /repositories: \|\n            devpath-gitops/);
+  assert.doesNotMatch(workflow, /repositories: \|\n            documents/);
   assert.doesNotMatch(workflow, /(?:git\s+push|kubectl|wrangler|deploy\b)/i);
   assert.match(workflow, /permissions:\n  actions: read\n  contents: read/);
 
