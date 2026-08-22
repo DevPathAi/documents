@@ -68,15 +68,18 @@ jobs:
           test "$(git rev-parse HEAD)" = "${APPROVAL_SOURCE_SHA}"
           test -z "$(git status --porcelain=v1 --untracked-files=all)"
 
+      # devpath-evidence-reader(gitops 단독 설치, 전부 read-only)로 GitOps 읽기와
+      # 조직 Members read(조직 수준 권한이라 레포 선택과 무관)를 민팅한다.
+      # documents 자기 레포 읽기는 이미 github.token(GITHUB_TOKEN)이 담당한다 —
+      # 레거시 org App 비밀(GITOPS_APP_ID/KEY) 의존 제거(2026-08-22).
       - name: Mint read-only GitOps and organization token
         id: gitops-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3.2.0
         with:
-          app-id: ${{ secrets.GITOPS_APP_ID }}
-          private-key: ${{ secrets.GITOPS_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.MISSION_SPINE_EVIDENCE_READER_APP_ID }}
+          private-key: ${{ secrets.MISSION_SPINE_EVIDENCE_READER_APP_PRIVATE_KEY }}
           owner: DevPathAi
           repositories: |
-            documents
             devpath-gitops
           permission-actions: read
           permission-contents: read
