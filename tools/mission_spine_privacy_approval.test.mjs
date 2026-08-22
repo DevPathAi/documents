@@ -814,12 +814,17 @@ test('workflow is dispatch-only, pinned, protected, and has no deploy or write a
   assert.match(workflow, /actions\/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02\s+# v4\.6\.2/);
   assert.deepEqual(
     [...workflow.matchAll(/secrets\.([A-Z0-9_]+)/g)].map((match) => match[1]).sort(),
-    ['GITOPS_APP_ID', 'GITOPS_APP_PRIVATE_KEY'],
+    // 2026-08-22: 레거시 org App 비밀에서 devpath-evidence-reader
+    // (mission-spine-privacy-approval 환경 secret)로 이행.
+    ['MISSION_SPINE_EVIDENCE_READER_APP_ID', 'MISSION_SPINE_EVIDENCE_READER_APP_PRIVATE_KEY'],
   );
   assert.match(workflow, /permission-actions: read/);
   assert.match(workflow, /permission-contents: read/);
   assert.match(workflow, /permission-members: read/);
-  assert.match(workflow, /repositories: \|\n            documents\n            devpath-gitops/);
+  // 2026-08-22: evidence-reader 설치는 devpath-gitops 단독 — documents 자기 레포는
+  // github.token 이 담당하므로 민팅 대상에서 제외됐다.
+  assert.match(workflow, /repositories: \|\n            devpath-gitops/);
+  assert.doesNotMatch(workflow, /repositories: \|\n            documents/);
   assert.doesNotMatch(workflow, /(?:git\s+push|kubectl|wrangler|deploy\b)/i);
   assert.match(workflow, /permissions:\n  actions: read\n  contents: read/);
 
