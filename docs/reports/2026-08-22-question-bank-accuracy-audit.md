@@ -67,17 +67,27 @@ AMBIGUOUS 26)을 전량 재작성해 운영 DB 에 적용했다.
 - 원칙: 주제·태그·난이도·유형 보존 최소 수정, 정답이 최장 보기가 되는 편향 회피
   (08-14 「정답=최장보기 73%」 사고 재발 방지).
 
+## 시드 원본 교정 (2026-08-22 완료)
+
+1. **shared**: `V202608221001__correct_question_bank_accuracy.sql` (PR #73 develop 머지,
+   et11 릴리스에 탑재). 6트랙 155건을 md5(content) 매칭으로 교정 + 0단계 CRLF→LF
+   정규화. 버전 0.0.1-et11.20260822 로 올리고 불변 게시 스펙 재산정
+   (jar 1_229_362/4ea08b9f…). 검증 의미론 = 「옛 3중(content md5·options·answer_key)
+   잔존 시 실패」 — md2 시드 계열 개발 DB 의 변형 행 때문에 존재 검증은 부당 실패.
+2. **learning-svc**: `db/seed/question_bank_md2_seed.sql` 전체본 237건 교정
+   (PR #56 develop 머지). NODE_TYPESCRIPT·DATA_AI 2트랙의 시드 정본.
+
+★교훈: shared `.gitattributes` 의 `/src/main/resources/** text eol=crlf` 는 CI(리눅스)
+체크아웃도 CRLF 로 물질화한다 — 여러 줄 문자열 리터럴을 담는 마이그레이션은
+per-file `eol=lf` 핀 필수(선례 V202608161009·1011). 그리고 스테이지드 마이그레이션
+테스트의 부분 스키마 때문에 데이터 마이그레이션은 `to_regclass` 가드 필수.★
+
 ## 잔여 작업
 
-1. **시드 원본 교정** — 운영 DB 는 교정됐으나 시드(6트랙: shared 마이그레이션 /
-   2트랙: learning-svc `db/seed/*_md2_seed.sql`)는 옛 문항을 담고 있다. 적용된
-   마이그레이션은 불변이므로 **다음 shared 릴리스(et11)에 교정 마이그레이션**
-   (`2026-08-22-question-bank-key-fixes.sql` + `2026-08-22-question-bank-rewrites.sql`
-   기반)을 실어야 신규 환경이 일치한다. learning-svc 시드 파일은 직접 편집 가능.
-2. **생성 게이트에 사실 검증 축 추가** — 구조·분포 게이트만으로는 29.6% 결함율이
+1. **생성 게이트에 사실 검증 축 추가** — 구조·분포 게이트만으로는 29.6% 결함율이
    재발한다(PYTHON_BACKEND 3건 vs 미검수 트랙 21~47건). 이후 문항 생성 시 적대
    검증 에이전트를 게이트에 포함할 것.
-3. 전체 결함 목록: `2026-08-22-question-bank-defects.json` (237건, id·트랙·유형·근거)
+2. 전체 결함 목록: `2026-08-22-question-bank-defects.json` (237건, id·트랙·유형·근거)
 
 ## 자료
 
