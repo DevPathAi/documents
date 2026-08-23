@@ -1,15 +1,27 @@
-# 핸드오프 2026-08-23 — governance 충돌 해소 + Shared ET11 게시
+# 핸드오프 2026-08-23 — governance 충돌 해소 + Shared ET11 게시 + AI 전담 전환
 
 > 선행 문서: `handoff-2026-08-22-night-seal-restore-complete.md`.
 > 이 문서는 그 문서 §1의 governance 차단 해소와 Shared ET11 게시 결과를 잇는다.
 
 ## 1. 다음 착수점
 
-1. **[사람] `qahnaarin` 조직 초대 수락**
-   - 2026-08-23 09:20 KST 라이브 API: membership `pending`, invitation id `78678364`.
-   - 초대 생성: 2026-08-17 20:18:21 KST. GitHub의 7일 자동 만료 계약에 따라
-     **2026-08-24 20:18:21 KST 전** 대상 계정 로그인으로 수락해야 한다.
-   - 현재 CLI 계정은 `VelkaressiaBlutkrone`이므로 대신 수락할 수 없다.
+1. **AI 전담 승인 계약으로 전환**
+   - 2026-08-23 사용자 결정으로 `qahnaarin` 초대·별도 사람 승인 경로를 작업과
+     차단 조건에서 완전히 제외했다. 초대를 다시 보내거나 수락을 기다리지 않는다.
+   - 현재 GitOps의 staging/OFF/ON/landing/rollback 환경은 reviewer가
+     `VelkaressiaBlutkrone` 1명이고 `prevent_self_review=true`다. 또한
+     `verify_current_protected_approval.py`와 `verify_release_artifacts.py`는 승인자가
+     workflow actor·triggering actor와 같으면 실패한다. 따라서 현 계약을 그대로 둔 채
+     문구만 AI 작업으로 바꾸면 sealed release가 실제로는 진행되지 않는다.
+   - Shared의 migration-release 환경도 같은 단일 reviewer·self-review 방지 형상이다.
+     Shared publish에서 검증한 일시 해제 → AI API 승인 → 즉시 복원 → GET 검증 절차를
+     migration에도 동일하게 적용하되, GitOps의 명시적 신원 불일치 검증은 별도로
+     테스트 우선 교정해야 한다.
+   - 테스트를 먼저 추가해 사람 신원 분리 가정을 제거하고, AI가 수행한 코드 검토·CI·
+     불변 artifact 검증 결과를 fail-closed 기계 증거로 인증하도록 검증기·워크플로·환경
+     정책을 함께 교정한다. 단순 영구 무보호 전환은 금지한다.
+   - 전환 전까지 AI가 보호 설정을 일시 조정해야 한다면 변경 전 원본 전체 스냅샷,
+     최소 필드 변경, 작업 직후 원자적 복원, 라이브 GET 정확 일치를 모두 증거로 남긴다.
 2. **ET11 sealed release 입력 생성**
    - GitOps main의 `release-manifests/candidates/`와 `releases/`는 `.gitkeep`만 있고,
      원격 `release/candidate-*` 브랜치도 0개다. 따라서 아직 promote를 디스패치할
@@ -23,6 +35,15 @@
      실제 실행 API를 스모크한다. candidate/seal 없이 수동으로 우회하지 않는다.
 
 ## 2. 완결된 것
+
+### GitHub 초대 경로 폐기
+
+- 조직 초대 `78678364`(`qahnaarin`, `direct_member`)를 취소했다.
+- `devpath-shared` 저장소 초대 `329407883`(`qahnaarin`, `write`)도 취소했다.
+- 2026-08-23 10:51 KST 라이브 재조회에서 해당 조직·저장소 pending 초대는 각각
+  0건이고, 조직 전체 멤버 목록에도 `qahnaarin`은 0건이다.
+- 이 항목은 사람이 수행할 잔여 작업이 아니다. 이전 핸드오프·설계 문서의
+  `qahnaarin` 수락 지시는 이 문서가 대체한다.
 
 ### governance 단일 계약
 
@@ -66,6 +87,9 @@
 
 ## 3. 현재 경계와 함정
 
+- **초대 제거 ≠ AI 승인 계약 전환 완료.** pending 초대는 0건이지만 GitOps 검증기와
+  보호 환경에는 독립 사람 승인 가정이 아직 남아 있다. ET11 candidate/final/seal보다
+  먼저 §1-1을 코드·테스트·라이브 정책까지 완료한다.
 - **게시 완료 ≠ 운영 migration 완료.** 운영 DB의 V202608221001과 GitOps migration
   digest는 아직 이전 상태다. candidate/final/validation seal이 없으므로 migration release,
   promote, sandbox 실행 API 스모크는 아직 실행하지 않았다.
@@ -84,5 +108,7 @@
 - Shared main: `c4d468a70e8870e8f60f25539e91599def75f0f2`, CI/publish attempt 1 green.
 - Shared main 보호: build strict 필수, review count 1, dismiss stale/last-push true,
   admins/conversation 적용, force/delete 금지.
-- org invitation: `qahnaarin` pending.
+- `qahnaarin` 조직·Shared 저장소 pending 초대: 각각 0건. 조직 멤버 아님.
+- GitOps AI 전담 승인 계약: 미교정. 현재 5개 보호 환경과 두 검증기에 사람 신원 분리
+  가정이 남아 있음.
 - ET11 GitOps candidate/final/seal/migration/promote: 미생성·미실행.
