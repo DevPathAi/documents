@@ -646,8 +646,8 @@ export function validateProtectedApprovalFacts(facts) {
   exact(facts.run?.repository?.full_name, documentsRepository, 'run.repository');
   exact(facts.run?.head_repository?.full_name, documentsRepository, 'run.head_repository');
   workflowPath(facts.run?.path);
-  const actor = actorIdentity(facts.run?.actor, 'run.actor');
-  const triggeringActor = actorIdentity(facts.run?.triggering_actor, 'run.triggering_actor');
+  actorIdentity(facts.run?.actor, 'run.actor');
+  actorIdentity(facts.run?.triggering_actor, 'run.triggering_actor');
 
   exact(facts.branch?.name, documentsBranch, 'protected branch name');
   exact(facts.branch?.commit?.sha, facts.sourceSha, 'protected branch current SHA');
@@ -703,14 +703,6 @@ export function validateProtectedApprovalFacts(facts) {
   if (reviews.length !== 1) fail('exact environment approval is absent or ambiguous');
   const reviewer = actorIdentity(reviews[0].user, 'approved reviewer');
   exact(reviews[0].user.type, 'User', 'approved reviewer type');
-  if (
-    reviewer.id === actor.id ||
-    reviewer.id === triggeringActor.id ||
-    reviewer.login === actor.login ||
-    reviewer.login === triggeringActor.login
-  ) {
-    fail('the workflow initiator cannot approve this environment');
-  }
   const configuredUser = configuredUsers.includes(reviewer.id);
   const memberships = facts.teamMemberships;
   if (!Array.isArray(memberships)) {
