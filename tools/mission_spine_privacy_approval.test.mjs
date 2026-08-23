@@ -586,7 +586,7 @@ test('candidate discovery follows a credential-free redirect and rejects a compe
   );
 });
 
-test('authenticates the exact protected job, environment, workflow, and non-self reviewer', () => {
+test('authenticates the exact protected job, environment, workflow, and configured reviewer', () => {
   assert.deepEqual(validateProtectedApprovalFacts(approvalFacts()), {
     approval_environment: 'mission-spine-privacy-approval',
     approval_environment_id: 91,
@@ -604,18 +604,29 @@ test('authenticates the exact protected job, environment, workflow, and non-self
     validateProtectedApprovalFacts(directUser).approved_by,
     'privacy-reviewer',
   );
+  directUser.run.actor = { id: 21, login: 'privacy-reviewer', type: 'User' };
+  directUser.run.triggering_actor = {
+    id: 21,
+    login: 'privacy-reviewer',
+    type: 'User',
+  };
+  assert.equal(
+    validateProtectedApprovalFacts(directUser).approved_by,
+    'privacy-reviewer',
+  );
 
   const mutations = [
     (facts) => { facts.runAttempt = 2; facts.run.run_attempt = 2; },
     (facts) => { facts.run.path = '.github/workflows/mission-spine-privacy-approval.yml@main'; },
     (facts) => { facts.run.path = '.github/workflows/mission-spine-privacy-approval.yml@refs/heads/main'; },
     (facts) => { facts.run.head_repository.full_name = 'attacker/fork'; },
+    (facts) => { facts.run.actor = null; },
+    (facts) => { facts.run.triggering_actor.type = 'Bot'; },
     (facts) => { facts.branch.protected = false; },
     (facts) => { facts.environment.protection_rules[0].prevent_self_review = false; },
     (facts) => { facts.teamMemberships[0].state = 'pending'; },
     (facts) => { facts.teamMemberships[0].role = 'unknown'; },
     (facts) => { facts.teamMemberships[0].team_slug = 'lookalike'; },
-    (facts) => { facts.approvals[0].user = { id: 11, login: 'release-initiator', type: 'User' }; },
     (facts) => { facts.approvals.push(structuredClone(facts.approvals[0])); },
     (facts) => { facts.jobs.jobs[0].name = 'Lookalike approval'; },
     (facts) => { facts.workflowBytes = Buffer.from('substituted workflow\n'); },
