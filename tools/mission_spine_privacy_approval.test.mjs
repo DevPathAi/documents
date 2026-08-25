@@ -63,7 +63,7 @@ function candidateBytes(overrides = {}) {
     gitops: {
       repository: 'DevPathAi/devpath-gitops',
       base_sha: gitopsBaseSha,
-      base_web_tag: '4567890abcdef1234567890abcdef12345678901',
+      base_web_tag: '4567890abcdef1234567890abcdef12345678901-mission-on',
       base_web_digest: `sha256:${'1'.repeat(64)}`,
       web_kustomization: 'apps/devpath-web/base/kustomization.yaml',
     },
@@ -264,6 +264,28 @@ test('binds exact raw candidate bytes and the exact analytics privacy object', (
     approvalSourceSha: sourceSha,
   });
   assert.deepEqual(actual, privacy);
+
+  for (const invalidTag of [
+    '4567890abcdef1234567890abcdef12345678901-mission-invalid',
+    '4567890ABCDEF1234567890abcdef12345678901-mission-on',
+    `${'0'.repeat(40)}-mission-off`,
+  ]) {
+    const invalidBytes = candidateBytes({
+      gitops: {
+        repository: 'DevPathAi/devpath-gitops',
+        base_sha: gitopsBaseSha,
+        base_web_tag: invalidTag,
+        base_web_digest: `sha256:${'1'.repeat(64)}`,
+        web_kustomization: 'apps/devpath-web/base/kustomization.yaml',
+      },
+    });
+    assert.throws(() => validateCandidateBinding({
+      candidateBytes: invalidBytes,
+      releaseId,
+      candidateSpecSha256: sha256(invalidBytes),
+      approvalSourceSha: sourceSha,
+    }), /base_web_tag/i);
+  }
 
   assert.throws(() => validateCandidateBinding({
     candidateBytes: bytes,
