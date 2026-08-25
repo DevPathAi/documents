@@ -26,6 +26,7 @@ const MAX_CANDIDATE_BYTES = 256 * 1024;
 const MAX_EVIDENCE_BYTES = 64 * 1024;
 const MAX_ZIP_BYTES = MIB;
 const SHA40 = /^(?!0{40}$)[0-9a-f]{40}$/;
+const WEB_BASE_TAG = /^([0-9a-f]{40})(?:-mission-(?:off|on))?$/;
 const SHA64 = /^(?!0{64}$)[0-9a-f]{64}$/;
 const SAFE_RELEASE_ID = /^ms-[0-9]{8}-[a-z0-9][a-z0-9-]{2,40}$/;
 const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9_.:/-]{1,127}$/;
@@ -89,6 +90,14 @@ function sha256(bytes) {
 function sha40(value, name) {
   if (typeof value !== 'string' || !SHA40.test(value)) {
     fail(`${name} must be a nonzero lowercase Git SHA`);
+  }
+  return value;
+}
+
+function webBaseTag(value, name) {
+  const match = typeof value === 'string' ? WEB_BASE_TAG.exec(value) : null;
+  if (match === null || /^0{40}$/.test(match[1])) {
+    fail(`${name} must be a nonzero lowercase Git SHA with an optional mission phase`);
   }
   return value;
 }
@@ -360,7 +369,7 @@ function parseCandidateContract({
   exactKeys(candidate.gitops, GITOPS_KEYS, 'candidate gitops');
   exact(candidate.gitops.repository, gitopsRepository, 'candidate gitops.repository');
   sha40(candidate.gitops.base_sha, 'candidate gitops.base_sha');
-  sha40(candidate.gitops.base_web_tag, 'candidate gitops.base_web_tag');
+  webBaseTag(candidate.gitops.base_web_tag, 'candidate gitops.base_web_tag');
   if (
     typeof candidate.gitops.base_web_digest !== 'string' ||
     !/^sha256:[0-9a-f]{64}$/.test(candidate.gitops.base_web_digest)
