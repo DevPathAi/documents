@@ -15,18 +15,22 @@
 - 수동 커밋, push, PR 생성과 merge는 위 단일 계정으로 수행한다. GitHub Actions가
   sealed manifest를 커밋할 때 사용하는 `devpath-release-bot`은 자동화 신원이며
   별도 인간 계정·초대 대상이 아니다.
-- 보호 브랜치의 필수 CI, conversation resolution, admin enforcement,
-  force-push/delete 금지는 유지한다. 존재하지 않는 두 번째 사람을 요구하던
-  `required_approving_review_count=1`과 `require_last_push_approval=true`만 단일계정
-  계약에 맞게 제거한다.
+- Home·Frontend·Platform·Learning·Documents의 인간 승격 보호 브랜치는 필수 CI,
+  conversation resolution, admin enforcement, force-push/delete 금지를 유지한다.
+  존재하지 않는 두 번째 사람을 요구하던 `required_approving_review_count=1`과
+  `require_last_push_approval=true`만 단일계정 계약에 맞게 제거한다.
+- GitOps `main`은 예외적으로 release App만 bypass하는 기존 봉인 정책을 유지한다.
+  사람 PR의 승인 1명 설정은 수동 승격 경로가 아니라 App 외 쓰기를 거부하는 방어선이며,
+  candidate/seal/promotion은 `devpath-gitops-release` 자동화 신원으로만 진행한다. 이 App은
+  인간 계정·조직 초대·reviewer가 아니다.
 - 보호 환경은 reviewer를 `VelkaressiaBlutkrone` 하나로 유지한다. 자동 승인 절차는
   `approve_pending_deployment.py`가 `prevent_self_review`를 최소 시간 동안 변경하고
   승인 직후 원래 값으로 복원한 뒤 GET으로 정확히 검증한 경우에만 유효하다.
 
 ## 2. 2026-08-26 실측 근거
 
-- Home `master`, Frontend `main`, Platform `main`, Learning `main`의 PR 승인 수는
-  0이고 last-push 별도 승인 요구는 꺼져 있다.
+- Home `master`, Frontend `main`, Platform `main`, Learning `main`, Documents `main`의
+  PR 승인 수는 0이고 last-push 별도 승인 요구는 꺼져 있다.
 - Home, Frontend, AI, Documents, GitOps의 확인 대상 보호 환경 reviewer는
   `VelkaressiaBlutkrone` 하나이며 `prevent_self_review=true`로 복원돼 있다.
 - staging live runtime은 candidate API route port `8080`, CORS origin
