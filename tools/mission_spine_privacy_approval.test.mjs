@@ -34,7 +34,7 @@ const releaseId = 'ms-20990101-privacy-fixture';
 const sourceSha = '1234567890abcdef1234567890abcdef12345678';
 const candidateHeadSha = '234567890abcdef1234567890abcdef123456789';
 
-test('prod26r7 branch dispatcher starts the protected main workflow as the Actions App', () => {
+test('prod26r8 branch dispatcher starts the protected main workflow as the Actions App', () => {
   const workflow = readFileSync(
     join(root, '.github', 'workflows', 'mission-spine-privacy-approval.yml'),
     'utf8',
@@ -45,13 +45,13 @@ test('prod26r7 branch dispatcher starts the protected main workflow as the Actio
   );
   assert.match(
     workflow,
-    /dispatch-privacy-approval:\r?\n\s+if: github\.ref == 'refs\/heads\/chore\/prod26r7-privacy-dispatch'/,
+    /dispatch-privacy-approval:\r?\n\s+if: github\.ref == 'refs\/heads\/chore\/prod26r8-privacy-dispatch'/,
   );
   assert.match(workflow, /actions: write/);
-  assert.match(workflow, /RELEASE_ID: ms-20260829-prod26r7/);
+  assert.match(workflow, /RELEASE_ID: ms-20260829-prod26r8/);
   assert.match(
     workflow,
-    /CANDIDATE_SPEC_SHA256: 876787696ed20ad1867b451a323fa213e1c413c16a5b1e2336bf61028fec9b3c/,
+    /CANDIDATE_SPEC_SHA256: a0ad5fd087db806c56fe41f195b7722cd97a821b71c6178f2959a12679d0614f/,
   );
   assert.match(
     workflow,

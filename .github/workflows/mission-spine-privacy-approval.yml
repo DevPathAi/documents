@@ -208,7 +208,7 @@ jobs:
             --expected-zip-sha256="${ARTIFACT_DIGEST}"
 
   dispatch-privacy-approval:
-    if: github.ref == 'refs/heads/chore/prod26r7-privacy-dispatch'
+    if: github.ref == 'refs/heads/chore/prod26r8-privacy-dispatch'
     name: Dispatch exact privacy approval
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -216,8 +216,8 @@ jobs:
       actions: write
       contents: read
     env:
-      RELEASE_ID: ms-20260829-prod26r7
-      CANDIDATE_SPEC_SHA256: 876787696ed20ad1867b451a323fa213e1c413c16a5b1e2336bf61028fec9b3c
+      RELEASE_ID: ms-20260829-prod26r8
+      CANDIDATE_SPEC_SHA256: a0ad5fd087db806c56fe41f195b7722cd97a821b71c6178f2959a12679d0614f
       SOURCE_SHA: 7f732ac5ba31a91e81ea4e557cb7f67c8ee5ca36
       INPUT_RELEASE_ID: ${{ inputs.release_id }}
       INPUT_CANDIDATE_SPEC_SHA256: ${{ inputs.candidate_spec_sha256 }}
@@ -231,7 +231,7 @@ jobs:
           test "$GITHUB_ACTOR" = "VelkaressiaBlutkrone"
           test "$GITHUB_TRIGGERING_ACTOR" = "VelkaressiaBlutkrone"
           test "$GITHUB_RUN_ATTEMPT" = "1"
-          test "$GITHUB_REF" = "refs/heads/chore/prod26r7-privacy-dispatch"
+          test "$GITHUB_REF" = "refs/heads/chore/prod26r8-privacy-dispatch"
           test "$INPUT_RELEASE_ID" = "$RELEASE_ID"
           test "$INPUT_CANDIDATE_SPEC_SHA256" = "$CANDIDATE_SPEC_SHA256"
           test "$INPUT_SOURCE_SHA" = "$SOURCE_SHA"
@@ -249,9 +249,9 @@ jobs:
           )"
           test "$current_main" = "$SOURCE_SHA"
 
-          payload="$RUNNER_TEMP/prod26r7-privacy-dispatch.json"
-          response="$RUNNER_TEMP/prod26r7-privacy-dispatch-response.json"
-          run_document="$RUNNER_TEMP/prod26r7-privacy-run.json"
+          payload="$RUNNER_TEMP/prod26r8-privacy-dispatch.json"
+          response="$RUNNER_TEMP/prod26r8-privacy-dispatch-response.json"
+          run_document="$RUNNER_TEMP/prod26r8-privacy-run.json"
           test ! -e "$payload"
           test ! -e "$response"
           test ! -e "$run_document"
