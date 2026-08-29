@@ -33,6 +33,34 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const releaseId = 'ms-20990101-privacy-fixture';
 const sourceSha = '1234567890abcdef1234567890abcdef12345678';
 const candidateHeadSha = '234567890abcdef1234567890abcdef123456789';
+
+test('prod26r6 branch dispatcher starts the protected main workflow as the Actions App', () => {
+  const workflow = readFileSync(
+    join(root, '.github', 'workflows', 'mission-spine-privacy-approval.yml'),
+    'utf8',
+  ).replace(/\r\n/g, '\n');
+  assert.match(
+    workflow,
+    /approve-analytics-privacy-release:\r?\n\s+if: github\.ref == 'refs\/heads\/main'/,
+  );
+  assert.match(
+    workflow,
+    /dispatch-privacy-approval:\r?\n\s+if: github\.ref == 'refs\/heads\/chore\/prod26r6-privacy-dispatch'/,
+  );
+  assert.match(workflow, /actions: write/);
+  assert.match(workflow, /RELEASE_ID: ms-20260829-prod26r6/);
+  assert.match(
+    workflow,
+    /CANDIDATE_SPEC_SHA256: 2661d7089ebb5d2e85d53955126fab4a1f1f6926f887a89e90085c83e773bf47/,
+  );
+  assert.match(
+    workflow,
+    /SOURCE_SHA: 7f732ac5ba31a91e81ea4e557cb7f67c8ee5ca36/,
+  );
+  assert.match(workflow, /test "\$inner_actor" = "github-actions\[bot\]"/);
+  assert.match(workflow, /test "\$inner_triggering_actor" = "github-actions\[bot\]"/);
+  assert.match(workflow, /test "\$\(jq -er '\.actor\.id' "\$run_document"\)" = "41898282"/);
+});
 const gitopsBaseSha = '34567890abcdef1234567890abcdef1234567890';
 const candidateSha = 'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
 const workflowBytes = Buffer.from('name: trusted privacy approval workflow\n');
@@ -820,7 +848,7 @@ test('workflow is dispatch-only, pinned, protected, and has no deploy or write a
   const workflow = readFileSync(
     join(root, '.github', 'workflows', 'mission-spine-privacy-approval.yml'),
     'utf8',
-  );
+  ).replace(/\r\n/g, '\n');
   const dispatch = workflow.match(/\non:\n([\s\S]*?)\npermissions:/)?.[1];
   assert.ok(dispatch);
   assert.deepEqual(dispatch.match(/^  [A-Za-z_][A-Za-z0-9_-]*:/gm), [
@@ -873,7 +901,7 @@ test('CI always runs the privacy producer contract with read-only pinned actions
   const workflow = readFileSync(
     join(root, '.github', 'workflows', 'privacy-producer-ci.yml'),
     'utf8',
-  );
+  ).replace(/\r\n/g, '\n');
   assert.match(workflow, /^name: Privacy Producer CI$/m);
   const triggers = workflow.match(/\non:\n([\s\S]*?)\npermissions:/)?.[1];
   assert.ok(triggers);

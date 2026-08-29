@@ -30,6 +30,7 @@ concurrency:
 
 jobs:
   approve-analytics-privacy-release:
+    if: github.ref == 'refs/heads/main'
     name: Approve analytics privacy release
     environment: mission-spine-privacy-approval
     runs-on: ubuntu-24.04
@@ -205,3 +206,116 @@ jobs:
             --zip="${root}/artifact.zip" \
             --evidence="${root}/package/evidence.json" \
             --expected-zip-sha256="${ARTIFACT_DIGEST}"
+
+  dispatch-privacy-approval:
+    if: github.ref == 'refs/heads/chore/prod26r6-privacy-dispatch'
+    name: Dispatch exact privacy approval
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      contents: read
+    env:
+      RELEASE_ID: ms-20260829-prod26r6
+      CANDIDATE_SPEC_SHA256: 2661d7089ebb5d2e85d53955126fab4a1f1f6926f887a89e90085c83e773bf47
+      SOURCE_SHA: 7f732ac5ba31a91e81ea4e557cb7f67c8ee5ca36
+      INPUT_RELEASE_ID: ${{ inputs.release_id }}
+      INPUT_CANDIDATE_SPEC_SHA256: ${{ inputs.candidate_spec_sha256 }}
+      INPUT_SOURCE_SHA: ${{ inputs.approval_source_sha }}
+      GITHUB_API_VERSION: "2026-03-10"
+    steps:
+      - name: Prove the exact one-shot dispatcher context
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_ACTOR" = "VelkaressiaBlutkrone"
+          test "$GITHUB_TRIGGERING_ACTOR" = "VelkaressiaBlutkrone"
+          test "$GITHUB_RUN_ATTEMPT" = "1"
+          test "$GITHUB_REF" = "refs/heads/chore/prod26r6-privacy-dispatch"
+          test "$INPUT_RELEASE_ID" = "$RELEASE_ID"
+          test "$INPUT_CANDIDATE_SPEC_SHA256" = "$CANDIDATE_SPEC_SHA256"
+          test "$INPUT_SOURCE_SHA" = "$SOURCE_SHA"
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+
+      - name: Dispatch protected main through the repository Actions App
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          current_main="$(
+            gh api -H "X-GitHub-Api-Version: $GITHUB_API_VERSION" \
+              "repos/$GITHUB_REPOSITORY/branches/main" --jq '.commit.sha'
+          )"
+          test "$current_main" = "$SOURCE_SHA"
+
+          payload="$RUNNER_TEMP/prod26r6-privacy-dispatch.json"
+          response="$RUNNER_TEMP/prod26r6-privacy-dispatch-response.json"
+          run_document="$RUNNER_TEMP/prod26r6-privacy-run.json"
+          test ! -e "$payload"
+          test ! -e "$response"
+          test ! -e "$run_document"
+          umask 077
+          jq -n \
+            --arg release_id "$RELEASE_ID" \
+            --arg candidate_spec_sha256 "$CANDIDATE_SPEC_SHA256" \
+            --arg approval_source_sha "$SOURCE_SHA" \
+            '{
+              "ref": "main",
+              "inputs": {
+                "release_id": $release_id,
+                "candidate_spec_sha256": $candidate_spec_sha256,
+                "approval_source_sha": $approval_source_sha
+              }
+            }' >"$payload"
+
+          gh api --method POST \
+            -H "X-GitHub-Api-Version: $GITHUB_API_VERSION" \
+            --input "$payload" \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/mission-spine-privacy-approval.yml/dispatches" \
+            >"$response"
+          inner_run_id="$(jq -er '.workflow_run_id | select(type == "number" and . > 0)' "$response")"
+          [[ "$inner_run_id" =~ ^[1-9][0-9]*$ ]]
+
+          cancel_inner() {
+            gh api --method POST \
+              -H "X-GitHub-Api-Version: $GITHUB_API_VERSION" \
+              "repos/$GITHUB_REPOSITORY/actions/runs/$inner_run_id/cancel" \
+              >/dev/null 2>&1 || true
+          }
+          trap 'status=$?; if test "$status" -ne 0; then cancel_inner; fi; exit "$status"' EXIT
+
+          for attempt in $(seq 1 12); do
+            if gh api -H "X-GitHub-Api-Version: $GITHUB_API_VERSION" \
+              "repos/$GITHUB_REPOSITORY/actions/runs/$inner_run_id" \
+              >"$run_document"; then
+              break
+            fi
+            test "$attempt" -lt 12
+            sleep 1
+          done
+
+          inner_actor="$(jq -er '.actor.login' "$run_document")"
+          inner_triggering_actor="$(jq -er '.triggering_actor.login' "$run_document")"
+          test "$inner_actor" = "github-actions[bot]"
+          test "$(jq -er '.actor.id' "$run_document")" = "41898282"
+          test "$(jq -er '.actor.type' "$run_document")" = "Bot"
+          test "$inner_triggering_actor" = "github-actions[bot]"
+          test "$(jq -er '.triggering_actor.id' "$run_document")" = "41898282"
+          test "$(jq -er '.triggering_actor.type' "$run_document")" = "Bot"
+          test "$(jq -er '.event' "$run_document")" = "workflow_dispatch"
+          test "$(jq -er '.head_branch' "$run_document")" = "main"
+          test "$(jq -er '.head_sha' "$run_document")" = "$SOURCE_SHA"
+          test "$(jq -er '.run_attempt' "$run_document")" = "1"
+          test "$(jq -er '.path' "$run_document")" = ".github/workflows/mission-spine-privacy-approval.yml"
+          test "$(jq -r '.conclusion' "$run_document")" = "null"
+          trap - EXIT
+
+          {
+            echo "### Independent privacy approval dispatch"
+            echo "- inner run: $inner_run_id"
+            echo "- actor: $inner_actor"
+            echo "- triggering actor: $inner_triggering_actor"
+            echo "- source SHA: $SOURCE_SHA"
+            echo "- candidate SHA-256: $CANDIDATE_SPEC_SHA256"
+          } >>"$GITHUB_STEP_SUMMARY"
