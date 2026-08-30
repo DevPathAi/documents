@@ -217,7 +217,7 @@ jobs:
       contents: read
     env:
       RELEASE_ID: ms-20260830-prod26r9
-      CANDIDATE_SPEC_SHA256: aa5258cad6f117844b03a736e74bdff1b7a82e257191cbcd264ceb66c36bdddd
+      CANDIDATE_SPEC_SHA256: f86f010532dff3d231528f5ba4bc9b128704b9582393415b520ab981f7ad9ca5
       SOURCE_SHA: 7f732ac5ba31a91e81ea4e557cb7f67c8ee5ca36
       INPUT_RELEASE_ID: ${{ inputs.release_id }}
       INPUT_CANDIDATE_SPEC_SHA256: ${{ inputs.candidate_spec_sha256 }}
