@@ -51,7 +51,7 @@ test('prod26r9 branch dispatcher starts the protected main workflow as the Actio
   assert.match(workflow, /RELEASE_ID: ms-20260830-prod26r9/);
   assert.match(
     workflow,
-    /CANDIDATE_SPEC_SHA256: 1d6edb9a57c67ed699d8d0a5b687afa042c70ab4ce31ae510bf59d25a5763dc0/,
+    /CANDIDATE_SPEC_SHA256: 6ccb03eae9c047bd38fea91f963f1e17da67be72abf40b246e2e990fe1f06e78/,
   );
   assert.match(
     workflow,
