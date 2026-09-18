@@ -143,6 +143,28 @@ D1 은 2026-09-15 결정("React 로 재작성하지 않는다", frontend
 들어간 뒤에야** frontend 에서 `apps/mobile` 과 서명 빌드 워크플로를 지울 수 있다(그 전에 지우면 웹 승격이 막힌다).
 gitops main 은 룰셋 2종 + classic 보호의 3중 잠금이라 머지 절차에 사람 단계가 낀다.
 
+### 6.4 ET13 카탈로그 숫자 — 같은 gitops 변경에 묶는다 (2026-09-19)
+
+frontend 릴리스 #221(main `03e0c13`)의 운영 승격을 시도하다 두 곳에서 12-fixture 시절의 숫자가 남아 있음을 실측했다.
+
+1. **frontend `et13-baseline-approval.yml`** 이 원시 파일 `162` · visual 경로 `96` · `case_count: 96` · 번들 `98` 을
+   리터럴로 고정했다. 2026-09-17 N06(#210)에서 카탈로그가 12 → 15 fixture(visual 120 · a11y 30 · 웹 fixture 11)로
+   커졌고, 이 워크플로는 새 카탈로그로 처음 실행된 승인 run `35405819787` 에서 사람 승인 직후 죽었다.
+   수정 = frontend PR #222(개수를 case catalog 에서 파생; 실제 원시 아티팩트 204 파일과 경로 단위 일치 확인).
+2. **gitops `validate_release_manifest.py` 225–237행** 이 visual `case_count: 96`
+   (`web 48 · admin 16 · mobile 16 · dp_design 16`), a11y `24`(`12 · 4 · 4 · 4`)를 기대한다. 따라서 1 을 고쳐도
+   15-fixture 카탈로그는 gitops 승격 검증을 통과하지 못한다. 2026-09-17 핸드오프의 "ET13 승인 + Cloudflare
+   토큰만 있으면 승격 가능"은 사실이 아니었다.
+
+**결정(사용자, B)**: gitops 의 카탈로그 숫자 갱신을 §6.3 의 모바일 제거와 **한 번의 gitops 변경으로 묶는다.**
+모바일 fixture 가 카탈로그에서 빠지면 표면별 개수가 다시 바뀌므로, 따로 하면 3중 잠금 해제와 baseline 재승인이
+두 번 든다. 대가: #217·#219·#220 의 운영 반영이 S2 의 gitops 변경 시점까지 미뤄진다(급한 장애 수정 아님).
+gitops 검증기의 표면별 개수도 가능하면 리터럴 대신 카탈로그에서 파생하도록 바꾼다 — 같은 결함이 세 번째다
+(N06 의 `capture.mjs`·캡처 합계, 이번 승인 워크플로, gitops 검증기).
+
+승인 재시도 절차: 보호 환경이 `prevent_self_review` 이고 이 PC 의 `gh` CLI 가 리뷰어 계정이므로 승인 워크플로는
+`automation/dispatch-<release_id>` 브랜치의 디스패처 워크플로로 **봇이** 띄운다(직접 `gh workflow run` 금지).
+
 ## 7. S3 — 웹 재구성 구현
 
 `develop` 에서 단계별 PR 로 진행한다(장수 빅뱅 브랜치 금지 — frontend 는 PR 마다 perf-gate 약 25분이 돌고, 단계별
