@@ -120,12 +120,28 @@ D1 은 2026-09-15 결정("React 로 재작성하지 않는다", frontend
    모바일 fixture 제거(카탈로그·스키마 `prefixItems`·도구 카운트·`capture.mjs`·계약 테스트를 함께 — 2026-09-17
    N06 의 교훈: 리터럴 grep 을 합계 검사까지 넓힌다).
 
-### 6.3 위험 — S2 의 첫 태스크로 실측한다
+### 6.3 gitops 릴리스 계약 — 실측과 결정 (2026-09-19)
 
-**gitops 릴리스 증거 계약이 서명 모바일 빌드를 frontend 릴리스의 구성 요소로 요구하는지 아직 모른다**
-(`android-only release contract`, `signed-mobile-dispatch` 브랜치들이 그 흔적이다). 묶여 있으면 분리는 gitops 검증기·
-릴리스 매니페스트 계약 변경을 동반하고, 그 경우 S2 는 "frontend 레포에서 코드는 분리하되 릴리스 증거 생산자는
-새 레포가 맡는다"로 계약을 다시 쓴다. 이 실측 전에는 S2 의 규모를 확정하지 않는다.
+**실측(devpath-gitops `origin/main`)**: 웹 승격 계약이 서명 모바일 빌드를 필수 입력으로 묶고 있다.
+
+- candidate spec 의 `quality_evidence_inputs.mobile_test_artifacts`
+  (`leva.mission-spine.signed-android-build-binding.v2`: 서명 APK sha256 · build provenance · 워크플로 실행·아티팩트 식별자).
+- `scripts/release/validate_release_manifest.py`: `mobile.repository` 가 `frontend.repository`
+  (`DevPathAi/devpath-frontend`)와 같아야 하고(1029–1030행), 워크플로 경로가
+  `.github/workflows/mission-spine-signed-mobile-build.yml` 로 고정돼 있다(262행).
+- `scripts/release/verify_release_artifacts.py`: 서명 모바일 provenance·툴체인·`pubspec.lock` 해시·production 빌드
+  구성을 검증한다. 테스트는 `tests/release/test_signed_mobile_manual_trust.py` 외 다수.
+
+즉 현재 계약에서는 서명 모바일 빌드 없이 웹을 운영에 승격할 수 없고, 모바일이 다른 레포로 가면 검증이 실패한다.
+
+**결정(사용자)**: **웹 릴리스 계약에서 모바일을 제거한다.** 모바일은 새 레포에서 독립적으로 서명·배포한다.
+버린 것: 계약을 유지하고 바인딩만 새 레포를 가리키게 하기 · 분리를 S3 뒤로 미루기.
+
+**S2 에 추가되는 작업(gitops)**: candidate spec 스키마에서 `mobile_test_artifacts` 제거(스키마 버전 상승) →
+두 검증기와 `seal_release_manifest.py` 에서 서명 모바일 경로 제거 → 관련 테스트·픽스처 정리 → frontend 의 릴리스
+증거 도구(`tools/mission_spine_release_evidence.mjs` 등)에서 모바일 입력 제거. 순서 제약: **gitops 계약 변경이 main 에
+들어간 뒤에야** frontend 에서 `apps/mobile` 과 서명 빌드 워크플로를 지울 수 있다(그 전에 지우면 웹 승격이 막힌다).
+gitops main 은 룰셋 2종 + classic 보호의 3중 잠금이라 머지 절차에 사람 단계가 낀다.
 
 ## 7. S3 — 웹 재구성 구현
 
