@@ -348,7 +348,9 @@ class MobileFreeReleaseContractTest(unittest.TestCase):
             "event": "workflow_dispatch", "head_sha": "a" * 40, "head_branch": "main",
             "path": self.validator.PRODUCER_WORKFLOWS["manual-nvda"], "run_attempt": 1,
         }
-        with mock.patch.object(self.verifier, "_list_protected_runs", return_value=[run]):
+        with mock.patch.object(
+            self.verifier, "_list_protected_runs", return_value=[run]
+        ), mock.patch.object(self.verifier, "_list_named_artifacts", return_value=[]):
             with self.assertRaisesRegex(ValueError, "unknown protected producer kind"):
                 self.verifier.select_unique_protected_producer_run(
                     {}, "DevPathAi/devpath-frontend", "a" * 40,
