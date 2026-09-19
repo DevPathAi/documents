@@ -109,7 +109,12 @@ D1 은 2026-09-15 결정("React 로 재작성하지 않는다", frontend
 ### 6.2 설계
 
 1. **이력 보존 추출**: `git filter-repo` 로 `apps/mobile` 과 포크할 `packages/dp_design` 의 이력을 새 레포로 옮긴다.
-   새 레포 구조는 `app/`(구 `apps/mobile`) + `packages/dp_design/`(포크). 브랜치 전략은 조직 공통(main 보호 · develop 통합 · 2단계 PR).
+   새 레포 구조는 frontend 와 같은 경로를 유지한다: `apps/mobile/` + `packages/dp_design/`(포크). 경로를 바꾸면
+   `tools/mobile_source_guard.dart` 와 `mobile.yml` 의 하드코딩 경로를 전부 다시 써야 해서 유지했다(S2b 계획).
+   **실행 완료(2026-09-19)**: https://github.com/DevPathAi/devpath-mobile — 이력 296 커밋 · `apps/mobile` 207 파일 ·
+   `dp_core` 핀 `7634b63d` · lock 버전 표류 0 · 첫 PR CI 에서 `contract-test-android`·`ios-no-codesign` 통과
+   (run 35413590495). 가져오지 않은 워크플로를 검사하던 계약 테스트 2개 파일은 새 레포에서 제거했다(사용자 결정;
+   frontend 원본은 S2c 까지 남는다). 브랜치 전략은 조직 공통(main 보호 · develop 통합 · 2단계 PR).
 2. **`dp_design`**: 분리 시점의 복사본을 모바일 레포가 소유한다. 이후 두 `dp_design` 은 독립적으로 진화한다.
    시맨틱 토큰 계약의 **색·타이포 값**만 공통 브랜드로 남고, 반경·밀도·레이아웃 토큰은 갈라진다.
 3. **`dp_core`**: frontend 레포를 git 의존성으로 참조한다(`git: {url, ref: <commit>, path: packages/dp_core}`).
