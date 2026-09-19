@@ -1123,3 +1123,13 @@ git -C D:/workspace/dpa/devpath-mobile branch --list 'chore/s2c2*'
 ```
 
 Expected: develop 에 이 PR 의 커밋만 추가됨 · frontend 주 checkout 은 여전히 `feat/evidence-auth-smoke` 이고 변경 없음 · 인접 레포에 낯선 브랜치 없음.
+
+---
+
+## 실행 기록 (2026-09-19) — 계획과 달랐던 점
+
+- Node 24 의 `node --test` 요약 접두어는 `#` 가 아니라 `ℹ` 다(`ℹ pass 27`). 기준선 27 pass → 변경 뒤 26 pass(`release_evidence` 테스트 4건 삭제, 새 테스트 추가).
+- **Task 4**: 의존성 해석(`dart pub get`)을 기다리는 사이 워크플로를 먼저 고쳐, 백그라운드로 돌린 "빨강 확인"이 녹색으로 나왔다. 워크플로만 되돌린 상태에서 새 2건이 실패함을 따로 실증한 뒤 복원했다. 이때 `git stash push -- <경로>` / `pop` 을 썼는데, **stash 스택은 모든 worktree 가 공유**한다(이 레포에는 다른 세션의 `gstack-gitignore` stash 가 있었다) — 다음부터는 임시 WIP 커밋이나 `git stash push -m <고유태그>` + `apply <sha>` 를 쓴다.
+- **Task 4 Step 8**: 옮긴 Dart 테스트가 `dart format` 에서 1건 바뀌었다(계획의 코드 블록 줄바꿈이 포매터 결과와 달랐다). 포맷 적용 뒤 테스트 재통과 확인.
+- **Task 5 Step 2**: 잔존 grep 에 `.github/workflows/mobile.yml` 의 "**un**signed Android evidence" 2건이 걸렸다 — 모바일 CI 의 무서명 빌드 단계로 정규식 오탐. S2c-3 에서 파일째 삭제.
+- **Task 6**: Codex 기본 모델 `gpt-5.6-sol` 이 400 으로 거부돼 `-m gpt-5.5 -c model_reasoning_effort=high` 로 실행. 결과 No findings · approve(Codex 샌드박스에 node 가 없어 테스트는 로컬 결과가 근거).

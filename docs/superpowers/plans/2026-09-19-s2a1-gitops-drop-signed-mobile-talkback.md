@@ -1206,3 +1206,14 @@ git -C D:/workspace/dpa/devpath-frontend branch --list 'chore/s2a*'
 ```
 
 Expected: develop 에 이 PR 의 커밋만 추가됨 · **`origin/main` 은 `4f3ed64…` 그대로**(이 계획은 main 을 건드리지 않는다) · gitops 주 checkout 변경 없음 · 인접 레포에 낯선 브랜치 없음.
+
+---
+
+## 실행 기록 (2026-09-19) — 계획과 달랐던 점
+
+- **Task 0**: 전체 스위트는 CI 에서 1분 미만이지만 **이 PC 에서는 약 11분 30초** 걸린다(서브프로세스·git 의존 테스트). 기준선은 작업 worktree 와 섞이지 않게 별도 detached worktree(`.worktrees/gitops-baseline`)에서 전체 로그로 남겼다. `tail -N` 으로 자르면 `Ran/OK` 줄이 테스트의 표준출력에 밀려 사라진다 — 전체 로그를 파일로 받고 `grep -E "^(Ran |OK|FAILED)"` 로 읽는다. `pyflakes` 는 `--user` 설치가 첫 시도에 조용히 빠져 다시 설치했다.
+- **Task 1**: `test_unknown_protected_producer_kind_is_rejected` 가 빨강 단계에서 실제 GitHub API 를 호출했다(구 코드에서는 `signed-mobile` kind 가 유효해 `_list_named_artifacts` 까지 간다). `_list_named_artifacts` 도 mock 해 네트워크 없이 결정적으로 실패하게 고쳤다(위 코드에 반영).
+- **Task 5 목록에서 빠져 있던 것**(같은 계열의 개수 리터럴): `test_et13_evidence_contract.py` 의 `test_final_manifest_has_six_distinct_source_pinned_artifacts`(`len(quality) == 6` → 5, 이름도 five 로)와 `test_final_source_rebind_is_exact_and_removes_every_stale_pin`(candidate sha 참조 13 → 12). `test_manual_nvda_trust.py` 의 정적 헬퍼 `_write_zip_link`(서명 zip 테스트 전용)도 삭제.
+- **Task 6**: README 28행의 ET13 설명 끝 절 "their `Mobile` cases cannot satisfy signed native-build or manual TalkBack evidence" 가 표에 없었다 → "are Flutter-web projections, never native-device evidence" 로 고쳤다. 같은 문장의 96/24 개수는 PR ② 의 몫.
+- **Task 7**: Codex 기본 모델 `gpt-5.6-sol` 이 "not supported when using Codex with a ChatGPT account"(400)로 거부된다. 사용자 설정은 두고 호출에만 `-m gpt-5.5 -c model_reasoning_effort=high` 를 붙였다.
+- 도구 함정 재확인: Bash heredoc 안에서 백슬래시가 들어간 문자열 치환은 조용히 빗나간다(바이트 리터럴의 `\n` 을 포함한 치환 1건이 적용되지 않았다). 백슬래시가 필요한 치환은 `bytes([92])`·`chr(92)` 로 조립한다.
