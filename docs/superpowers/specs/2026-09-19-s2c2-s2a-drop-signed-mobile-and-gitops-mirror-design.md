@@ -229,3 +229,25 @@ frontend 는 PR 마다 perf-gate 약 23분이 돌아, frontend 에 상시 핀하
    상위 스펙 §6.5 의 "S2a 계획은 S2c 산출값이 입력이므로 S2c 실행 뒤에 쓴다"와 같은 이유다.
 
 S2c-3 은 별도 bounded 작업이다.
+
+## 8. 실행 결과 (2026-09-19) — 계획 1·2번 완료, 3번의 입력값
+
+| 계획 | PR | 결과 |
+|---|---|---|
+| 1. frontend S2c-2 | DevPathAi/devpath-frontend#224 | develop `c251b40dceed6c8b7ed69bcbec4c28149e0f0a52` · CI 8개 통과(perf-gate 22m55s) · Codex approve |
+| 2. gitops PR ① | DevPathAi/devpath-gitops#160 | develop `3823ac1` · CI 전체 스위트 337건 OK · Codex 지적 1건(minor, 낡은 "all six" 메시지) 반영 · **main 은 `4f3ed64` 그대로** |
+
+실행 중 계획과 달랐던 점은 각 계획 문서 끝의 "실행 기록"에 있다.
+
+**3번 계획(gitops PR ② + main 승격)의 입력값 — 작성 시 frontend `origin/develop` 에서 다시 읽어 대조한다.**
+
+| 항목 | 값 (frontend `c251b40d` 기준) |
+|---|---|
+| `evidence/et13/catalog.v1.json` sha256 | `c5acc346a770f5890c6dd06ce616ffc1105eba12b7605e8ad985897e91b00c96` (S2c-1 산출값과 동일 — S2c-2 는 카탈로그를 건드리지 않았다) |
+| `evidence/et13/generated/visual-cases.v1.json` sha256 | `acd368d92e9850cb51d67dc2d3cc9a6ae7c96e48f58da28f0e353ca0edc741ce` |
+| `evidence/et13/generated/a11y-cases.v1.json` sha256 | `cf664d46f5e0b0ea9ab789dbf4afca4dbc71778eff0db05779c3a48392622929` |
+| `projection_contract_sha256` · fixture · case | `158fdc88…435b78` · 13 · visual 104 / a11y 26 |
+| 진단 스냅샷 출처 후보 | frontend `et13-evidence` run `35426558168`(pull_request, head `75d239e0`), 아티팩트 `et13-unsealed-raw-review-run-35426558168-attempt-1`(id `10579396586`, 만료 2026-10-03) |
+
+주의: 핀 출처 커밋은 **S2c-3 이 머지된 뒤의 develop** 으로 잡는 편이 안전하다(§5.1 의 게이트). S2c-3 이 위 세 파일의 바이트를 바꾸지 않으면
+해시는 그대로지만, 진단 스냅샷의 `source_sha` 와 ET13 실행은 그 커밋의 것으로 다시 고른다. 위 아티팩트는 만료 전까지의 예비 출처다.
