@@ -195,7 +195,16 @@ gitops `validate_release_manifest.py` 는 개수뿐 아니라 frontend ET13 카�
 (803·1024–1065·1647–1663행) · `SIGNED_MOBILE_*` 상수(244–266행) · 수동 접근성 증거 `manual-talkback`
 (TalkBack+Android, `required_artifact: candidate_signed_apk`; 59·68·79·283–297행). `manual-nvda`(웹)는 남는다.
 
-계획 문서: S2b = `docs/superpowers/plans/2026-09-19-s2b-devpath-mobile-repo-extraction.md`.
+**S2c 는 다시 셋으로 나뉜다**(실측, 2026-09-19): frontend 의 모바일 결합은 성격이 다른 세 덩어리다.
+
+| # | 내용 | 비고 |
+|---|---|---|
+| S2c-1 | ET13 증거 계약에서 `mobile` distribution·fixture 2종 제거 → 13 fixture · visual 104 · a11y 26, 새 투영 계약 해시 | N06(12→15)의 변경 지점을 역방향으로. 산출값이 S2a 의 입력 |
+| S2c-2 | 릴리스 증거에서 서명 모바일·TalkBack 제거 (`tools/mission_spine_manual_at_evidence.mjs`, `mission-spine-manual-at-evidence.yml`, `mission-spine-signed-mobile-build.yml`, `tool/release-evidence/catalogs/manual-talkback.v1.json`) | 서명 APK 인증이 공용 `authenticate-inputs` 잡에 있고, 증거 JSON 의 `signed_apk_sha256` 을 gitops `verify_release_artifacts.py` 가 검증한다 → **S2a 와 쌍으로 설계**해야 하는 공급망 코드 |
+| S2c-3 | `apps/mobile`·`mobile.yml`·`tools/mobile_source_guard.dart`·루트 workspace 항목 삭제 | c-1·c-2 뒤 |
+
+계획 문서: S2b = `docs/superpowers/plans/2026-09-19-s2b-devpath-mobile-repo-extraction.md`(실행 완료) ·
+S2c-1 = `docs/superpowers/plans/2026-09-19-s2c1-et13-drop-mobile-distribution.md`.
 
 승인 재시도 절차: 보호 환경이 `prevent_self_review` 이고 이 PC 의 `gh` CLI 가 리뷰어 계정이므로 승인 워크플로는
 `automation/dispatch-<release_id>` 브랜치의 디스패처 워크플로로 **봇이** 띄운다(직접 `gh workflow run` 금지).
