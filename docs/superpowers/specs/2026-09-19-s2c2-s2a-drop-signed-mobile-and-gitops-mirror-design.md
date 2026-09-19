@@ -251,3 +251,51 @@ S2c-3 은 별도 bounded 작업이다.
 
 주의: 핀 출처 커밋은 **S2c-3 이 머지된 뒤의 develop** 으로 잡는 편이 안전하다(§5.1 의 게이트). S2c-3 이 위 세 파일의 바이트를 바꾸지 않으면
 해시는 그대로지만, 진단 스냅샷의 `source_sha` 와 ET13 실행은 그 커밋의 것으로 다시 고른다. 위 아티팩트는 만료 전까지의 예비 출처다.
+
+## 9. 실행 결과 2 (2026-09-19 밤) — S2c-3 · 핀 출처 결정 · frontend 스키마 결함
+
+| 항목 | 결과 |
+|---|---|
+| S2c-3 | DevPathAi/devpath-frontend#225 → develop `5a47d8837f81ab1ce1809ec05093626d5ba7f931`. 219 파일 · −24,895줄. `pubspec.lock` 은 모바일 전용 43개 제거뿐(남은 153개 전 필드 동일) · `_workspaceLockSha` `30d70407…` · **핀 3파일 sha256 불변** |
+| frontend 릴리스 | DevPathAi/devpath-frontend#226(develop→main, #222~#225) → main `9607627616fdd1f369ff58d3fd86440ef6c171f3`. 운영 무영향(승격은 gitops 게이트) |
+| PR ② 계획 | `plans/2026-09-19-s2a2-gitops-et13-final-rebind.md`(documents #146) |
+
+**S2c-3 에서 계획에 없던 결합**: `apps/web` 의 테스트 두 개가 `../mobile` 을 읽고 있었다 — 재현성 계약 테스트의 Gradle wrapper 체크섬
+검사(같은 `distributionSha256Sum` 을 devpath-mobile 의 `mobile_release_contract_test.dart` 가 고정함을 확인한 뒤 제거)와 브랜드 일관성
+검사의 모바일 경로. `mobile.yml` 삭제로 `contract-test-android`·`ios-no-codesign` 체크가 사라졌지만 main 의 필수 체크는
+`analyze-test` 하나라 무해하다.
+
+**핀 출처 결정(사용자)**: gitops PR ② 는 **frontend main 릴리스 커밋**에 결속한다. 근거(실측): `et13-evidence.yml` 의
+`workflow_dispatch` 는 릴리스 입력 7개가 필수라 develop 에서 진단 모드로 띄울 수 없고, PR 실행의 증거 `source_sha` 는 PR 의 임시
+머지 ref 커밋이다. main push 실행의 `source_sha` 는 실제 main 커밋임을 run `35432137657` 로 확인했다. 기존 픽스처의 `dbc1cc9…` 도
+main 커밋이었다. 그래서 §5.1 의 순서에서 **frontend 재릴리스가 gitops PR ② 앞으로** 온다(재릴리스는 gitops 에 의존하지 않는다).
+
+**frontend 스키마 결함(같은 계열 아홉 번째)**: main `96076276` 에서 복사한 골든 파일의 잔존 점검이
+`evidence/et13/catalog.schema.json` 의 `projection_contract_sha256` `const` 가 12-fixture 시절 해시 `c66d08b6…` 임을 적발했다.
+같은 스키마의 `minItems/maxItems` 는 13 인데 이 한 줄만 N06(12→15)·S2c-1(15→13)을 모두 비껴가, `catalog.v1.json` 이 자기 스키마를
+통과하지 못하는 상태였다(ET13 스키마는 기계 검증되지 않는다). gitops 가 이 파일을 바이트 핀하므로 **frontend 를 먼저 고친다** —
+DevPathAi/devpath-frontend#227(const 수정 + 스키마 최상위 `const`·배열 제약 전부를 카탈로그와 대조하는 계약 테스트). 나머지 스키마
+4개는 전수 점검해 이상 없음. 이로 인해 frontend 를 한 번 더 main 에 릴리스하고, PR ② 의 핀은 그 커밋으로 옮긴다(gitops 브랜치는
+미푸시 상태라 `repin` 한 번으로 끝난다). 지금 고치지 않으면 나중에 gitops 재결속과 main 잠금 해제가 한 번 더 든다.
+
+**리뷰 수단**: Codex CLI 는 사용 한도 소진(무료 계정, 2026-10-19 까지)이고 대체 서브에이전트 리뷰는 이 PC 에서 빈 응답이다(2회).
+S2c-3 은 직접 검증 6항목 + CI 로 머지하고 PR 코멘트에 사실대로 남겼다. PR ② 는 머지 전에 사용자에게 리뷰 방식을 묻는다.
+
+**gitops main 봉인 형상(2026-09-19 실측, main 승격 계획의 입력)**: governance `21194270` active · `update` 규칙 · bypass = App
+`4679079` always / integrity `21194269` active · `deletion`·`non_fast_forward`·`required_linear_history` · bypass 없음 / classic:
+`enforce_admins` true · checks 없음 · reviews 1(`dismiss_stale`·`require_last_push_approval`, PR bypass = `devpath-gitops-release`) ·
+push 제한 = App 단독 · linear · conversation resolution. `gh` 계정 `VelkaressiaBlutkrone` 은 레포 admin.
+
+## 10. 실행 결과 3 (2026-09-19 밤) — frontend 재릴리스 · gitops PR ② 완료
+
+| 항목 | 결과 |
+|---|---|
+| frontend 스키마 수정 | DevPathAi/devpath-frontend#227 → develop `4636fba` |
+| frontend 재릴리스 | DevPathAi/devpath-frontend#228 → **main `31a7785d5f3c73563c8ddb61b69a7a0e07f65f16`**(gitops 의 핀 커밋). ET13 main 실행 `35434688375` success |
+| gitops PR ② | DevPathAi/devpath-gitops#161 → develop `9204c33fd0705e192b25efff2258911b649be884` · CI 전체 344건 OK · **main `4f3ed64` 불변** |
+
+§4.3 의 정정: main 과 develop 은 9개 파일에서 이미 갈라져 있어 "①+② 의 경로만 옮기고 `git diff origin/develop` 0 확인"은 성립하지 않는다(테스트 파일
+2개가 변경 전부터 달랐다). 승격은 **①+② 의 diff 를 main 위에 패치로 적용**한다 — `git apply --check --3way` exit 0 확인. 계획:
+`plans/2026-09-19-s2a3-gitops-main-promotion.md`.
+
+남은 것: gitops main 승격(해제 직전 1회 사용자 확인) → ET13 baseline 봇 디스패치·사람 승인 → candidate → 증거 → seal → promote → landing-last.
