@@ -206,6 +206,34 @@ gitops `validate_release_manifest.py` 는 개수뿐 아니라 frontend ET13 카�
 계획 문서: S2b = `docs/superpowers/plans/2026-09-19-s2b-devpath-mobile-repo-extraction.md`(실행 완료) ·
 S2c-1 = `docs/superpowers/plans/2026-09-19-s2c1-et13-drop-mobile-distribution.md`.
 
+### 6.6 S2c-1 산출값 — S2a(gitops 미러)의 입력 (2026-09-19)
+
+frontend PR #223(`chore/et13-drop-mobile-distribution`, develop 머지 `db955eab571f663312b2f462c5f602f4ca794e2d`,
+CI 전부 통과 — perf-gate 22m13s·produce-atomic-pair 포함)이 확정한 값이다. 머지된 `origin/develop` 에서 다시 읽어 대조했다. gitops `validate_release_manifest.py` 의
+`FRONTEND_FIXTURE_IDS`·`FRONTEND_PROJECTION_MATRIX`·`FRONTEND_PROJECTION_CONTRACT_SHA256`·`FRONTEND_CATALOG_CONTRACTS`
+가 이 값을 미러해야 웹 승격 검증이 통과한다.
+
+| 항목 | 값 |
+|---|---|
+| fixture id (순서 고정, 13개) | `web-today-available` · `web-path-current-week` · `web-content-reading` · `web-workspace-idle` · `web-review-loaded` · `web-mentor-context-preview` · `admin-kpi-dashboard` · `admin-support-long-wire` · `dp-design-mission-ledger` · `dp-design-context-payload-preview` · `web-community-free` · `web-community-qna` · `web-community-feedback` |
+| `projection_contract_sha256` | `158fdc882238c9459995c0572536a3cec3704e92bd1b28fa2d80907fc0435b78` |
+| `catalog_sha256` | `c5acc346a770f5890c6dd06ce616ffc1105eba12b7605e8ad985897e91b00c96` |
+| visual | `case_count` 104 · `surface_case_counts` `{web: 72, admin: 16, dp_design: 16}` |
+| a11y | `case_count` 26 · `surface_case_counts` `{web: 18, admin: 4, dp_design: 4}` |
+| owner / distribution | `web 9 · admin 2 · dp_design 2` / `web 11 · admin 2` |
+| build marker | distribution 2개(`web`, `admin`) |
+| 원시 리뷰 아티팩트 | 184 파일(`10 + 104 + 26 + 11 × 4`) — PR 의 ET13 run `35417871496` 아티팩트와 경로 단위 일치 확인 |
+
+`projection_matrix` 의 13행은 frontend `evidence/et13/catalog.v1.json` 에서 그대로 옮긴다(손으로 다시 쓰지 않는다).
+`catalog_sha256` 은 카탈로그 파일 바이트의 해시라, S2c-2·c-3 이 카탈로그를 건드리지 않는 한 바뀌지 않는다 —
+S2a 착수 시 frontend `origin/develop` 에서 다시 읽어 대조한다.
+
+실행 중 드러난 같은 계열의 낡은 리터럴(전부 PR #223 에서 수정): 5개 스키마의 `case_count`/`passed_case_count`
+(96·24)와 web surface 수(48·12) · `tools/et13_baseline_updater.dart` 의 `'case_count': 96`(승인 뒤 baseline 반영
+단계가 15-fixture candidate 를 거부) · producer 계약 테스트의 `case_count` 120/30 · 카탈로그 계약 테스트가 고정한
+투영 해시(세 번째 잠금 지점). S2c-3 에서 걸릴 지점: `tools/et13_evidence.dart` 가 `pubspec.lock` 의 해시
+(`_workspaceLockSha`)를 고정한다 — workspace 에서 `apps/mobile` 을 빼면 lock 이 바뀌므로 함께 갱신해야 한다.
+
 승인 재시도 절차: 보호 환경이 `prevent_self_review` 이고 이 PC 의 `gh` CLI 가 리뷰어 계정이므로 승인 워크플로는
 `automation/dispatch-<release_id>` 브랜치의 디스패처 워크플로로 **봇이** 띄운다(직접 `gh workflow run` 금지).
 
