@@ -118,10 +118,23 @@
   `FRONTEND_CATALOG_CONTRACTS` 의 `case_count`·`surface_case_counts` 를 이 모듈에서 파생한다. **상수 이름은 유지**해
   validate·verify·seal 의 사용처를 고치지 않는다. 레포 파일을 `Path(__file__)` 기준으로 읽는 선례는
   `verify_promotion_chain.py` 의 `SCRIPT_DIR` 이고, 스크립트만 sparse checkout 하는 워크플로는 없다(실측).
-- **case 식별자 미러**: `verify_release_artifacts.py` 의 `_frontend_expected_case_identity` 는 fixture 목록에 프로필
-  리터럴(visual = 폭 320·600·840·1240 × light/dark, a11y = 320 light·1240 dark)을 곱해 `(fixture_id, case_id, 경로)` 를
-  재구성한다 — 카탈로그 구조의 또 다른 손 미러다. 핀 파일의 `cases[*].{fixture_id, case_id, artifact_path}` 에서 읽도록
-  바꾸고, `_frontend_surface` 의 죽은 `mobile-` 분기를 지운다.
+- **case 식별자 재구성은 런타임에 남긴다**(계획 작성 중 정정): `verify_release_artifacts.py` 의
+  `_frontend_expected_case_identity` 는 fixture 목록에 프로필(visual = 폭 320·600·840·1240 × light/dark, a11y = 320 light·
+  1240 dark)을 곱해 `(fixture_id, case_id, 경로)` 를 재구성하고, `validate_frontend_evidence_bundle` 이 아티팩트의 case 를
+  그것과 한 줄씩 대조한다. 이것은 개수 리터럴이 아니라 **카탈로그를 믿지 않는 독립 불변식**이라 핀 파일 읽기로 바꾸면
+  방어선이 하나 준다. 런타임은 그대로 두고(입력인 `FRONTEND_FIXTURE_IDS` 만 파생), 대조 테스트가 "재구성 결과 == 핀 파일의
+  `cases[*].{fixture_id, case_id, artifact_path}`" 를 잠근다. `_frontend_surface` 의 죽은 `mobile-` 분기는 지운다.
+- **표면 집합 리터럴 2곳**: `{"web", "admin", "mobile", "dp_design"}` 가 `validate_release_manifest.py`(921행)와
+  `verify_release_artifacts.py` `_validate_surface_counts`(273행)에 있다 → 파생한 `surface_case_counts` 의 키 집합으로 바꾼다.
+- **이 작업의 실체는 "final rebind" 다**(계획 작성 중 실측): gitops 계약 픽스처는 frontend 커밋 `dbc1cc90…` 에 결속돼 있다.
+  `release-manifests/contracts/frontend-et13/` 의 골든 5파일은 그 커밋의 `evidence/et13/{catalog,evidence,generated-cases,
+  manifest}.schema.json`·`release-bundle.v1.json` 과 바이트 동일하고, **그중 스키마 4개가 S2c-1(#223) 이후의 frontend 와
+  다르다**(개수 리터럴 변경). `tests/release/test_et13_final_rebind.py` 가 frontend SHA · catalog/projection 해시 · 레인별
+  생성 카탈로그 해시 · 골든 해시 · `diagnostic-producer-snapshot.v1.json`(그 커밋의 진단 producer 실행 관측값: provenance·
+  manifest·evidence·로컬 candidate 해시, assets/renderer lock 해시)을 고정한다. 따라서 PR ② 는 골든 5파일 재복사 + 핀 3파일
+  추가 + candidate 픽스처의 frontend 결속(소스 SHA·카탈로그 해시·fixture 목록·매트릭스·개수) 갱신 + 진단 스냅샷 재생성 +
+  픽스처 sha 재결속을 함께 한다. 진단 스냅샷은 값을 지어내지 않고 **핀 커밋에서 돈 frontend `et13-evidence` 실행의
+  `et13-unsealed-raw-review-run-<id>-attempt-<n>` 아티팩트**에서 읽는다.
 - **파생 불가능한 곳**: `schema-v1.json` 의 `const`(fixture_ids 2곳 · projection matrix · `surface_case_counts` 2곳)는 값을
   13-fixture 로 고치고, 신규 `tests/release/test_frontend_et13_pinned_contract.py` 가 "스키마 const == 핀 파일 파생값"을
   잠근다. `test_et13_evidence_contract.py`·`test_et13_final_rebind.py` 의 리터럴도 같은 모듈에서 읽는다.
@@ -207,5 +220,12 @@ frontend 는 PR 마다 perf-gate 약 23분이 돌아, frontend 에 상시 핀하
 
 ## 7. 산출 계획 문서
 
-이 스펙에서 구현 계획 두 개가 나온다: `plans/2026-09-19-s2c2-frontend-drop-signed-mobile-talkback.md` ·
-`plans/2026-09-19-s2a-gitops-mobile-removal-and-et13-pin.md`(PR ①·②·main 승격). S2c-3 은 별도 bounded 작업이다.
+이 스펙에서 구현 계획 세 개가 나온다.
+
+1. `plans/2026-09-19-s2c2-frontend-drop-signed-mobile-talkback.md` — frontend S2c-2.
+2. `plans/2026-09-19-s2a1-gitops-drop-signed-mobile-talkback.md` — gitops PR ①. 1번과 독립이라 병행한다.
+3. gitops PR ② + main 승격 계획 — **1·2번이 머지된 뒤에 쓴다.** 입력(핀 출처 커밋, 그 커밋의 ET13 실행 아티팩트)이
+   S2c-2 머지 전에는 존재하지 않고, PR ① 이 검증기에서 수백 줄을 지운 뒤의 코드를 기준으로 써야 줄 번호와 코드가 맞는다.
+   상위 스펙 §6.5 의 "S2a 계획은 S2c 산출값이 입력이므로 S2c 실행 뒤에 쓴다"와 같은 이유다.
+
+S2c-3 은 별도 bounded 작업이다.
