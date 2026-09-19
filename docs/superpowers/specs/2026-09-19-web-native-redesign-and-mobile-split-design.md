@@ -139,8 +139,9 @@ D1 은 2026-09-15 결정("React 로 재작성하지 않는다", frontend
 
 **S2 에 추가되는 작업(gitops)**: candidate spec 스키마에서 `mobile_test_artifacts` 제거(스키마 버전 상승) →
 두 검증기와 `seal_release_manifest.py` 에서 서명 모바일 경로 제거 → 관련 테스트·픽스처 정리 → frontend 의 릴리스
-증거 도구(`tools/mission_spine_release_evidence.mjs` 등)에서 모바일 입력 제거. 순서 제약: **gitops 계약 변경이 main 에
-들어간 뒤에야** frontend 에서 `apps/mobile` 과 서명 빌드 워크플로를 지울 수 있다(그 전에 지우면 웹 승격이 막힌다).
+증거 도구(`tools/mission_spine_release_evidence.mjs` 등)에서 모바일 입력 제거. ~~순서 제약: gitops 계약 변경이 main 에
+들어간 뒤에야 frontend 에서 `apps/mobile` 과 서명 빌드 워크플로를 지울 수 있다.~~ → **§6.5 가 이 순서를 뒤집는다**
+(frontend 먼저, gitops 가 그 최종 값을 미러).
 gitops main 은 룰셋 2종 + classic 보호의 3중 잠금이라 머지 절차에 사람 단계가 낀다.
 
 ### 6.4 ET13 카탈로그 숫자 — 같은 gitops 변경에 묶는다 (2026-09-19)
@@ -161,6 +162,35 @@ frontend 릴리스 #221(main `03e0c13`)의 운영 승격을 시도하다 두 곳
 두 번 든다. 대가: #217·#219·#220 의 운영 반영이 S2 의 gitops 변경 시점까지 미뤄진다(급한 장애 수정 아님).
 gitops 검증기의 표면별 개수도 가능하면 리터럴 대신 카탈로그에서 파생하도록 바꾼다 — 같은 결함이 세 번째다
 (N06 의 `capture.mjs`·캡처 합계, 이번 승인 워크플로, gitops 검증기).
+
+### 6.5 S2 의 실행 순서 교정 — gitops 는 frontend 카탈로그의 거울이다 (2026-09-19)
+
+§6.3 은 "gitops 계약 변경이 main 에 들어간 뒤에야 frontend 에서 `apps/mobile` 을 지울 수 있다"고 적었다. 근거는
+"먼저 지우면 웹 승격이 막힌다"였다. 실측으로 이 순서를 뒤집는다.
+
+gitops `validate_release_manifest.py` 는 개수뿐 아니라 frontend ET13 카탈로그 자체를 미러로 고정한다:
+
+| 항목 | gitops `origin/main` 이 고정한 값 | frontend `origin/develop` 현재 값 |
+|---|---|---|
+| `FRONTEND_FIXTURE_IDS` (101행) | 12개 (`mobile-today-available`·`mobile-content-reading` 포함) | 15개 (`web-community-{free,qna,feedback}` 추가) |
+| `FRONTEND_PROJECTION_CONTRACT_SHA256` (117행) | `c66d08b6…ccf4bde3` | `106e8d29…51fde3ca` |
+| `FRONTEND_PROJECTION_MATRIX` (120행~) | 12항목 | 15항목 |
+| visual `surface_case_counts` | web 48 · admin 16 · mobile 16 · dp_design 16 | web 72 · admin 16 · mobile 16 · dp_design 16 |
+
+따라서 (1) 웹 승격은 **이미 막혀 있다**(12 ↔ 15 불일치) — "먼저 지우면 막힌다"는 근거가 사라졌고, (2) gitops 가
+고정할 **최종 값**(모바일 fixture 를 뺀 13개 목록과 그 투영 계약 해시)은 frontend 에서 카탈로그를 바꿔 생성해야만
+존재한다. gitops 를 먼저 바꾸면 곧 다시 바꿔야 할 중간 값을 고정하게 된다.
+
+**교정된 순서**: S2b(`devpath-mobile` 추출, 비파괴) → S2c(frontend: 모바일 ET13 fixture·`apps/mobile`·모바일
+워크플로·릴리스 증거 도구의 모바일 입력 제거 → 새 카탈로그·해시 확정, develop 머지) → S2a(gitops: §6.3 의 모바일
+제거 + S2c 가 확정한 fixture 목록·매트릭스·해시·개수를 미러) → frontend `develop → main` 재릴리스 → ET13 baseline
+봇 디스패치·사람 승인 → gitops 승격. S2a 의 구현 계획은 S2c 의 산출값이 입력이므로 **S2c 실행 뒤에** 쓴다.
+
+함께 제거되는 웹 릴리스 요구(실측, `validate_release_manifest.py`): `quality_evidence_inputs.mobile_test_artifacts`
+(803·1024–1065·1647–1663행) · `SIGNED_MOBILE_*` 상수(244–266행) · 수동 접근성 증거 `manual-talkback`
+(TalkBack+Android, `required_artifact: candidate_signed_apk`; 59·68·79·283–297행). `manual-nvda`(웹)는 남는다.
+
+계획 문서: S2b = `docs/superpowers/plans/2026-09-19-s2b-devpath-mobile-repo-extraction.md`.
 
 승인 재시도 절차: 보호 환경이 `prevent_self_review` 이고 이 PC 의 `gh` CLI 가 리뷰어 계정이므로 승인 워크플로는
 `automation/dispatch-<release_id>` 브랜치의 디스패처 워크플로로 **봇이** 띄운다(직접 `gh workflow run` 금지).
