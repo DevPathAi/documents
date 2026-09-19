@@ -142,7 +142,8 @@ D1 은 2026-09-15 결정("React 로 재작성하지 않는다", frontend
 **결정(사용자)**: **웹 릴리스 계약에서 모바일을 제거한다.** 모바일은 새 레포에서 독립적으로 서명·배포한다.
 버린 것: 계약을 유지하고 바인딩만 새 레포를 가리키게 하기 · 분리를 S3 뒤로 미루기.
 
-**S2 에 추가되는 작업(gitops)**: candidate spec 스키마에서 `mobile_test_artifacts` 제거(스키마 버전 상승) →
+**S2 에 추가되는 작업(gitops)**: candidate spec 스키마에서 `mobile_test_artifacts` 제거(~~스키마 버전 상승~~ →
+**in-place 변경으로 정정**, 근거는 `2026-09-19-s2c2-s2a-drop-signed-mobile-and-gitops-mirror-design.md` §2 Q3) →
 두 검증기와 `seal_release_manifest.py` 에서 서명 모바일 경로 제거 → 관련 테스트·픽스처 정리 → frontend 의 릴리스
 증거 도구(`tools/mission_spine_release_evidence.mjs` 등)에서 모바일 입력 제거. ~~순서 제약: gitops 계약 변경이 main 에
 들어간 뒤에야 frontend 에서 `apps/mobile` 과 서명 빌드 워크플로를 지울 수 있다.~~ → **§6.5 가 이 순서를 뒤집는다**
