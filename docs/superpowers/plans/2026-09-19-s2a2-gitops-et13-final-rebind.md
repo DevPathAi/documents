@@ -1070,3 +1070,27 @@ the visual catalog is exactly 104 cases (`Web` 72, `Admin` 16, `dp_design` 16), 
 ## 범위 밖 (다음 계획)
 
 gitops `release/s2a-main-promotion`: main 에서 분기해 ①+② 의 경로만 옮기고(`git diff origin/develop -- <경로>` 0 확인) squash PR → 전제조건 충족 뒤 **해제 직전 1회 사용자 확인** → 최소 해제 → 머지 → 스냅샷대로 재봉인 → `validate_authority_state` 로 봉인 형상 검증. 그 뒤 ET13 baseline 봇 디스패치·사람 승인 → candidate → 증거 → seal → promote → landing-last.
+
+---
+
+## 실행 기록 (2026-09-19) — 계획과 달랐던 점
+
+- **핀이 두 번 잡혔다.** 첫 핀 `9607627616fdd1f369ff58d3fd86440ef6c171f3`(frontend #226)에서 복사한 골든 파일의 잔존 점검(Task 6 Step 4 의 grep)이
+  frontend `catalog.schema.json` 의 `projection_contract_sha256` const 가 12-fixture 시절 해시(`c66d08b6…`)임을 적발했다. frontend 를 먼저 고치고
+  (DevPathAi/devpath-frontend#227 → 릴리스 #228) **최종 핀 = `31a7785d5f3c73563c8ddb61b69a7a0e07f65f16`**, 진단 실행 = `35434688375`. re-pin 은 스크립트 한 번
+  (`repin.py`: 8파일 재복사 → 모듈 해시 리터럴 → 픽스처의 frontend SHA 7+3곳 → candidate sha 12곳+sidecar → README)으로 끝났고 바뀐 해시는
+  `catalog.schema.json` 하나(`8e0bee6a…` → `0906bb04…`)다.
+- **Task 2**: 검증기를 경로로만 로드하고 `scripts/release` 를 `sys.path` 에 넣지 않는 테스트가 둘 있었다(`test_main_pr_policy.py`·`test_release_contract.py`).
+  검증기 자신이 `SCRIPT_DIR` 을 `sys.path` 에 넣은 뒤 형제 모듈을 import 하게 했다 — `verify_promotion_chain.py` 의 기존 관례와 같다.
+- **Task 4**: 픽스처의 `surface_case_counts` 는 여러 줄이 아니라 **인라인** 서식이었다. 스크립트가 쓰기 전에 멈췄고(파일 불변), `json.dumps(값)` 기본 서식으로
+  맞춰 다시 실행했다. 그 수정을 heredoc 안의 파이썬으로 시도했다가 백슬래시가 또 깨져 Edit 도구로 고쳤다.
+- **Task 5**: 최종 실행 전에 첫 핀의 main 실행(`35432137657`)으로 `make_snapshot.py` 를 드라이런했다 — main push 실행의 `source_sha` 는 실제 main 커밋이고(PR
+  실행과 다르다), 스크립트는 값 16줄만 바꾼다. 결과는 되돌렸다. 최종 관측값은 PR DevPathAi/devpath-gitops#161 본문과 `test_et13_final_rebind.py` 에 있다.
+- **Task 6**: `test_release_hardening.py` 는 무거워 로컬에서 모듈 전체를 돌리지 않았고, **CI 가 a11y 페이로드의 `case_count: 24` 리터럴을 잡았다**
+  (visual 쪽만 고치고 a11y 의 개수 두 줄을 놓쳤다). 수정 `fa43cbc`. 같은 계열 열 번째 — 개수 리터럴은 "한 파일 안에서도" 레인마다 따로 있다.
+- **Task 7**: README 28행에 "exact ordered **12-row** … matrix" 가 하나 더 있었다 → 행 수를 문장에서 뺐다.
+- **Task 8**: CI 344건 OK(`fa43cbc`). 리뷰 방식은 사용자 결정 = **CI + 직접 검증으로 develop 머지**, 독립 리뷰는 main 승격 PR 에서 다시 시도.
+  머지 = develop `9204c33fd0705e192b25efff2258911b649be884`, **main `4f3ed64` 불변**.
+- **main 승격의 전제를 미리 확인했다**: ①+② 패치가 gitops main 위에 `git apply --check --3way` exit 0 으로 적용된다. main 과 develop 은 9개 파일에서
+  이미 갈라져 있어(스펙 §4.3 의 "경로만 이관 + diff 0" 은 그 전제가 틀렸다) 승격은 **패치 적용**이어야 한다 → `plans/2026-09-19-s2a3-gitops-main-promotion.md`.
+- 환경: 사용자의 게임(약 19GB)으로 메모리 압박이 심해 백그라운드 대기 작업이 네 번 강제 종료됐다 → `gh run watch <run> --exit-status` 를 포그라운드로 썼다.

@@ -285,3 +285,17 @@ S2c-3 은 직접 검증 6항목 + CI 로 머지하고 PR 코멘트에 사실대�
 `4679079` always / integrity `21194269` active · `deletion`·`non_fast_forward`·`required_linear_history` · bypass 없음 / classic:
 `enforce_admins` true · checks 없음 · reviews 1(`dismiss_stale`·`require_last_push_approval`, PR bypass = `devpath-gitops-release`) ·
 push 제한 = App 단독 · linear · conversation resolution. `gh` 계정 `VelkaressiaBlutkrone` 은 레포 admin.
+
+## 10. 실행 결과 3 (2026-09-19 밤) — frontend 재릴리스 · gitops PR ② 완료
+
+| 항목 | 결과 |
+|---|---|
+| frontend 스키마 수정 | DevPathAi/devpath-frontend#227 → develop `4636fba` |
+| frontend 재릴리스 | DevPathAi/devpath-frontend#228 → **main `31a7785d5f3c73563c8ddb61b69a7a0e07f65f16`**(gitops 의 핀 커밋). ET13 main 실행 `35434688375` success |
+| gitops PR ② | DevPathAi/devpath-gitops#161 → develop `9204c33fd0705e192b25efff2258911b649be884` · CI 전체 344건 OK · **main `4f3ed64` 불변** |
+
+§4.3 의 정정: main 과 develop 은 9개 파일에서 이미 갈라져 있어 "①+② 의 경로만 옮기고 `git diff origin/develop` 0 확인"은 성립하지 않는다(테스트 파일
+2개가 변경 전부터 달랐다). 승격은 **①+② 의 diff 를 main 위에 패치로 적용**한다 — `git apply --check --3way` exit 0 확인. 계획:
+`plans/2026-09-19-s2a3-gitops-main-promotion.md`.
+
+남은 것: gitops main 승격(해제 직전 1회 사용자 확인) → ET13 baseline 봇 디스패치·사람 승인 → candidate → 증거 → seal → promote → landing-last.
