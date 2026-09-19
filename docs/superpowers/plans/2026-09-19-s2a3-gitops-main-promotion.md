@@ -2,6 +2,27 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> ## ⛔ 2026-09-19 정정 — 이 계획의 Task 2~4(봉인 해제 → admin squash 머지)는 **실행하지 않는다**
+>
+> Task 0·1 을 실행해 PR DevPathAi/devpath-gitops#162 를 열자 `mission-spine-main-pr-policy` 가 실패했다:
+> `main PR may not change the base-owned policy implementation: release-manifests/…, scripts/release/…`.
+> 이것은 의도된 게이트다 — `scripts/release/verify_main_pr_policy.py` 는 main 대상 PR 이 `.github/workflows/`·`.github/actions/`·
+> `scripts/release/`·`tools/release-wrangler/`·`release-manifests/` 아래를 **일절 바꾸지 못하게** 한다(2026-08-17 도입).
+>
+> **통제면 변경의 정식 경로는 PR 이 아니라 "publisher" 다**(실측, 2026-09-03~09-12 의 main 통제면 커밋 전부):
+> 1. 현재 main 바로 위에 `devpath-gitops-release[bot]` 작성자·커미터의 **단일 target 커밋**을 만들어 `fix/…-main-<날짜>` 브랜치로 올린다.
+> 2. main + 1커밋짜리 **헬퍼 브랜치**(`chore/…-publish-<날짜>`)가 `.github/workflows/mission-spine-auth-smoke.yml` 을 one-shot publisher 로 바꾸고
+>    그 계약 테스트 1개를 더한다. `workflow_dispatch`(`full: true`, attempt 1, actor 고정)로 띄운다.
+> 3. 보호 환경 `mission-spine-production-off`(리뷰어 `VelkaressiaBlutkrone`, `prevent_self_review: true`, 허용 브랜치는 현재 `main` 뿐) 승인 뒤,
+>    target 에서 전체 스위트를 돌리고 → 릴리스 App 토큰을 발급해 `verify_gitops_write_authority.py` 로 쓰기 권한을 검증하고 →
+>    **App 이 `TARGET_SHA:refs/heads/main` 을 fast-forward push** 한다. **봉인은 풀지 않는다**(App 이 governance 룰셋의 유일한 bypass 주체다).
+> 참고 구현: `origin/chore/prod27r4-cloudflare-pagination-publish-20260912` 의 `mission-spine-auth-smoke.yml`.
+>
+> 9/9~9/10 의 #146·#148·`db36521` 은 사람이 봉인을 풀고 정책 체크 실패를 넘겨 머지한 것이다 — 그 뒤로는 쓰이지 않았다. 이 계획이 택했던 방식이 그것이고,
+> **의도된 게이트를 넘어가는 방식이라 쓰지 않는다.** Task 0(패치 적용)의 결과와 #162 의 CI(main 기준 전체 **347건 OK**, head `4f0ba69`)는 그대로 유효한
+> 증거다 — publisher 의 target 커밋은 같은 트리를 봇 작성자로 다시 만든 것이어야 한다. publisher 경로의 설계·계획은 사용자 결정 뒤 별도 문서로 쓴다.
+> 봉인에는 손대지 않았다(룰셋 2종 active · classic 그대로, 2026-09-19 확인).
+
 **Goal:** gitops `develop` 에 들어간 S2a ①(서명 모바일·TalkBack 제거, #160)과 ②(ET13 final rebind, #161)를 **한 번의 squash PR 로 `main` 에 올린다.** main 의 봉인(룰셋 2종 + classic 보호)은 머지에 필요한 최소한만, 머지에 필요한 시간만 풀고 원래 형상으로 되돌린다.
 
 **Architecture:** main 과 develop 은 9개 파일에서 이미 갈라져 있다(main 에만 있는 릴리스 수정이 있다 — 실측). 그래서 develop 의 파일을 복사하지 않고 **①+② 의 diff 를 main 위에 패치로 적용**한다. 봉인은 "해제 전 GET 스냅샷 → 최소 해제 → 머지 → 스냅샷대로 복원 → 복원 결과 == 스냅샷 확인 + `validate_authority_state`" 의 순서로 다루고, 해제 뒤의 모든 단계는 한 스크립트가 `trap` 으로 재봉인을 보장한다.
