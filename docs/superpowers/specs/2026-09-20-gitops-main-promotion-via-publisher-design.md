@@ -217,3 +217,28 @@ job `if`·`environment`·`permissions`·`concurrency` · 모든 `uses:` 가 40�
 ## 9. 산출 계획 문서
 
 `plans/2026-09-20-gitops-main-promotion-via-publisher.md` 하나 — 준비 단계(§5.1)의 Task 들과, 확인 게이트 뒤 실행 단계(§5.2~§5.3)의 Task 들.
+
+## 10. 실행 결과 (2026-09-20) — 승격 완료
+
+gitops `main` 은 `4f3ed64` → **`69e7bd15570f5ba0f271c83b5bd46955cb249c8e`**(트리 `7799cc07…`)로 fast-forward 됐다. 봉인은 풀지 않았다.
+
+| 항목 | 값 |
+|---|---|
+| publisher 실행 | `35491725505` — actor·triggering actor `github-actions[bot]` · attempt 1 · head `00cafba`(헬퍼) · 14개 step 전부 success · 05:27:30Z → 05:28:28Z |
+| 디스패처 실행 | `35491720855`(`automation/dispatch-s2a-main-publish` push) |
+| 승인 | `VelkaressiaBlutkrone`, 환경 `mission-spine-production-off`, `prevent_self_review` **불변**. 코멘트: "…after restoring the main-only environment policy." |
+| 환경 브랜치 정책 | 헬퍼 정책을 임시 추가했다가 승인 **전에** main-only(id `57524487`)로 복원·검증. publisher 의 live 단언(§4.2)도 job 안에서 같은 것을 확인하고 통과 |
+| main CI | `35491763390` success(`69e7bd15`) |
+| 사후 | 룰셋 2종 active · `enforce_admins` true · 진행·대기 실행 0 · `app.leva.ai.kr`·`leva.ai.kr` 200 · #162 닫음 |
+
+**Q4 의 변경(사용자 결정, 확인 게이트에서)**: "실행은 사람 단계가 가능한 날에" 대신 **"지금 실행 — 사람 단계(N01 토큰 · ET13 시각 승인 · NVDA)는 나중에"**.
+따라서 `ms-20260916-community-ia` 의 **자동 롤백 레인은 2026-09-20T05:28Z 부터 다음 릴리스 승격까지 닫혀 있다** — 하루 이내가 아니라 사람 단계가
+끝날 때까지다. 그 구간의 비상 수단은 수동 gitops(`handoff-2026-08-22-et10-release-complete-manual-gitops.md`). §8 의 첫 위험이 이 결정으로 길어졌다.
+
+**독립 리뷰**(§6): Critical 0 · Major 2 · Minor 4 — 전부 변이로 재현한 뒤 고쳤다. 상세는 계획 문서 끝 「리뷰 결과」.
+
+**실행 중 드러난 결함 1건**: 실행 스크립트의 사이트 확인이 `Python-urllib` 기본 UA 로 나가 Cloudflare 가 `leva.ai.kr` 에 403 을 돌려줬다(가짜 실패 —
+승격과 복원·승인은 그 전에 끝나 있었다). 테스트를 먼저 더해 고쳤고 `--post-verify-only` 로 사후 검증 전체를 다시 통과시켰다. 상세는 계획 문서 끝 「실행 결과」.
+
+**다음**: frontend main `31a7785d` 에 대한 ET13 baseline **봇 디스패치** → 사람의 시각 승인 → gitops candidate(`gitops.base_sha` = `69e7bd15…`) →
+수동 NVDA 증거 → seal → promote → landing-last(prior deployment 기대값 `005cf175-6e3e-4400-a201-1987ce9d8d84`, N01 토큰 선행).

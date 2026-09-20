@@ -1,5 +1,6 @@
 import unittest
 from typing import Any
+from unittest import mock
 
 import run_s2a_main_publish as runner
 from run_s2a_main_publish import Ops, PublishError, RestoreError
@@ -248,6 +249,29 @@ class PublishTransactionTest(unittest.TestCase):
         github.prevent_self_review = False
         with self.assertRaisesRegex(PublishError, "prevent_self_review"):
             runner.post_verify(github.ops(), None)
+
+    def test_site_probe_identifies_itself(self) -> None:
+        # Cloudflare answers 403 to the default "Python-urllib" agent on leva.ai.kr (live, 2026-09-20).
+        seen: list[Any] = []
+
+        class _Response:
+            status = 200
+
+            def __enter__(self) -> "_Response":
+                return self
+
+            def __exit__(self, *exc: Any) -> None:
+                return None
+
+        def fake_urlopen(request: Any, timeout: float) -> _Response:
+            seen.append(request)
+            return _Response()
+
+        with mock.patch.object(runner.urllib.request, "urlopen", fake_urlopen):
+            self.assertEqual(200, runner._http_status("https://leva.ai.kr"))
+        self.assertEqual("https://leva.ai.kr", seen[0].full_url)
+        agent = seen[0].get_header("User-agent")
+        self.assertTrue(agent and "urllib" not in agent.lower(), agent)
 
 
 if __name__ == "__main__":

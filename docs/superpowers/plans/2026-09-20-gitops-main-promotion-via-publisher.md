@@ -895,6 +895,7 @@ push 직후에는 아직 안 보일 수 있으므로 **Task 4 Step 5 의 preflig
 ```python
 import unittest
 from typing import Any
+from unittest import mock
 
 import run_s2a_main_publish as runner
 from run_s2a_main_publish import Ops, PublishError, RestoreError
@@ -1143,6 +1144,29 @@ class PublishTransactionTest(unittest.TestCase):
         github.prevent_self_review = False
         with self.assertRaisesRegex(PublishError, "prevent_self_review"):
             runner.post_verify(github.ops(), None)
+
+    def test_site_probe_identifies_itself(self) -> None:
+        # Cloudflare answers 403 to the default "Python-urllib" agent on leva.ai.kr (live, 2026-09-20).
+        seen: list[Any] = []
+
+        class _Response:
+            status = 200
+
+            def __enter__(self) -> "_Response":
+                return self
+
+            def __exit__(self, *exc: Any) -> None:
+                return None
+
+        def fake_urlopen(request: Any, timeout: float) -> _Response:
+            seen.append(request)
+            return _Response()
+
+        with mock.patch.object(runner.urllib.request, "urlopen", fake_urlopen):
+            self.assertEqual(200, runner._http_status("https://leva.ai.kr"))
+        self.assertEqual("https://leva.ai.kr", seen[0].full_url)
+        agent = seen[0].get_header("User-agent")
+        self.assertTrue(agent and "urllib" not in agent.lower(), agent)
 
 
 if __name__ == "__main__":
@@ -1441,8 +1465,10 @@ def _run(command: list[str]) -> str:
 
 
 def _http_status(url: str) -> int:
+    # Cloudflare answers 403 to the default "Python-urllib" agent on leva.ai.kr, so identify ourselves.
+    request = urllib.request.Request(url, headers={"User-Agent": "devpath-release-postverify/1.0"})
     try:
-        with urllib.request.urlopen(url, timeout=20) as response:  # noqa: S310 - fixed https URLs
+        with urllib.request.urlopen(request, timeout=20) as response:  # noqa: S310 - fixed https URLs
             return response.status
     except urllib.error.HTTPError as exc:
         return exc.code
@@ -1482,7 +1508,7 @@ if __name__ == "__main__":
 cd $P && py -m unittest test_run_s2a_main_publish 2>&1 | tail -4; cd /d/workspace/dpa
 ```
 
-Expected: `Ran 12 tests` · `OK`.
+Expected: `Ran 13 tests` · `OK`.
 
 - [ ] **Step 5: live 읽기 전용 preflight(쓰기 없음)**
 
@@ -1667,7 +1693,7 @@ py "$X/run_s2a_main_publish.py" --repo-dir $G --staged-sha $STAGED_SHA --comment
 curl -s -o /dev/null -w '%{http_code}\n' https://app.leva.ai.kr; curl -s -o /dev/null -w '%{http_code}\n' https://leva.ai.kr
 ```
 
-Expected: `Ran 12 tests`·`OK` · `{"preflight": "ok", …}` · `200` 두 줄. preflight 가 "main moved" 로 실패하면 **Part A 를 새 main 위에서 다시 한다**
+Expected: `Ran 13 tests`·`OK` · `{"preflight": "ok", …}` · `200` 두 줄. preflight 가 "main moved" 로 실패하면 **Part A 를 새 main 위에서 다시 한다**
 (target·헬퍼·디스패처를 새 `MAIN_SHA` 로 다시 만들고 핀을 전부 바꾼 뒤 리뷰도 다시) — 이 계획의 SHA 로는 진행하지 않는다.
 
 - [ ] **Step 2: 헬퍼 계약 테스트를 원격 바이트로 한 번 더**
@@ -1795,3 +1821,32 @@ gh pr close 162 -R $R --comment "같은 트리(7799cc07…)가 one-shot publishe
   도구가 명령을 errexit 이 억제되는 문맥에서 감싸 실행하기 때문이다. GitHub Actions 와 같은 조건은 독립된 `bash -c '…'` 다.
 - 리뷰 에이전트는 14분간 일하고 최종 응답으로 "완료." 한 단어만 돌려줬다(지난 세션의 "빈 응답"과 같은 모양). 보고는 에이전트 대화 기록의
   중간 메시지에 있었다 — 기록 파일을 통째로 읽지 않고 assistant 텍스트 블록의 **길이만** 먼저 뽑아 위치를 찾은 뒤 그 블록만 꺼냈다.
+
+---
+
+# 실행 결과 (Part B, 2026-09-20) — 승격 성공
+
+Task 7 의 전제 재측정은 전부 통과했다. 확인 게이트에서 사용자는 **"지금 실행 — 사람 단계는 나중에"**를 골랐다(스펙 Q4 의 변경 — 스펙 §10).
+Task 8 의 트랜잭션은 1회 실행으로 승격까지 끝냈고, **사후 검증의 마지막 항목에서 스크립트가 가짜 실패로 멈췄다.**
+
+| 시각(UTC) | 일 |
+|---|---|
+| 05:27:09 | 트랜잭션 시작 — preflight → 환경에 헬퍼 브랜치 정책 추가 |
+| 05:27:23 | 디스패처 실행 `35491720855`(`automation/dispatch-s2a-main-publish` push) success |
+| 05:27:30 | publisher 실행 `35491725505` 생성 — actor·triggering actor `github-actions[bot]`, attempt 1, head `00cafba` → 승인 대기 |
+| (그 사이) | main-only 복원·검증 → `VelkaressiaBlutkrone` 승인(`prevent_self_review` 불변) |
+| 05:28:28 | publisher success — 14개 step 전부 통과, App 이 main 을 `4f3ed64` → `69e7bd15` 로 fast-forward |
+| ~05:29 | main push 의 CI `35491763390` success |
+| 05:29:22 | 스크립트가 `PublishError: https://leva.ai.kr is not 200` 로 종료(exit 1) |
+
+**가짜 실패의 원인(스크립트 결함)**: `_http_status` 가 `urllib` 의 기본 User-Agent(`Python-urllib/3.x`)로 요청했고, Cloudflare 가 `leva.ai.kr` 에서 그 UA 에
+**403** 을 돌려준다(같은 시각 curl 은 200, `app.leva.ai.kr` 은 urllib 로도 200, UA 를 `devpath-release-postverify/1.0` 으로 주면 200 — 실측).
+준비 단계에서 사이트를 curl 로만 확인했고 스크립트의 urllib 경로는 live 로 한 번도 돌리지 않았다 — `--preflight-only` 는 사이트를 보지 않는다.
+계획 Task 8 Step 2 대로 환경 정책부터 직접 확인(main-only · `prevent_self_review` true)한 뒤, 테스트를 먼저 더해(`test_site_probe_identifies_itself`)
+`_http_status` 가 자기 UA 를 밝히도록 고치고 `--post-verify-only` 로 **사후 검증 전체를 같은 코드 경로로 통과**시켰다. 위 코드 블록은 그 최종본이다(테스트 13건).
+
+**교훈**: 가짜 API 로 테스트한 스크립트의 **실제 I/O 가장자리**(`_gh_api`·`_run`·`_http_status`)는 테스트가 덮지 않는다. `_gh_api`·`_run` 은
+`--preflight-only` 가 live 로 밟아 줬지만 `_http_status` 는 아무도 밟지 않았다. 다음에는 읽기 전용 live 점검이 **모든** 가장자리를 한 번씩 지나가게 한다.
+
+사후 상태(실측): main `69e7bd15570f5ba0f271c83b5bd46955cb249c8e` · 트리 `7799cc07…` · 룰셋 2종 active · `enforce_admins` true · 환경 정책 `main` 단독 ·
+진행·대기 실행 0 · 운영 200/200 · gitops #162 닫음(열린 PR 0) · 브랜치 4개(target·헬퍼·staged·방아쇠)는 증거로 남김.
