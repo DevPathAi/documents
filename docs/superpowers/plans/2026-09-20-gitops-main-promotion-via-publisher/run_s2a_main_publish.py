@@ -182,7 +182,7 @@ def open_dispatch_restore(
         failure = exc
     try:
         restore(ops, state["snapshot"])
-    except Exception as exc:
+    except BaseException as exc:  # noqa: BLE001 - an interrupted restore is an unverified restore
         raise RestoreError(
             "main-only policy NOT verified - restore it by hand before anything else"
         ) from (failure or exc)
@@ -204,11 +204,17 @@ def approve(ops: Ops, run_id: int, environment_id: int, comment: str) -> list[in
         path,
         {"environment_ids": [environment_id], "state": "approved", "comment": comment},
     )
-    _require(len(approved) == 1, "approval response is not exact")
+    _require(
+        isinstance(approved, list) and len(approved) == 1, "approval response is not exact"
+    )
     return [item["id"] for item in approved]
 
 
-def post_verify(ops: Ops, snapshot: dict[str, Any], *, ci_wait_seconds: float = 900.0) -> None:
+def post_verify(
+    ops: Ops, snapshot: dict[str, Any] | None, *, ci_wait_seconds: float = 900.0
+) -> None:
+    """Verify the published state. ``snapshot=None`` (``--post-verify-only``) still requires the
+    sealed environment shape, but cannot compare it with a pre-publish snapshot."""
     _require(_branch_sha(ops, "main") == TARGET_SHA, "main is not TARGET_SHA")
     commit = ops.api("GET", f"repos/{REPO}/git/commits/{TARGET_SHA}", None)
     _require(commit["tree"]["sha"] == TARGET_TREE, "published tree is not TARGET_TREE")
@@ -222,7 +228,8 @@ def post_verify(ops: Ops, snapshot: dict[str, Any], *, ci_wait_seconds: float = 
     )
     protection = ops.api("GET", f"repos/{REPO}/branches/main/protection", None)
     _require(protection["enforce_admins"]["enabled"] is True, "enforce_admins is off")
-    _require(snapshot_environment(ops) == snapshot, "environment differs from the snapshot")
+    observed = snapshot_environment(ops)
+    _require(snapshot is None or observed == snapshot, "environment differs from the snapshot")
     deadline = ops.clock() + ci_wait_seconds
     ci_path = f"repos/{REPO}/actions/workflows/ci.yml/runs?head_sha={TARGET_SHA}&event=push"
     while True:
@@ -292,7 +299,7 @@ def main() -> int:
         print(json.dumps({"preflight": "ok", "helper_sha": state["helper_sha"]}))
         return 0
     if args.post_verify_only:
-        post_verify(ops, snapshot_environment(ops))
+        post_verify(ops, None)
         print(json.dumps({"post_verify": "ok", "main": TARGET_SHA}))
         return 0
     print(json.dumps(publish(ops, args.repo_dir, args.staged_sha, args.comment), sort_keys=True))

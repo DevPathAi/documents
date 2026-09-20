@@ -15,6 +15,9 @@ publisher 로 바꾼 **헬퍼** 1커밋, 헬퍼를 `github-actions[bot]` 으로 
 > **이 계획의 코드는 작성 시점(2026-09-20)에 스크래치패드에서 실제로 돌려 확인했다**: 계약 테스트 11건 OK + 워크플로 변이 7종 전부 적발 ·
 > 실행 스크립트 테스트 9건 OK + 변이 6종 전부 적발 · 두 워크플로 actionlint v1.7.12 무결 · target 생성 스크립트가 `69e7bd15…` 를 재현
 > (#162 head 와 diff 0). 실행자는 같은 결과를 다시 얻어야 한다 — 다르면 멈춘다.
+>
+> **2026-09-20 리뷰 반영(Task 5)**: 아래 코드 블록은 독립 리뷰 뒤의 최종본이다(헬퍼 head `00cafba`). 계약 테스트 13건 ·
+> 실행 트랜잭션 테스트 12건 · 변이 11종(원래 7 + 리뷰 4) 전부 적발. 무엇을 왜 고쳤는지는 문서 끝 「리뷰 결과」 절.
 
 ## Global Constraints
 
@@ -281,6 +284,7 @@ HELPER_BRANCH = "chore/s2a-mobile-free-contract-publish-20260920"
 TARGET_BRANCH = "fix/s2a-mobile-free-contract-main-20260920"
 ENVIRONMENT = "mission-spine-production-off"
 PINNED_ACTION = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+@[0-9a-f]{40}")
+LINE_CONTINUATION = re.compile(r"\\\n[ \t]*")
 
 STEP_CONTRACT_TEST = "Run the publisher contract test on the exact helper bytes"
 STEP_LIVE_ENVIRONMENT = "Authenticate the live protected environment and this approval"
@@ -426,11 +430,11 @@ class S2aMainPublishTest(unittest.TestCase):
         self.assertEqual("read", mint["with"]["permission-administration"])
         self.assertEqual("write", mint["with"]["permission-contents"])
         self.assertEqual("DevPathAi", mint["with"]["owner"])
-        pushes = [
-            line.strip()
-            for line in self.text.splitlines()
-            if re.search(r"\bgit\b.*\bpush\b", line)
-        ]
+        # Fold shell line continuations first: `git ... \` + `push ...` is ONE command.
+        shell = "\n".join(
+            LINE_CONTINUATION.sub(" ", step["run"]) for step in self.steps if "run" in step
+        )
+        pushes = [line.strip() for line in shell.splitlines() if re.search(r"\bpush\b", line)]
         self.assertEqual(
             ['git -C gitops-main push origin "$TARGET_SHA:refs/heads/main"'], pushes
         )
@@ -448,6 +452,29 @@ class S2aMainPublishTest(unittest.TestCase):
         self.assertEqual(2, self.text.count("verify_gitops_write_authority.py"))
         for forbidden in ("--force", "+$TARGET_SHA", "+refs", "--mirror", "--delete"):
             self.assertNotIn(forbidden, self.text)
+
+    def test_token_bearing_steps_have_no_other_write_path(self) -> None:
+        # The App token can write any ref through the API, not only through `git push`.
+        mint = self.names.index(STEP_MINT)
+        for step in self.steps[mint:]:
+            run = LINE_CONTINUATION.sub(" ", step.get("run", ""))
+            for pattern in (r"\bgh\b", r"\bcurl\b", r"\bwget\b", r"git/refs", r"update-ref"):
+                self.assertIsNone(re.search(pattern, run), (step.get("name"), pattern))
+        # Pinned coordinates live in the job `env`; no step may rewrite them mid-job.
+        for forbidden in ("GITHUB_ENV", "GITHUB_PATH", "BASH_ENV"):
+            self.assertNotIn(forbidden, self.text)
+
+    def test_listings_cannot_fail_silently(self) -> None:
+        # `mapfile < <(cmd)` hides cmd's exit status from `set -e`; an assignment does not.
+        self.assertNotIn("< <(", self.text)
+        self.assertIn(
+            'helper_listing="$(git diff-tree --no-commit-id --name-only -r HEAD)"',
+            self._run("Prove the exact one-shot helper context"),
+        )
+        self.assertIn(
+            'target_listing="$(git diff-tree --no-commit-id --name-only -r HEAD)"',
+            self._run(STEP_TARGET_TEST),
+        )
 
     def test_the_promotion_chain_is_deliberately_absent(self) -> None:
         for forbidden in (
@@ -554,7 +581,8 @@ jobs:
           test "$MAIN_SHA" = "$HELPER_BASE_SHA"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git rev-parse HEAD^)" = "$HELPER_BASE_SHA"
-          mapfile -t helper_paths < <(git diff-tree --no-commit-id --name-only -r HEAD)
+          helper_listing="$(git diff-tree --no-commit-id --name-only -r HEAD)"
+          mapfile -t helper_paths <<<"$helper_listing"
           test "${#helper_paths[@]}" -eq 2
           test "${helper_paths[0]}" = ".github/workflows/mission-spine-auth-smoke.yml"
           test "${helper_paths[1]}" = "tests/release/test_s2a_main_publish.py"
@@ -633,7 +661,9 @@ jobs:
             '244265210+devpath-gitops-release[bot]@users.noreply.github.com'
           test "$(git show -s --format=%ce HEAD)" = \
             '244265210+devpath-gitops-release[bot]@users.noreply.github.com'
-          mapfile -t target_paths < <(git diff-tree --no-commit-id --name-only -r HEAD)
+          target_listing="$(git diff-tree --no-commit-id --name-only -r HEAD)"
+          test -n "$target_listing"
+          mapfile -t target_paths <<<"$target_listing"
           test "${#target_paths[@]}" -gt 0
           for target_path in "${target_paths[@]}"; do
             case "$target_path" in
@@ -716,7 +746,7 @@ jobs:
 cd $HW && py -m unittest discover -s tests/release -p 'test_s2a_main_publish.py' 2>&1 | tail -4; cd /d/workspace/dpa
 ```
 
-Expected: `Ran 11 tests` · `OK`.
+Expected: `Ran 13 tests` · `OK`.
 
 - [ ] **Step 6: actionlint(CI 와 같은 v1.7.12)로 린트**
 
@@ -891,7 +921,9 @@ class FakeGitHub:
         self.dispatch_appears = True
         self.push_fails = False
         self.delete_is_ignored = False
+        self.delete_is_interrupted = False
         self.can_approve = True
+        self.approval_body: Any = [{"id": 4242}]
         self.ci_conclusion = "success"
 
     # -- Ops ---------------------------------------------------------------
@@ -970,6 +1002,8 @@ class FakeGitHub:
         if method == "DELETE" and path.startswith(runner.POLICIES_PATH + "/"):
             policy_id = int(path.rsplit("/", 1)[1])
             assert policy_id != MAIN_POLICY_ID, "the main policy must never be deleted"
+            if self.delete_is_interrupted:
+                raise KeyboardInterrupt
             if not self.delete_is_ignored:
                 self.policies = [row for row in self.policies if row["id"] != policy_id]
             return None
@@ -986,7 +1020,7 @@ class FakeGitHub:
                 "state": "approved",
                 "comment": "go",
             }
-            return [{"id": 4242}]
+            return self.approval_body
         if path == f"{repo}/git/commits/{runner.TARGET_SHA}":
             return {"tree": {"sha": runner.TARGET_TREE}}
         if path == f"{repo}/rulesets":
@@ -1087,6 +1121,28 @@ class PublishTransactionTest(unittest.TestCase):
         with self.assertRaisesRegex(PublishError, "main CI failed"):
             runner.publish(github.ops(), "D:/repo", STAGED_SHA, "go")
         self.assertTrue(github.approved())
+
+    def test_an_interrupt_during_the_restore_is_a_restore_error(self) -> None:
+        github = FakeGitHub()
+        github.delete_is_interrupted = True
+        with self.assertRaises(RestoreError):
+            runner.publish(github.ops(), "D:/repo", STAGED_SHA, "go")
+        self.assertFalse(github.approved())
+
+    def test_an_empty_approval_response_is_a_publish_error(self) -> None:
+        github = FakeGitHub()
+        github.approval_body = None
+        with self.assertRaisesRegex(PublishError, "approval response is not exact"):
+            runner.publish(github.ops(), "D:/repo", STAGED_SHA, "go")
+        self.assertEqual(["main"], [row["name"] for row in github.policies])
+
+    def test_post_verify_without_a_snapshot_still_requires_the_sealed_shape(self) -> None:
+        github = FakeGitHub()
+        github.main = runner.TARGET_SHA
+        runner.post_verify(github.ops(), None)
+        github.prevent_self_review = False
+        with self.assertRaisesRegex(PublishError, "prevent_self_review"):
+            runner.post_verify(github.ops(), None)
 
 
 if __name__ == "__main__":
@@ -1289,7 +1345,7 @@ def open_dispatch_restore(
         failure = exc
     try:
         restore(ops, state["snapshot"])
-    except Exception as exc:
+    except BaseException as exc:  # noqa: BLE001 - an interrupted restore is an unverified restore
         raise RestoreError(
             "main-only policy NOT verified - restore it by hand before anything else"
         ) from (failure or exc)
@@ -1311,11 +1367,17 @@ def approve(ops: Ops, run_id: int, environment_id: int, comment: str) -> list[in
         path,
         {"environment_ids": [environment_id], "state": "approved", "comment": comment},
     )
-    _require(len(approved) == 1, "approval response is not exact")
+    _require(
+        isinstance(approved, list) and len(approved) == 1, "approval response is not exact"
+    )
     return [item["id"] for item in approved]
 
 
-def post_verify(ops: Ops, snapshot: dict[str, Any], *, ci_wait_seconds: float = 900.0) -> None:
+def post_verify(
+    ops: Ops, snapshot: dict[str, Any] | None, *, ci_wait_seconds: float = 900.0
+) -> None:
+    """Verify the published state. ``snapshot=None`` (``--post-verify-only``) still requires the
+    sealed environment shape, but cannot compare it with a pre-publish snapshot."""
     _require(_branch_sha(ops, "main") == TARGET_SHA, "main is not TARGET_SHA")
     commit = ops.api("GET", f"repos/{REPO}/git/commits/{TARGET_SHA}", None)
     _require(commit["tree"]["sha"] == TARGET_TREE, "published tree is not TARGET_TREE")
@@ -1329,7 +1391,8 @@ def post_verify(ops: Ops, snapshot: dict[str, Any], *, ci_wait_seconds: float = 
     )
     protection = ops.api("GET", f"repos/{REPO}/branches/main/protection", None)
     _require(protection["enforce_admins"]["enabled"] is True, "enforce_admins is off")
-    _require(snapshot_environment(ops) == snapshot, "environment differs from the snapshot")
+    observed = snapshot_environment(ops)
+    _require(snapshot is None or observed == snapshot, "environment differs from the snapshot")
     deadline = ops.clock() + ci_wait_seconds
     ci_path = f"repos/{REPO}/actions/workflows/ci.yml/runs?head_sha={TARGET_SHA}&event=push"
     while True:
@@ -1399,7 +1462,7 @@ def main() -> int:
         print(json.dumps({"preflight": "ok", "helper_sha": state["helper_sha"]}))
         return 0
     if args.post_verify_only:
-        post_verify(ops, snapshot_environment(ops))
+        post_verify(ops, None)
         print(json.dumps({"post_verify": "ok", "main": TARGET_SHA}))
         return 0
     print(json.dumps(publish(ops, args.repo_dir, args.staged_sha, args.comment), sort_keys=True))
@@ -1419,7 +1482,7 @@ if __name__ == "__main__":
 cd $P && py -m unittest test_run_s2a_main_publish 2>&1 | tail -4; cd /d/workspace/dpa
 ```
 
-Expected: `Ran 9 tests` · `OK`.
+Expected: `Ran 12 tests` · `OK`.
 
 - [ ] **Step 5: live 읽기 전용 preflight(쓰기 없음)**
 
@@ -1604,7 +1667,7 @@ py "$X/run_s2a_main_publish.py" --repo-dir $G --staged-sha $STAGED_SHA --comment
 curl -s -o /dev/null -w '%{http_code}\n' https://app.leva.ai.kr; curl -s -o /dev/null -w '%{http_code}\n' https://leva.ai.kr
 ```
 
-Expected: `Ran 9 tests`·`OK` · `{"preflight": "ok", …}` · `200` 두 줄. preflight 가 "main moved" 로 실패하면 **Part A 를 새 main 위에서 다시 한다**
+Expected: `Ran 12 tests`·`OK` · `{"preflight": "ok", …}` · `200` 두 줄. preflight 가 "main moved" 로 실패하면 **Part A 를 새 main 위에서 다시 한다**
 (target·헬퍼·디스패처를 새 `MAIN_SHA` 로 다시 만들고 핀을 전부 바꾼 뒤 리뷰도 다시) — 이 계획의 SHA 로는 진행하지 않는다.
 
 - [ ] **Step 2: 헬퍼 계약 테스트를 원격 바이트로 한 번 더**
@@ -1616,7 +1679,7 @@ git -C $G worktree add --detach $HW origin/chore/s2a-mobile-free-contract-publis
 cd /d/workspace/dpa && git -C $G worktree remove $HW
 ```
 
-Expected: `Ran 11 tests`·`OK`.
+Expected: `Ran 13 tests`·`OK`.
 
 - [ ] **Step 3: 사람 준비물 확인 후 요약을 보여 주고 "진행"을 받는다**
 
@@ -1699,3 +1762,36 @@ gh pr close 162 -R $R --comment "같은 트리(7799cc07…)가 one-shot publishe
 - [ ] **Step 4: 곧바로 릴리스 캠페인으로 넘어간다**
 
 롤백 레인이 닫혀 있는 구간이다. 캠페인 계획은 이 문서의 범위 밖이므로, 핸드오프 §4 순서로 brainstorming(bounded) → 실행에 들어간다.
+
+---
+
+# 리뷰 결과 (Task 5, 2026-09-20)
+
+수단: 새 컨텍스트 읽기 전용 서브에이전트(`oh-my-claudecode:security-reviewer`) — 스펙 §6. 판정은 **Critical 0 · Major 2 · Minor 4**,
+핵심 결론은 "publisher 가 `TARGET_SHA` 가 아닌 것을 main 에 쓰거나 단언을 건너뛰고 `git push` 에 도달하는 경로는 없다",
+"선례 대비 실수로 빠진 단언은 없다", "live 환경·승인 단언의 jq 식은 빈 배열·null·다수 규칙·다수 리뷰어·rejected 뒤 approved 에서 모두 거짓이 된다".
+
+컨트롤러가 지적마다 **변이로 재현한 뒤** 고쳤다(변이 스크립트는 세션 스크래치패드의 `review-repro/mutate.py`·`mutate_original7.py`).
+
+| # | 심각도 | 지적 | 재현 | 조치 |
+|---|---|---|---|---|
+| 1 | Major | 계약 테스트의 push 탐지가 줄 단위라 `git … \` + 다음 줄 `push …` 로 나눈 **두 번째 push** 를 못 본다 | MISSED 확인 | 모든 `run` 블록의 줄 계속을 접은 뒤 `push` 단어가 든 줄이 정확히 하나일 것을 단언 |
+| 2 | Major | App 토큰으로 `gh api …/git/refs/…` 같은 **API ref 쓰기**를 해도 어떤 금지 패턴에도 안 걸린다 | MISSED 확인 | 토큰 발급 이후 step 의 `run` 에 `gh`·`curl`·`wget`·`git/refs`·`update-ref` 금지 |
+| 2b | (컨트롤러 추가) | `$GITHUB_ENV` 로 핀한 좌표를 job 도중 덮어쓰는 변형도 통과한다 | MISSED 확인 | 파일 전체에 `GITHUB_ENV`·`GITHUB_PATH`·`BASH_ENV` 금지 |
+| 3 | Minor | `mapfile -t x < <(git diff-tree …)` 는 git 의 실패를 `set -e` 로부터 숨긴다(선례에도 있던 모양) | `bash -c` 로 확인: 프로세스 치환은 rc=0 으로 계속, 대입은 rc=128 로 중단 | 두 곳 모두 `listing="$(…)"` 대입 + here-string 으로 교체, 계약 테스트가 `< <(` 부재를 고정 |
+| 4 | Minor | 복원 도중의 `KeyboardInterrupt` 가 `except Exception` 을 뚫고 나간다(승인에는 도달하지 않지만 `RestoreError` 가 아니다) | 테스트 실행 자체가 끊김 | 복원 블록을 `except BaseException` 으로 — 중단된 복원은 "검증되지 않은 복원"이다 |
+| 5 | Minor | 승인 POST 가 빈 본문이면 `len(None)` 의 `TypeError` | 테스트로 확인 | `isinstance(approved, list)` 를 함께 단언해 `PublishError` 로 |
+| 6 | Minor | `--post-verify-only` 가 방금 찍은 스냅샷과 자기 비교를 한다 | 코드로 확인 | `post_verify(ops, None)` — 봉인된 모양(main-only·`prevent_self_review`·리뷰어)은 요구하되, 사전 스냅샷 비교는 하지 않는다고 코드가 정직하게 말한다 |
+
+고친 뒤: 계약 테스트 13건 · 실행 트랜잭션 테스트 12건 · 변이 11종 전부 적발 · actionlint 무결 · live `--preflight-only` 통과(헬퍼 head `00cafba`).
+헬퍼는 **amend** 로 고쳤다(publisher 가 "main + 정확히 1커밋"을 단언한다) — `2829db1` → `00cafba`.
+
+**이 세션이 밟은 함정 두 개**(다음 실행자를 위해):
+
+- Major 1 의 첫 재현은 "CAUGHT" 로 나왔는데 **가짜였다.** 변이 스크립트를 Bash heredoc 으로 넘기자 백슬래시+줄바꿈이 글자 그대로의 `\n` 이 되어
+  변이가 한 줄짜리 push 가 됐고, 옛 테스트도 그것은 잡는다. 스크립트를 Write 도구로 파일에 쓰고 백슬래시를 `chr(92)` 로 만들자 MISSED 가 나왔다.
+  (9/19 핸드오프 §5 의 "heredoc 안의 백슬래시 치환은 조용히 빗나간다" 그대로.) **재현이 기대와 다르면 재현 자체를 먼저 의심한다.**
+- 셸 수정의 검증도 한 번 틀렸다: Bash 도구 안의 `( set -e; … )` 서브셸에서는 실패한 대입이 중단을 일으키지 않아 "수정이 안 먹는다"로 보였다.
+  도구가 명령을 errexit 이 억제되는 문맥에서 감싸 실행하기 때문이다. GitHub Actions 와 같은 조건은 독립된 `bash -c '…'` 다.
+- 리뷰 에이전트는 14분간 일하고 최종 응답으로 "완료." 한 단어만 돌려줬다(지난 세션의 "빈 응답"과 같은 모양). 보고는 에이전트 대화 기록의
+  중간 메시지에 있었다 — 기록 파일을 통째로 읽지 않고 assistant 텍스트 블록의 **길이만** 먼저 뽑아 위치를 찾은 뒤 그 블록만 꺼냈다.
