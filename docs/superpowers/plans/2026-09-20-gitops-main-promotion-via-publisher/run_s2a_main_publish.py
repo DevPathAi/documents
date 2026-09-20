@@ -278,8 +278,10 @@ def _run(command: list[str]) -> str:
 
 
 def _http_status(url: str) -> int:
+    # Cloudflare answers 403 to the default "Python-urllib" agent on leva.ai.kr, so identify ourselves.
+    request = urllib.request.Request(url, headers={"User-Agent": "devpath-release-postverify/1.0"})
     try:
-        with urllib.request.urlopen(url, timeout=20) as response:  # noqa: S310 - fixed https URLs
+        with urllib.request.urlopen(request, timeout=20) as response:  # noqa: S310 - fixed https URLs
             return response.status
     except urllib.error.HTTPError as exc:
         return exc.code
