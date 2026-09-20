@@ -26,7 +26,9 @@ class FakeGitHub:
         self.dispatch_appears = True
         self.push_fails = False
         self.delete_is_ignored = False
+        self.delete_is_interrupted = False
         self.can_approve = True
+        self.approval_body: Any = [{"id": 4242}]
         self.ci_conclusion = "success"
 
     # -- Ops ---------------------------------------------------------------
@@ -105,6 +107,8 @@ class FakeGitHub:
         if method == "DELETE" and path.startswith(runner.POLICIES_PATH + "/"):
             policy_id = int(path.rsplit("/", 1)[1])
             assert policy_id != MAIN_POLICY_ID, "the main policy must never be deleted"
+            if self.delete_is_interrupted:
+                raise KeyboardInterrupt
             if not self.delete_is_ignored:
                 self.policies = [row for row in self.policies if row["id"] != policy_id]
             return None
@@ -121,7 +125,7 @@ class FakeGitHub:
                 "state": "approved",
                 "comment": "go",
             }
-            return [{"id": 4242}]
+            return self.approval_body
         if path == f"{repo}/git/commits/{runner.TARGET_SHA}":
             return {"tree": {"sha": runner.TARGET_TREE}}
         if path == f"{repo}/rulesets":
@@ -222,6 +226,28 @@ class PublishTransactionTest(unittest.TestCase):
         with self.assertRaisesRegex(PublishError, "main CI failed"):
             runner.publish(github.ops(), "D:/repo", STAGED_SHA, "go")
         self.assertTrue(github.approved())
+
+    def test_an_interrupt_during_the_restore_is_a_restore_error(self) -> None:
+        github = FakeGitHub()
+        github.delete_is_interrupted = True
+        with self.assertRaises(RestoreError):
+            runner.publish(github.ops(), "D:/repo", STAGED_SHA, "go")
+        self.assertFalse(github.approved())
+
+    def test_an_empty_approval_response_is_a_publish_error(self) -> None:
+        github = FakeGitHub()
+        github.approval_body = None
+        with self.assertRaisesRegex(PublishError, "approval response is not exact"):
+            runner.publish(github.ops(), "D:/repo", STAGED_SHA, "go")
+        self.assertEqual(["main"], [row["name"] for row in github.policies])
+
+    def test_post_verify_without_a_snapshot_still_requires_the_sealed_shape(self) -> None:
+        github = FakeGitHub()
+        github.main = runner.TARGET_SHA
+        runner.post_verify(github.ops(), None)
+        github.prevent_self_review = False
+        with self.assertRaisesRegex(PublishError, "prevent_self_review"):
+            runner.post_verify(github.ops(), None)
 
 
 if __name__ == "__main__":
