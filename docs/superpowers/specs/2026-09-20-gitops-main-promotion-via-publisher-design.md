@@ -115,7 +115,8 @@ mission-spine-production-off` · 전용 `concurrency` 그룹 · SHA 로 핀한 �
 | target 경로 단언 | `--name-status` 4행 exact | `git rev-parse HEAD^{tree}` == `TARGET_TREE` + 모든 변경 경로가 3개 접두사 안 |
 | 체인 단계 | `SEALED_SHA` 체크아웃 · `verify_migration_result.py` · `verify_promotion_chain.py` before/after | **없음**(§3.1). `RELEASE_EVIDENCE_TOKEN` 도 쓰지 않는다 |
 
-**더하는 것 ①** — 헬퍼 컨텍스트 단언 바로 뒤에, 헬퍼 checkout 에서 `python -m unittest tests.release.test_s2a_main_publish` 를 돌린다.
+**더하는 것 ①** — 헬퍼 컨텍스트 단언 바로 뒤에, 헬퍼 checkout 에서 `python -m unittest discover -s tests/release -p 'test_s2a_main_publish.py'` 를 돌린다(CI 와 같은 discover 형식 —
+gitops 에는 `tests/__init__.py` 가 없어 `tests.release.…` 점 표기는 러너 site-packages 의 `tests` 패키지에 가려질 수 있다).
 헬퍼에는 CI 가 없으므로(§5.1) 실제로 실행되는 바로 그 워크플로 파일이 자기 계약을 통과하는지 실행 시점에 확인한다.
 
 **더하는 것 ②** — App 토큰 발급 **앞**에 두는 "live 환경·승인 단언"(`GH_TOKEN: github.token`):
@@ -133,7 +134,7 @@ job `if`·`environment`·`permissions`·`concurrency` · 모든 `uses:` 가 40�
 `verify_promotion_chain`·`SEALED_SHA`·`RELEASE_EVIDENCE_TOKEN` 이 파일에 **나오지 않음**(의도된 제거를 고정) ·
 계약 테스트 자기 실행 step 과 live 환경·승인 단언 step 이 App 토큰 발급 step 보다 **앞** · `MAIN_SHA == HELPER_BASE_SHA`.
 
-### 4.4 실행 스크립트 `run_s2a_main_publish.py` (레포 밖 — 계획 문서에 전문 수록, 실행 세션의 스크래치패드에 물질화)
+### 4.4 실행 스크립트 `run_s2a_main_publish.py` (gitops 밖 — 계획 문서에 전문 수록하고 같은 바이트를 documents `plans/2026-09-20-gitops-main-promotion-via-publisher/` 에 커밋, 실행 세션의 스크래치패드에 `git show` 로 물질화)
 
 실행 단계 전체를 한 Python 스크립트로 묶는다. 셸 `trap` 을 쓰지 않는 이유: 이 PC 는 메모리 압박으로 백그라운드 대기가 네 번 강제 종료됐다
 (핸드오프 §5). `try/finally` 로 복원을 보장한다.
@@ -142,7 +143,8 @@ job `if`·`environment`·`permissions`·`concurrency` · 모든 `uses:` 가 40�
    (1건·`main`·id `57524487`) · `prevent_self_review == true`.
 2. 헬퍼 브랜치 정책 POST, **돌아온 id 기록**.
 3. staged 디스패처 SHA 를 `automation/dispatch-s2a-main-publish` 로 push → 헬퍼 브랜치의 auth-smoke 실행이 `waiting` 이 될 때까지 폴링(상한 5분).
-4. `finally`: 기록한 id 로 DELETE(`main` 정책은 건드리지 않는다 — 목록을 다시 쓰지 않고 추가분만 지운다) → GET 이 스냅샷과 같음을 단언.
+4. `finally`: **이름이 헬퍼 브랜치인 정책만** DELETE(POST 응답을 잃어 id 를 모르는 경우에도 복원된다. `main` 정책은 이름이 달라 절대 지워지지 않는다 —
+   목록을 다시 쓰지 않고 추가분만 지운다) → GET 이 스냅샷과 같음을 단언.
    **여기서 실패하면 승인으로 가지 않고 멈춘다.**
 5. `pending_deployments` 에서 `current_user_can_approve == true` 확인 → POST 승인(`environment_ids` 는 `-F` 정수형).
 6. `gh run watch <run> --interval 15 --exit-status` 포그라운드.
