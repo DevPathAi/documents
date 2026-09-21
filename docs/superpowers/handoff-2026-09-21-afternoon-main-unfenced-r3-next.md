@@ -1,5 +1,7 @@
 # 핸드오프 2026-09-21 (오후) — gitops main 의 writer fence 제거 완료 · 운영과 git 다시 일치 · 다음은 r3
 
+> ✅ **2026-09-21 저녁에 처리됨** — §3 의 r3 는 운영 승격(mission-ON)까지 끝났다. 현재 상태와 다음(landing-last)은 `handoff-2026-09-21-evening-r3-promoted-landing-last-next.md`. 아래는 그 시점의 기록으로 읽는다.
+>
 > 직전 문서: `handoff-2026-09-21-r2-promote-blocked-temporary-unfence.md`(같은 날 오전). **그 §1 의 경고("운영이 git 과 어긋나 있다")는 이 문서로 해소됐다** —
 > 임시 조치는 전부 되돌렸고, 그 문서의 "원복 한 줄"은 이미 실행됐다. 교착의 구조(§3)와 교훈(§5)은 그대로 유효하다.
 
