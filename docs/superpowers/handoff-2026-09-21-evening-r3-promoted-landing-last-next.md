@@ -1,5 +1,7 @@
 # 핸드오프 2026-09-21 (저녁) — 릴리스 r3 운영 승격 완료(mission-ON) · 남은 것은 landing-last
 
+> 🚨 **§4 의 landing-last 를 그대로 다시 실행하지 말 것 — §9(2026-09-21T10:20Z 추가)를 먼저 읽는다.** landing-last 는 홈의 Pages Functions 를 빼고 배포한다. 한 번 실행했다가 2분 30초 만에 롤백했다.
+>
 > 직전 문서: `handoff-2026-09-21-afternoon-main-unfenced-r3-next.md`(같은 날 오후). 그 §3 의 r3 를 이 구간이 서비스 재빌드부터 promote ON 까지 끝냈다.
 > 산출물·스크립트는 레포 밖 `D:/workspace/dpa/.release-artifacts/ms-20260920-community-flat-pages/r3/`(git 저장소 아님).
 
@@ -72,3 +74,21 @@
 
 - **N01 Cloudflare durable token** — landing-last 전.
 - 앞에서 넘어온 것: 모바일 서명 시크릿 4종 이전 · YouTube 재업로드 · 로그인 캡처 · AdSense 결정.
+
+## 9. 추가 (2026-09-21T10:20Z) — landing-last 를 실행했고, 되돌렸다
+
+**N01 은 닫혔다.** 사용자가 대시보드에서 `Account → Cloudflare Pages → Edit` 단일 권한 토큰을 만들었고, gitops 환경 `mission-spine-production-landing` 의 `CLOUDFLARE_API_TOKEN` 이 갱신됐다(`2026-09-21T09:57:53Z`). 새 토큰은 landing-last 의 Cloudflare preflight 와 배포를 실제로 통과시켰다 — 더는 로컬 OAuth 세션에 의존하지 않는다.
+
+**실행**: landing-last `35587817335`(봇 디스패치 · attempt 1 · 관문은 사용자 확인 뒤 AI 승인). 사전에 읽기 전용으로 돌려 본 preflight(`cloudflare_pages.py --action preflight`)와 같은 결과로 통과(mode=deploy) → wrangler 가 새 운영 배포 `9814656f-8e6c-4a48-9403-f16e553fb634`(소스 `5b9d6e38`)를 만들었다 → 직후 `capture-new-production` 이 `public dist marker probe failed` 로 실패(9/16 에도 있던 전파 지연 계열).
+
+**회귀**: 새 운영에서 `/api/invite-rounds` 가 **404**(직전 운영 배포·preview 는 200 JSON), `/api/lead` POST 는 405. **landing-last 는 봉인된 `dist` 만 올린다 — CI 의 작업 디렉터리에 `functions/` 가 없어 Pages Functions 와 `_routes.json` 이 빠진다.** CI 의 wrangler 출력에는 `Uploading Functions bundle`·`_routes.json` 줄이 없다(레포 루트에서 올린 preview 에는 있다). 영향: `/updates` 의 초대 회차 목록(9/17 GovTech 핫픽스 기능) · 리드 폼 · 통계 위젯.
+
+**복구**: Cloudflare Pages 롤백 API(`POST …/deployments/005cf175-6e3e-4400-a201-1987ce9d8d84/rollback`)로 직전 운영 배포를 되살렸다 — 10:20:12Z 성공, 10:20:23Z `/api/invite-rounds` 200. 회귀 구간 약 2분 30초. **현재 운영 홈 = `005cf175-…`(소스 `24c6e748`) 그대로**이고 `9814656f` 는 비활성 운영 배포로 이력에 남아 있다. 앱과 gitops main(`30c0e9f7`)은 무변화.
+
+**그래서 §4 는 이렇게 바뀐다**: landing-last 는 파이프라인을 고치기 전에는 올바르게 끝낼 수 없다. 제품 소스는 운영 홈과 같으므로(차이는 테스트·문서 3파일) 미뤄도 방문자가 잃는 것은 없다. 고칠 곳 — 설계부터:
+
+1. **함수를 배포물에 묶는다.** (a) 홈 빌드가 함수를 `dist/_worker.js`(Pages advanced mode)로 컴파일해 봉인 dist 에 넣는다 — 함수가 `dist_sha256` 에 묶이고 landing-last 는 그대로 둘 수 있다. 또는 (b) landing-last 가 `home.source_sha` 의 `functions/`·`_routes.json` 을 체크아웃해 그 자리에서 배포한다 — gitops 통제면 변경이라 publisher 경로. (a)가 봉인의 의미("올라가는 바이트 전부가 해시에 묶인다")에 맞는다.
+2. **`/api/*` 라이브 smoke 를 landing-last(배포 직후)와 홈 CI 에 넣는다.** 지금의 smoke 는 페이지 200 만 본다.
+3. 다음 landing 때 확인할 것: Pages 이력에 같은 `commit_hash`(`5b9d6e38`)의 운영 배포 `9814656f` 가 남아 있다 — mode 판정(`reuse`)과 "deploy window / production census" 검사가 이것을 어떻게 보는지. 홈 소스가 바뀌면(1번) `home.source_sha` 가 달라져 새 candidate 가 필요하다 — 즉 **landing 은 다음 릴리스(id 새로)에 실린다.** r3 의 앱 승격은 그대로 유효하다.
+
+**교훈**: 사전 검증이 "검사가 통과하는가"와 "제품 파일이 같은가"만 봤고 **"배포물에서 무엇이 빠지는가"**는 보지 않았다. preview 배포와 CI 배포의 wrangler 출력을 나란히 놓았다면 미리 보였다. 배포 뒤 첫 확인은 200 이 아니라 **기능 경로**여야 한다 — 이번에 빨리 잡은 것은 실패한 실행의 로그에서 빠진 줄을 봤기 때문이지, 검사가 잡아서가 아니다.
