@@ -1,5 +1,7 @@
 # 핸드오프 2026-09-21 — 릴리스 캠페인 r2: seal 완료 · promote 교착 · 운영은 임시 unfence 상태
 
+> ✅ **2026-09-21 오후에 해소됨** — §1 의 임시 상태는 전부 되돌렸고 "원복 한 줄"은 이미 실행됐다. 현재 상태와 다음 순서는 `handoff-2026-09-21-afternoon-main-unfenced-r3-next.md`. 아래 §1·§4 는 그 시점의 기록으로 읽는다(§3 교착 구조·§5 교훈은 유효).
+>
 > 직전 문서: `handoff-2026-09-20-evening-release-campaign-evidence-pending.md`. 그 §3 의 재개 순서를 이 세션이 밟았다.
 > **먼저 읽을 것은 §1 의 경고 하나다.** 산출물·스크립트는 레포 밖
 > `D:/workspace/dpa/.release-artifacts/ms-20260920-community-flat-pages/`(git 저장소 아님, r2 분은 그 안의 `r2/`).

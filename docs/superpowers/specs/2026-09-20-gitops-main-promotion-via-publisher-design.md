@@ -243,7 +243,7 @@ gitops `main` 은 `4f3ed64` → **`69e7bd15570f5ba0f271c83b5bd46955cb249c8e`**(�
 **다음**: frontend main `31a7785d` 에 대한 ET13 baseline **봇 디스패치** → 사람의 시각 승인 → gitops candidate(`gitops.base_sha` = `69e7bd15…`) →
 수동 NVDA 증거 → seal → promote → landing-last(prior deployment 기대값 `005cf175-6e3e-4400-a201-1987ce9d8d84`, N01 토큰 선행).
 
-## 11. 부록 (2026-09-21) — 같은 publisher 로 폐기된 r2 의 writer fence 를 main 에서 걷어낸다 · 준비 완료, 실행 전
+## 11. 부록 (2026-09-21) — 같은 publisher 로 폐기된 r2 의 writer fence 를 main 에서 걷어낸다 · **실행 완료**(§11.1)
 
 **왜**: 릴리스 `ms-20260920-community-flat-pages-r2` 의 마이그레이션 커밋 M(`c1d5e8cf197c7dbcb0d5f224011b82b73412e17a`)이 platform-svc·sandbox-svc 를
 `replicas: 0` 으로 fence 했다. fence 를 푸는 것은 promote 의 additive-services 커밋인데, promote 는 9개 서비스의 immutable-image 증거를 요구하고
@@ -290,3 +290,19 @@ Synced/Healthy · replicas 1 · OAuth 시작 경로 302 확인. 순서가 바뀌
 **범위 밖**: fence ServiceAccount 의 `imagePullSecrets` 매니페스트 결함(M 렌더 검증에 걸릴 수 있어 분리 — 수동 patch 유지) · r3 전체.
 
 스크립트: `plans/2026-09-21-gitops-main-writer-fence-removal-via-publisher/`.
+
+### 11.1 실행 결과 (2026-09-21T06:02Z~06:09Z)
+
+gitops `main` 은 `c1d5e8cf` → **`fcf97cf686df8e8bad56597d4679f9a96fd597fc`**(트리 `a1c43f95…`)로 fast-forward 됐다. 봉인은 풀지 않았다.
+
+| 항목 | 값 |
+|---|---|
+| publisher 실행 | `35566755778` — actor `github-actions[bot]` · attempt 1 · 전 step success |
+| 승인 | `VelkaressiaBlutkrone`, 환경 `mission-spine-production-off`, `prevent_self_review` **불변**. 사용자 확인 1회 뒤 AI 가 승인 |
+| 환경 브랜치 정책 | 헬퍼 정책(id `60552783`)이 열려 있던 구간 약 20초(06:02:07~06:02:29Z — 스크립트 밖에서 독립 관찰). 승인은 main-only(id `57524487`) 복원·검증 **뒤** |
+| main CI | `35566816989` success |
+| 사후 | 룰셋 2종 active · `enforce_admins` true · 진행·대기 실행 0 · `app.leva.ai.kr`·`leva.ai.kr` 200 |
+| 클러스터 원복 | `main == target` 과 git 선언 `replicas: 1` 을 확인한 뒤 AppSet 의 `ignoreApplicationDifferences` 제거 → 11초 만에 platform·sandbox `Synced/Healthy`·auto-sync 복원, 3분 관찰 내내 1/1·같은 파드(재시작 0). 마이그레이션 Job 재실행 없음 |
+
+이번에는 실행 중 드러난 결함이 없었다 — preflight 가 post_verify 의 읽기 경로를 전부 미리 지나간 덕이다(§10 의 결함과 대비).
+**다음**: `gitops.base_sha` = `fcf97cf6…` 로 r3 — `handoff-2026-09-21-afternoon-main-unfenced-r3-next.md` §3.
