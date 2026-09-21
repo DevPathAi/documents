@@ -242,3 +242,51 @@ gitops `main` 은 `4f3ed64` → **`69e7bd15570f5ba0f271c83b5bd46955cb249c8e`**(�
 
 **다음**: frontend main `31a7785d` 에 대한 ET13 baseline **봇 디스패치** → 사람의 시각 승인 → gitops candidate(`gitops.base_sha` = `69e7bd15…`) →
 수동 NVDA 증거 → seal → promote → landing-last(prior deployment 기대값 `005cf175-6e3e-4400-a201-1987ce9d8d84`, N01 토큰 선행).
+
+## 11. 부록 (2026-09-21) — 같은 publisher 로 폐기된 r2 의 writer fence 를 main 에서 걷어낸다 · 준비 완료, 실행 전
+
+**왜**: 릴리스 `ms-20260920-community-flat-pages-r2` 의 마이그레이션 커밋 M(`c1d5e8cf197c7dbcb0d5f224011b82b73412e17a`)이 platform-svc·sandbox-svc 를
+`replicas: 0` 으로 fence 했다. fence 를 푸는 것은 promote 의 additive-services 커밋인데, promote 는 9개 서비스의 immutable-image 증거를 요구하고
+community-svc·notification-svc 의 아티팩트가 2026-09-21 에 만료됐다(같은 SHA 로 재생성 불가). 새 릴리스도 시작할 수 없다 — shared 의 마이그레이션 게이트가
+replica override 가 있는 base 를 거부한다. 운영은 클러스터 쪽 임시 조치로 살려 두었다(`handoff-2026-09-21-r2-promote-blocked-temporary-unfence.md` §1).
+main 대상 PR·직접 push 는 봉인에 막혀 있으므로 §1 의 publisher 가 정식 경로다.
+
+**결정(사용자, 2026-09-21)**: **fence 만 제거한다.** target 은 M 의 단일 자식이고 두 writer kustomization 만 fence 이전 base(`69e7bd15…`)의 블롭으로 되돌린다.
+`69e7bd15` 의 트리로 통째 되돌리지 않는 이유 — migration kustomization 의 Job 이름이 9/16 의 것으로 돌아가는데 그 Job 은 이미 prune 됐으므로 ArgoCD 가
+다시 만들어 실행한다(init 이 writer replicas=0 을 기다리다 멈추고 일회성 관문 ConfigMap 도 없다 → `devpath-migration` Degraded). M 의 Job 은 Complete 라
+그대로 두면 아무것도 재실행되지 않는다. 클러스터의 수동 replicas 1 이 곧 git 상태가 되므로 push 자체는 운영 무변화다.
+
+**§3.1 과의 차이**: 이번 `MAIN_SHA` 는 완료된 릴리스의 종단 커밋이 아니라 **폐기된 체인의 M** 이다. 그래도 다음 candidate 에 영향이 없음을 실제 게이트 코드로
+증명했다(`prove_next_base.py`) — `inspect_chain` 은 `base_sha` 에서 walk 를 멈추고 base 에는 inert migration Job(`suspend: true`) · 파싱 가능한 migration
+selector · writer fence 부재만 요구한다. target 은 세 검사와 shared 게이트의 두 렌더를 통과하고, 대조군 M 은 두 게이트 모두 거부한다. r2 는 폐기되고 봉인
+브랜치는 증거로 남는다.
+
+| 좌표 | 값 |
+|---|---|
+| `MAIN_SHA` = `HELPER_BASE_SHA` | `c1d5e8cf197c7dbcb0d5f224011b82b73412e17a` |
+| `FENCE_BASE_SHA` | `69e7bd15570f5ba0f271c83b5bd46955cb249c8e` |
+| target `fix/r2-writer-fence-removal-main-20260921` | `fcf97cf686df8e8bad56597d4679f9a96fd597fc` · 트리 `a1c43f95c1332611e0f32066b51aa25090e98b5a`(고정 타임스탬프로 결정적 재현 — `make_unfence_target.py`) |
+| 헬퍼 `chore/r2-writer-fence-removal-publish-20260921` | `8e42f757c3b73570e94c1ec7309fb406222bb705`(2경로: publisher · `tests/release/test_r2_unfence_main_publish.py`) |
+| staged 디스패처 `chore/r2-unfence-publish-dispatcher-staged-20260921` | `00c66257a9c48552bc5b92278f6b04e552b0f982` |
+| 방아쇠 | `automation/dispatch-r2-unfence-main-publish` — **아직 없음**(그 이름으로 push 하는 것이 실행) |
+
+**§4.2 대비 바꾼 것**(9/20 에 실행된 헬퍼와의 diff 가 정확히 이것뿐임을 확인): 핀·이름·브랜치명 · target `fetch-depth` 2→3(조부모의 트리가 필요 — 실제 얕은
+클론으로 depth 3 통과·depth 2 실패를 확인) · 접두사 allowlist 대신 **`--name-status` 정확히 2행 + 두 블롭 == `$FENCE_BASE_SHA` 의 블롭 + migration 블롭 == M**.
+블롭 비교는 대입 뒤 `test -n` 을 거친다(`test "$(a)" = "$(b)"` 는 두 명령이 다 실패하면 통과한다). fence 잔존 검사는 `if grep -q` 분기다(`! grep` 은 `set -e` 를
+건드리지 않는다). 실행 스크립트는 (a) preflight 가 post_verify 의 **모든 읽기 경로**(룰셋 · `enforce_admins` · target 트리 · `ci.yml` runs · 사이트 200)를 첫 쓰기
+전에 지나가고(§10 의 결함 교정) (b) **리뷰된 헬퍼 SHA 를 핀**한다(`--helper-sha`).
+
+**검증**: 계약 테스트 16(옛 워크플로에 RED 확인 후) · actionlint(헬퍼·디스패처) · target 검증 step 을 실제 target 에서 독립 Git Bash 로 실행 + 변이 3종이 의도한
+단언에서 사망(`mutation_check.py`) · target 트리에서 `tests/release` 전체 347 OK · 실행 스크립트 단위 테스트 18 · live `--preflight-only` OK + 음성 대조(틀린 헬퍼
+SHA → 쓰기 전 거부). **독립 리뷰**(새 컨텍스트, 읽기 전용): Critical 0 · Medium 1 · Low 2 — 전부 변이로 재현한 뒤 고쳤다(`contract_mutants.py`): step 수준 `env` 가
+job 수준 핀을 가릴 수 있었음(9/20 원본에서 물려받은 구멍) · `set -euo pipefail` 미단언(`shell:` 을 명시하지 않은 러너 셸은 `bash -e {0}` 이라 pipefail·nounset 이
+없다 — 리뷰어가 든 완화 근거보다 실제로 더 중요했다) · 실행 스크립트가 헬퍼 SHA 를 핀하지 않고 발견하던 비대칭.
+
+**실행 절차**(사용자 확인 1회 뒤): §5.2 와 같다 — `run_r2_unfence_main_publish.py --repo-dir … --staged-sha 00c66257… --helper-sha 8e42f757… --comment …`.
+**publisher 밖의 순서 하나가 추가된다**: `main == target` 을 확인한 **뒤에만** 클러스터의 임시 조치를 되돌린다
+(`kubectl -n argocd patch applicationset devpath-services --type=json -p '[{"op":"remove","path":"/spec/ignoreApplicationDifferences"}]'`) → 두 앱
+Synced/Healthy · replicas 1 · OAuth 시작 경로 302 확인. 순서가 바뀌면 fence 가 다시 걸린다.
+
+**범위 밖**: fence ServiceAccount 의 `imagePullSecrets` 매니페스트 결함(M 렌더 검증에 걸릴 수 있어 분리 — 수동 patch 유지) · r3 전체.
+
+스크립트: `plans/2026-09-21-gitops-main-writer-fence-removal-via-publisher/`.
