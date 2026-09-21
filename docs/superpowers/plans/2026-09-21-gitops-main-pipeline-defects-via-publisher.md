@@ -408,3 +408,28 @@ A	tests/release/test_production_startup_budget.py
 - [ ] **B6:** notification → ai → lcs → community → learning → sandbox → platform → gateway 순으로 하나씩 `rollout resume` → `rollout status --timeout=6m` → 새 파드 `restartCount == 0` · `startupProbe` 존재 확인 → 다음. 실패 시 그 Deployment 를 다시 pause + 새 ReplicaSet `scale --replicas=0`, 중단하고 보고.
 - [ ] **B7:** 사후 — 8개 앱 Synced/Healthy · `paused` 없음 · 전 파드 재시작 0 · `app.leva.ai.kr`·`leva.ai.kr` 200 · OAuth 시작 경로 302 · 룰셋·`enforce_admins`·환경 정책 불변.
 - [ ] **B8:** 스펙 §12.6 실행 결과 · 핸드오프 · 메모리. 다음 candidate 의 `gitops.base_sha` = `TARGET_SHA`.
+
+---
+
+## 실행 기록 — Part A (2026-09-21~22)
+
+**좌표**: `MAIN_SHA` `30c0e9f717efaad9bd46d47721a61495f4093e96` · dev 커밋(로컬 전용) `b1da15b` · **target `5961922b9a309055a75bc7302e5c852c5c51d59c`**(트리 `85d71a7f6734d781df3ea0f287ae8569a1b801e4`, 두 번 실행해 같은 SHA, 원격 `fix/pipeline-defects-main-20260921`).
+
+| Task | 결과 |
+|---|---|
+| 1 | 기준선 `tests/release` 347 OK(skipped 3) → 새 테스트 RED(1 FAIL · 1 KeyError, steady-state 1건은 PASS) → GREEN · smoke 4건 RED(`_probe_api` 부재) → GREEN · dev 트리 전체 **354 OK(skipped 3)** · 9개 앱 렌더 diff = 서비스마다 `startupProbe` 7줄, migration 은 `imagePullSecrets` 2줄, 삭제 0 |
+| 1(실물) | `_probe_api("https://leva.ai.kr")` 수락 · **9/21 사고의 함수 없는 배포 `https://9814656f.devpath-home-page.pages.dev` 는 `HTTPError 404` 로 거부** |
+| 2 | target 트리 == dev 트리(스크립트가 단언)이므로 위 354건이 target 의 결과다 |
+| 3 | `prove_next_base.py` 7/7 PASS — target 은 chain base 요건 · writer fence 렌더 · 다음 migration 렌더 · **`set-migration-release` → kustomize build → `validate-migration-render` 의 실제 경로**(SA 문서 포함)를 통과, 대조군 3건(fence 가 있는 M ×2, suspend 된 렌더)은 거부 |
+| 4 | 헬퍼 = 9/21 실행본에서 치환표대로만 파생(diff 70줄 전부 표의 항목) · 계약 테스트 16건: 9/21 워크플로에서 RED(8건 실패) → 새 워크플로에서 GREEN · actionlint 통과 · 계약 변이 9종 전부 killed · step 변이: 실제 target 통과, A(11경로)·B(13경로)는 전체 목록 비교에서, C(같은 12경로·내용 변조)는 트리 핀에서 사망 |
+| 5 | 디스패처 = 9/21 실행본에서 이름 4곳만 치환, actionlint 통과. 방아쇠 브랜치 없음 확인 |
+| 6 | 실행 스크립트 = 9/21 실행본에서 좌표 8줄만 치환, 단위 테스트 18 OK |
+
+**계획 대비 편차**
+
+1. `insert_startup_probe.py` — `apps/**` 에 `eol` 속성이 없어 Windows 체크아웃이 CRLF 로 물질화된다(인덱스는 LF). "LF 로 정규화해 정확 치환 → 체크아웃의 줄바꿈 양식으로 되돌려 쓰기"로 고쳤고, blob 이 LF 임은 `make_pipeline_defects_target.py` 가 바이트로 단언한다.
+2. `prove_next_base.py` — 처음에 `validate_base_migration_render` 를 골랐다가 FAIL 을 봤다. 원인은 변경이 아니라 **검사 선택의 오류**였다: shared 의 릴리스 워크플로는 그 함수를 쓰지 않고 `set-migration-release` 로 kustomization 을 다시 쓴 뒤 빌드해 `validate-migration-render` 에 넣는다(main 의 렌더도 같은 이유로 그 함수에 거부된다). 실제 경로로 교체했다.
+3. 계획의 `dryrun_target_step.py` 는 만들지 않았다 — `mutation_check.py` 의 첫 케이스("핀된 target 자체, 통과해야 함")가 같은 일을 한다.
+4. **헬퍼·디스패처의 push 를 독립 리뷰 뒤로 미뤘다.** 헬퍼는 "MAIN 의 단일 자식 · 정확히 2경로"여야 해서 리뷰 뒤 수정은 커밋 교체(force-push)를 뜻한다. 로컬 커밋만 해 두고 리뷰 → push → live preflight 순으로 한다.
+5. `render_run_script.py` 는 선례를 작업 트리가 아니라 `git show` 의 커밋된 바이트에서 읽는다(같은 CRLF 물질화).
+6. 헬퍼 트리에서 `tests/release` 전체는 돌리지 않았다 — 헬퍼 트리는 main 에 오르지 않고, publisher 도 헬퍼에서는 계약 테스트만 돌린다(선례와 같다).

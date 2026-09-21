@@ -307,7 +307,7 @@ gitops `main` 은 `c1d5e8cf` → **`fcf97cf686df8e8bad56597d4679f9a96fd597fc`**(
 이번에는 실행 중 드러난 결함이 없었다 — preflight 가 post_verify 의 읽기 경로를 전부 미리 지나간 덕이다(§10 의 결함과 대비).
 **다음**: `gitops.base_sha` = `fcf97cf6…` 로 r3 — `handoff-2026-09-21-afternoon-main-unfenced-r3-next.md` §3.
 
-## 12. 부록 (2026-09-21 밤) — 같은 publisher 로 파이프라인 결함 3건을 main 에 올린다 · **설계 승인, 준비 전**
+## 12. 부록 (2026-09-21 밤) — 같은 publisher 로 파이프라인 결함 3건을 main 에 올린다 · **준비 진행 중(독립 리뷰 대기) — 실행 전**(§12.5)
 
 **왜**: 2026-09-21 의 사고 세 건(`handoff-2026-09-21-night-session-close.md` §3) 가운데 둘의 근본 원인과, 그날 드러난 수동 의존 하나가 gitops 통제면에 남아 있다.
 전부 main 대상 PR 이 막히는 경로(`apps/**` · `scripts/release/**`)라 §1 의 publisher 가 정식 경로다.
@@ -363,3 +363,19 @@ main 이 r3 의 mission-on 커밋에서 벗어나는 순간부터 다음 릴리�
 **범위 밖**: liveness `timeoutSeconds` 조정 · landing smoke 실패 시 자동 롤백(`--action rollback-prior` 는 이미 있다) · `sandbox-migration-gate` ConfigMap 자동화 · 홈 develop → master 릴리스.
 
 스크립트: `plans/2026-09-21-gitops-main-pipeline-defects-via-publisher/`.
+
+### 12.5 준비 현황 (2026-09-22 새벽, 세션 종료 시점)
+
+| 좌표 | 값 | 상태 |
+|---|---|---|
+| `MAIN_SHA` = `HELPER_BASE_SHA` | `30c0e9f717efaad9bd46d47721a61495f4093e96` | 세션 종료 시 `origin/main` 과 일치 |
+| target `fix/pipeline-defects-main-20260921` | `5961922b9a309055a75bc7302e5c852c5c51d59c` · 트리 `85d71a7f6734d781df3ea0f287ae8569a1b801e4`(`make_pipeline_defects_target.py`, 두 번 실행해 같은 SHA) | **push 됨** |
+| 헬퍼 `chore/pipeline-defects-publish-20260921` | `3e67810471eaf90499e26134f2e76c942c25d711`(2경로: publisher · `tests/release/test_pipeline_defects_main_publish.py`) | **로컬 커밋만 — 리뷰 뒤 push** |
+| staged 디스패처 `chore/pipeline-defects-publish-dispatcher-staged-20260921` | `cbf153840adfba33c3460de0ae653cf54a02b4e2`(1경로 추가) | **로컬 커밋만 — 리뷰 뒤 push** |
+| 방아쇠 `automation/dispatch-pipeline-defects-main-publish` | — | **없음**(그 이름으로 push 하는 것이 실행) |
+
+**끝난 검증**: 기준선 `tests/release` 347 OK(skipped 3) → target 트리 **354 OK**(새 테스트 7건은 RED 확인 뒤 GREEN) · 9개 앱 kustomize 렌더 diff = 서비스마다 `startupProbe` 7줄, migration 은 `imagePullSecrets` 2줄, 삭제 0 · `_probe_api` 실물: `https://leva.ai.kr` 수락, **9/21 사고의 함수 없는 배포 `9814656f.devpath-home-page.pages.dev` 는 `HTTPError 404` 로 거부** · `prove_next_base.py` 7/7(target 은 gitops chain base 요건과 shared 의 실제 렌더 경로 `set-migration-release` → build → `validate-migration-render` 를 통과, 대조군 3건은 거부) · 헬퍼는 9/21 실행본 대비 치환표의 항목만 다름(diff 70줄) · 계약 테스트 16건: 9/21 워크플로에 RED(8건) → 새 워크플로에 GREEN · actionlint(헬퍼·디스패처) · 계약 변이 9종 전부 killed · step 변이: 실제 target 통과 / 11경로·13경로는 전체 목록 비교에서, 같은 12경로의 내용 변조는 트리 핀에서 사망 · 실행 스크립트는 9/21 실행본 대비 좌표 8줄만 다름, 단위 테스트 18 OK.
+
+**남은 준비**: ① 독립 리뷰(새 컨텍스트, 읽기 전용) — 세션 종료 시점에 **진행 중이었고 결과를 받지 못했다.** 입력 패키지를 다시 만드는 명령과 지시문의 뼈대는 `plans/2026-09-21-gitops-main-pipeline-defects-via-publisher/REVIEW.md` 에 있다. 다음 세션은 리뷰를 **처음부터 다시** 돌린다 ② 발견 사항을 변이·재현으로 확인한 뒤 수정(헬퍼·target 이 바뀌면 핀을 다시 굴린다) ③ 헬퍼·디스패처 push ④ live `--preflight-only` + 음성 대조(틀린 `--helper-sha`) ⑤ §12.4 의 확인 관문.
+
+§11 이 SA 를 분리하며 든 우려("M 렌더 검증에 걸릴 수 있어")는 실제 게이트 코드로 **해당 없음**을 확인했다 — shared 의 렌더 검증은 Job 문서만 본다.
