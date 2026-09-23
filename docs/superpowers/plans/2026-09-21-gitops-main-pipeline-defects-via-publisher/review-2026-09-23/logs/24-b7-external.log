@@ -1,0 +1,24 @@
+### 2026-09-23T10:17:31Z sites
+https://app.leva.ai.kr                        200 text/html 14251B
+https://leva.ai.kr                            200 text/html; charset=utf-8 43651B
+https://leva.ai.kr/api/invite-rounds          200 application/json; charset=utf-8 2B
+### oauth start
+https://api.leva.ai.kr/oauth2/authorization/github      302
+https://api.leva.ai.kr/oauth2/authorization/google      302
+### gateway health via api
+200
+### github controls
+main=5961922b9a309055a75bc7302e5c852c5c51d59c
+21194270 mission-spine-main-governance active
+21194269 mission-spine-main-integrity active
+enforce_admins=true
+env policies=branch:main
+busy runs=0 waiting=0
+trigger branch: cbf15384 (9/21 precedent left its trigger branch too)
+### helper run timing
+9 Test the exact pipeline-defects target: success 2026-09-23T10:09:42Z -> 2026-09-23T10:10:09Z
+10 Mint the production-scoped release App token: success 2026-09-23T10:10:09Z -> 2026-09-23T10:10:09Z
+11 Checkout current protected main with release App authority: success 2026-09-23T10:10:09Z -> 2026-09-23T10:10:10Z
+12 Authenticate authority and the target graph: success 2026-09-23T10:10:11Z -> 2026-09-23T10:10:12Z
+13 Fast-forward protected main to the exact tested pipeline-defects target: success 2026-09-23T10:10:12Z -> 2026-09-23T10:10:15Z
+14 Re-authenticate the published main: success 2026-09-23T10:10:15Z -> 2026-09-23T10:10:16Z

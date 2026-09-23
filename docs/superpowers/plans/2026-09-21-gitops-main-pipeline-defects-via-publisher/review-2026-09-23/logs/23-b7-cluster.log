@@ -1,0 +1,72 @@
+### 10:17:18 node
+ 10:17:18 up 44 days,  6:17,  0 users,  load average: 2.29, 2.16, 1.72
+### deployments
+NAME                       PAUSED   REPLICAS   READY   UPDATED   AVAILABLE   GEN   OBS   SP_PERIOD
+devpath-notification-svc   <none>   1          1       1         1           13    13    5
+devpath-ai-svc             <none>   1          1       1         1           19    19    5
+devpath-lcs-svc            <none>   1          1       1         1           16    16    5
+devpath-community-svc      <none>   1          1       1         1           17    17    5
+devpath-learning-svc       <none>   1          1       1         1           20    20    5
+devpath-sandbox-svc        <none>   1          1       1         1           34    34    5
+devpath-platform-svc       <none>   1          1       1         1           31    31    5
+devpath-gateway            <none>   1          1       1         1           17    17    5
+### paused count: 0
+### active RS per deployment (expect 1 each)
+devpath-ai-svc 1
+devpath-community-svc 1
+devpath-gateway 1
+devpath-lcs-svc 1
+devpath-learning-svc 1
+devpath-notification-svc 1
+devpath-platform-svc 1
+devpath-sandbox-svc 1
+### pods (all)
+NAME                                                              PHASE       READY    RESTARTS   STARTED                SP
+devpath-admin-7df5b464c7-542tv                                    Running     true     0          2026-09-21T08:08:24Z   <none>
+devpath-ai-svc-56b6978666-n6qmp                                   Running     true     0          2026-09-23T10:14:23Z   5
+devpath-community-svc-7584c8dc46-q9zlc                            Running     true     0          2026-09-23T10:15:04Z   5
+devpath-flyway-migrate-81029e190726-6db1109cf9bd7e732b580596nbw   Succeeded   false    0          2026-09-21T08:05:26Z   <none>
+devpath-gateway-5c9f9dcb7c-j2cp2                                  Running     true     0          2026-09-23T10:16:44Z   5
+devpath-lcs-svc-7c6895dbd9-j8wsd                                  Running     true     0          2026-09-23T10:14:46Z   5
+devpath-learning-svc-669f7ff6cf-dtqsc                             Running     true     0          2026-09-23T10:15:28Z   5
+devpath-notification-svc-5f86d5b8b-k78xw                          Running     true     0          2026-09-23T10:13:41Z   5
+devpath-platform-svc-69d68b56c-kbq5c                              Running     true     0          2026-09-23T10:16:20Z   5
+devpath-sandbox-runner-7f9f47b4d9-g2btg                           Running     true     0          2026-08-23T09:27:49Z   <none>
+devpath-sandbox-svc-76b58dbbc7-52cvm                              Running     true     0          2026-09-23T10:15:52Z   5
+devpath-web-c656976c-tj42d                                        Running     true     0          2026-09-21T08:40:35Z   <none>
+elasticsearch-6fb897cd48-jx66t                                    Running     true     0          2026-08-22T01:13:09Z   5
+ollama-7d9cf64bd7-bl8fw                                           Running     true     1          2026-07-28T10:11:51Z   <none>
+ollama-gpu-56f889bdb8-2n65p                                       Pending     <none>   <none>     <none>                 <none>
+ollama-gpu-56f889bdb8-fntnx                                       Running     true     0          2026-09-04T07:50:40Z   <none>
+redis-954859c7b-45x9h                                             Running     true     2          2026-07-27T07:17:20Z   <none>
+### argo apps
+NAME                       SYNC     HEALTH        REV
+devpath-admin              Synced   Healthy       5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-ai-svc             Synced   Healthy       5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-community-svc      Synced   Healthy       5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-elasticsearch      Synced   Healthy       5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-gateway            Synced   Healthy       5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-lcs-svc            Synced   Healthy       5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-learning-svc       Synced   Healthy       5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-migration          Synced   Healthy       5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-notification-svc   Synced   Healthy       5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-ollama             Synced   Healthy       5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-ollama-gpu         Synced   Progressing   5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-platform-svc       Synced   Healthy       5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-redis              Synced   Healthy       5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-sandbox-runner     Synced   Healthy       5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-sandbox-svc        Synced   Healthy       5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-web                Synced   Healthy       5961922b9a309055a75bc7302e5c852c5c51d59c
+### apps at target: 16 / 16
+### fence SA live + managers
+[{"name":"ghcr-pull"}]
+[('kubectl-patch', 'Update', '2026-09-21T03:18:25Z')]
+### recent warnings (30m)
+2m42s       Warning   Unhealthy          pod/devpath-ai-svc-56b6978666-n6qmp            Startup probe failed: Get "http://10.42.0.202:8080/actuator/health/liveness": dial tcp 10.42.0.202:8080: connect: connection refused
+2m24s       Warning   Unhealthy          pod/devpath-lcs-svc-7c6895dbd9-j8wsd           Startup probe failed: Get "http://10.42.0.203:8080/actuator/health/liveness": dial tcp 10.42.0.203:8080: connect: connection refused
+2m          Warning   Unhealthy          pod/devpath-community-svc-7584c8dc46-q9zlc     Startup probe failed: Get "http://10.42.0.204:8080/actuator/health/liveness": dial tcp 10.42.0.204:8080: connect: connection refused
+96s         Warning   Unhealthy          pod/devpath-learning-svc-669f7ff6cf-dtqsc      Startup probe failed: Get "http://10.42.0.205:8080/actuator/health/liveness": dial tcp 10.42.0.205:8080: connect: connection refused
+78s         Warning   Unhealthy          pod/devpath-sandbox-svc-76b58dbbc7-52cvm       Startup probe failed: Get "http://10.42.0.206:8080/actuator/health/liveness": dial tcp 10.42.0.206:8080: connect: connection refused
+72s         Warning   Unhealthy          pod/devpath-sandbox-svc-76b58dbbc7-52cvm       Readiness probe failed: HTTP probe failed with statuscode: 503
+45s         Warning   Unhealthy          pod/devpath-platform-svc-69d68b56c-kbq5c       Startup probe failed: Get "http://10.42.0.207:8080/actuator/health/liveness": dial tcp 10.42.0.207:8080: connect: connection refused
+31s         Warning   Unhealthy          pod/devpath-gateway-5c9f9dcb7c-j2cp2           Startup probe failed: Get "http://10.42.0.208:8080/actuator/health/liveness": dial tcp 10.42.0.208:8080: connect: connection refused

@@ -1,0 +1,145 @@
+### node
+ 10:05:28 up 44 days,  6:05,  0 users,  load average: 2.83, 2.83, 1.69
+4
+Wed Sep 23 10:05:28 UTC 2026
+### deployments
+NAME                       PAUSED   REPLICAS   READY   UPDATED   GEN   OBS   STARTUPPROBE
+devpath-notification-svc   <none>   1          1       1         10    10    <none>
+devpath-ai-svc             <none>   1          1       1         16    16    <none>
+devpath-lcs-svc            <none>   1          1       1         13    13    <none>
+devpath-community-svc      <none>   1          1       1         14    14    <none>
+devpath-learning-svc       <none>   1          1       1         17    17    <none>
+devpath-sandbox-svc        <none>   1          1       1         31    31    <none>
+devpath-platform-svc       <none>   1          1       1         28    28    <none>
+devpath-gateway            <none>   1          1       1         14    14    <none>
+### replicasets (owned by the 8)
+devpath-ai-svc-5658f85987             devpath-ai-svc             0         <none>
+devpath-ai-svc-5954cb7bc4             devpath-ai-svc             0         <none>
+devpath-ai-svc-5b44c4fb9              devpath-ai-svc             1         1
+devpath-ai-svc-5cbcf8cf87             devpath-ai-svc             0         <none>
+devpath-ai-svc-76c8fbd447             devpath-ai-svc             0         <none>
+devpath-ai-svc-7c9f94955d             devpath-ai-svc             0         <none>
+devpath-ai-svc-7dff6cdd5f             devpath-ai-svc             0         <none>
+devpath-ai-svc-866845b6bf             devpath-ai-svc             0         <none>
+devpath-ai-svc-8b986b786              devpath-ai-svc             0         <none>
+devpath-ai-svc-d5c47fbcd              devpath-ai-svc             0         <none>
+devpath-ai-svc-fb576db4f              devpath-ai-svc             0         <none>
+devpath-community-svc-5b69d8d95c      devpath-community-svc      1         1
+devpath-community-svc-5d45c8df48      devpath-community-svc      0         <none>
+devpath-community-svc-66875c98ff      devpath-community-svc      0         <none>
+devpath-community-svc-66f797967d      devpath-community-svc      0         <none>
+devpath-community-svc-6c9c4bff84      devpath-community-svc      0         <none>
+devpath-community-svc-6dcbfb8784      devpath-community-svc      0         <none>
+devpath-community-svc-6f64dd8799      devpath-community-svc      0         <none>
+devpath-community-svc-7bc559c877      devpath-community-svc      0         <none>
+devpath-community-svc-85569ffb9d      devpath-community-svc      0         <none>
+devpath-community-svc-866dd487ff      devpath-community-svc      0         <none>
+devpath-community-svc-cc87f4d4        devpath-community-svc      0         <none>
+devpath-gateway-58774788f6            devpath-gateway            0         <none>
+devpath-gateway-58876bc544            devpath-gateway            0         <none>
+devpath-gateway-5ccbd9844b            devpath-gateway            0         <none>
+devpath-gateway-6bcddfbd74            devpath-gateway            0         <none>
+devpath-gateway-6bdb89db44            devpath-gateway            1         1
+devpath-gateway-6dc67c595f            devpath-gateway            0         <none>
+devpath-gateway-7485577b54            devpath-gateway            0         <none>
+devpath-gateway-78b55447c7            devpath-gateway            0         <none>
+devpath-gateway-7f5d985b9f            devpath-gateway            0         <none>
+devpath-gateway-cb9d4786b             devpath-gateway            0         <none>
+devpath-gateway-f64d45fc              devpath-gateway            0         <none>
+devpath-lcs-svc-54b7696dfd            devpath-lcs-svc            0         <none>
+devpath-lcs-svc-59f74b67db            devpath-lcs-svc            0         <none>
+devpath-lcs-svc-5d7556dd97            devpath-lcs-svc            0         <none>
+devpath-lcs-svc-66d55b9b7             devpath-lcs-svc            0         <none>
+devpath-lcs-svc-754bfff658            devpath-lcs-svc            0         <none>
+devpath-lcs-svc-766d74546f            devpath-lcs-svc            0         <none>
+devpath-lcs-svc-7895b467db            devpath-lcs-svc            0         <none>
+devpath-lcs-svc-7b6bf4748             devpath-lcs-svc            1         1
+devpath-lcs-svc-7cfd4d4fdf            devpath-lcs-svc            0         <none>
+devpath-lcs-svc-849bcc6bf4            devpath-lcs-svc            0         <none>
+devpath-lcs-svc-86d58765bb            devpath-lcs-svc            0         <none>
+devpath-learning-svc-54d9b896ff       devpath-learning-svc       0         <none>
+devpath-learning-svc-5956d8959c       devpath-learning-svc       0         <none>
+devpath-learning-svc-5c4fb9f878       devpath-learning-svc       0         <none>
+devpath-learning-svc-67989d678        devpath-learning-svc       1         1
+devpath-learning-svc-68b89c96f9       devpath-learning-svc       0         <none>
+devpath-learning-svc-6c9bf96799       devpath-learning-svc       0         <none>
+devpath-learning-svc-6fdcf65f         devpath-learning-svc       0         <none>
+devpath-learning-svc-7795d5987        devpath-learning-svc       0         <none>
+devpath-learning-svc-78fd56965b       devpath-learning-svc       0         <none>
+devpath-learning-svc-7b6798d6dc       devpath-learning-svc       0         <none>
+devpath-learning-svc-d69555578        devpath-learning-svc       0         <none>
+devpath-notification-svc-5d86b6884    devpath-notification-svc   0         <none>
+devpath-notification-svc-6746cb979    devpath-notification-svc   0         <none>
+devpath-notification-svc-7bbfd448bf   devpath-notification-svc   1         1
+devpath-notification-svc-7bf4ddf55c   devpath-notification-svc   0         <none>
+devpath-notification-svc-85cf5f6486   devpath-notification-svc   0         <none>
+devpath-notification-svc-865b68d5f4   devpath-notification-svc   0         <none>
+devpath-notification-svc-867fc6d8b5   devpath-notification-svc   0         <none>
+devpath-notification-svc-97c9467f4    devpath-notification-svc   0         <none>
+devpath-platform-svc-59dd96878b       devpath-platform-svc       1         1
+devpath-platform-svc-5b9dfc6c69       devpath-platform-svc       0         <none>
+devpath-platform-svc-5c8b7c85d5       devpath-platform-svc       0         <none>
+devpath-platform-svc-5f8fc9f5dc       devpath-platform-svc       0         <none>
+devpath-platform-svc-6fdb56574c       devpath-platform-svc       0         <none>
+devpath-platform-svc-77ccf7b86c       devpath-platform-svc       0         <none>
+devpath-platform-svc-78d4444798       devpath-platform-svc       0         <none>
+devpath-platform-svc-7bf84d9b47       devpath-platform-svc       0         <none>
+devpath-platform-svc-7d87f75d86       devpath-platform-svc       0         <none>
+devpath-platform-svc-d7c4bb9d5        devpath-platform-svc       0         <none>
+devpath-platform-svc-df878bcc6        devpath-platform-svc       0         <none>
+devpath-sandbox-svc-54f75f8b47        devpath-sandbox-svc        0         <none>
+devpath-sandbox-svc-55bbc7744b        devpath-sandbox-svc        0         <none>
+devpath-sandbox-svc-55cc7fc99d        devpath-sandbox-svc        0         <none>
+devpath-sandbox-svc-58dbdd6cf9        devpath-sandbox-svc        0         <none>
+devpath-sandbox-svc-66648f7fdb        devpath-sandbox-svc        1         1
+devpath-sandbox-svc-699ddfdb9         devpath-sandbox-svc        0         <none>
+devpath-sandbox-svc-75857598bc        devpath-sandbox-svc        0         <none>
+devpath-sandbox-svc-7b44d97c74        devpath-sandbox-svc        0         <none>
+devpath-sandbox-svc-7f579d66c8        devpath-sandbox-svc        0         <none>
+devpath-sandbox-svc-96855ff58         devpath-sandbox-svc        0         <none>
+devpath-sandbox-svc-b7479975f         devpath-sandbox-svc        0         <none>
+### pods
+NAME                                                              PHASE       READY    RESTARTS   STARTED
+devpath-admin-7df5b464c7-542tv                                    Running     true     0          2026-09-21T08:08:24Z
+devpath-ai-svc-5b44c4fb9-l4c5h                                    Running     true     0          2026-09-10T09:49:48Z
+devpath-community-svc-5b69d8d95c-4m999                            Running     true     0          2026-09-21T08:18:20Z
+devpath-flyway-migrate-81029e190726-6db1109cf9bd7e732b580596nbw   Succeeded   false    0          2026-09-21T08:05:26Z
+devpath-gateway-6bdb89db44-9sbpd                                  Running     true     0          2026-09-10T09:49:32Z
+devpath-lcs-svc-7b6bf4748-k46d7                                   Running     true     0          2026-09-21T08:19:06Z
+devpath-learning-svc-67989d678-r82sm                              Running     true     0          2026-09-21T08:19:29Z
+devpath-notification-svc-7bbfd448bf-h6xrh                         Running     true     0          2026-09-21T08:18:43Z
+devpath-platform-svc-59dd96878b-84kqn                             Running     true     0          2026-09-21T08:30:51Z
+devpath-sandbox-runner-7f9f47b4d9-g2btg                           Running     true     0          2026-08-23T09:27:49Z
+devpath-sandbox-svc-66648f7fdb-7hz82                              Running     true     0          2026-09-21T08:30:27Z
+devpath-web-c656976c-tj42d                                        Running     true     0          2026-09-21T08:40:35Z
+elasticsearch-6fb897cd48-jx66t                                    Running     true     0          2026-08-22T01:13:09Z
+ollama-7d9cf64bd7-bl8fw                                           Running     true     1          2026-07-28T10:11:51Z
+ollama-gpu-56f889bdb8-2n65p                                       Pending     <none>   <none>     <none>
+ollama-gpu-56f889bdb8-fntnx                                       Running     true     0          2026-09-04T07:50:40Z
+redis-954859c7b-45x9h                                             Running     true     2          2026-07-27T07:17:20Z
+### argo applications
+NAME                       SYNC     HEALTH        REV                                        AUTO
+devpath-admin              Synced   Healthy       30c0e9f717efaad9bd46d47721a61495f4093e96   map[prune:true selfHeal:true]
+devpath-ai-svc             Synced   Healthy       30c0e9f717efaad9bd46d47721a61495f4093e96   map[prune:true selfHeal:true]
+devpath-community-svc      Synced   Healthy       30c0e9f717efaad9bd46d47721a61495f4093e96   map[prune:true selfHeal:true]
+devpath-elasticsearch      Synced   Healthy       30c0e9f717efaad9bd46d47721a61495f4093e96   map[prune:true selfHeal:true]
+devpath-gateway            Synced   Healthy       30c0e9f717efaad9bd46d47721a61495f4093e96   map[prune:true selfHeal:true]
+devpath-lcs-svc            Synced   Healthy       30c0e9f717efaad9bd46d47721a61495f4093e96   map[prune:true selfHeal:true]
+devpath-learning-svc       Synced   Healthy       30c0e9f717efaad9bd46d47721a61495f4093e96   map[prune:true selfHeal:true]
+devpath-migration          Synced   Healthy       30c0e9f717efaad9bd46d47721a61495f4093e96   map[prune:true selfHeal:true]
+devpath-notification-svc   Synced   Healthy       30c0e9f717efaad9bd46d47721a61495f4093e96   map[prune:true selfHeal:true]
+devpath-ollama             Synced   Healthy       30c0e9f717efaad9bd46d47721a61495f4093e96   map[prune:true selfHeal:true]
+devpath-ollama-gpu         Synced   Progressing   30c0e9f717efaad9bd46d47721a61495f4093e96   map[prune:true selfHeal:true]
+devpath-platform-svc       Synced   Healthy       30c0e9f717efaad9bd46d47721a61495f4093e96   map[prune:true selfHeal:true]
+devpath-redis              Synced   Healthy       30c0e9f717efaad9bd46d47721a61495f4093e96   map[prune:true selfHeal:true]
+devpath-sandbox-runner     Synced   Healthy       30c0e9f717efaad9bd46d47721a61495f4093e96   map[prune:true selfHeal:true]
+devpath-sandbox-svc        Synced   Healthy       30c0e9f717efaad9bd46d47721a61495f4093e96   map[prune:true selfHeal:true]
+devpath-web                Synced   Healthy       30c0e9f717efaad9bd46d47721a61495f4093e96   map[prune:true selfHeal:true]
+### applicationset ignoreApplicationDifferences
+
+### argocd-cm timeout.reconciliation
+(empty = default 180s)
+### fence SA imagePullSecrets
+[{"name":"ghcr-pull"}]
+### notification app syncPolicy
+{"automated":{"prune":true,"selfHeal":true},"syncOptions":["CreateNamespace=true"]}

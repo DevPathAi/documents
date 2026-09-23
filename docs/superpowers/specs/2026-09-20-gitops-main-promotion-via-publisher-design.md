@@ -307,7 +307,7 @@ gitops `main` 은 `c1d5e8cf` → **`fcf97cf686df8e8bad56597d4679f9a96fd597fc`**(
 이번에는 실행 중 드러난 결함이 없었다 — preflight 가 post_verify 의 읽기 경로를 전부 미리 지나간 덕이다(§10 의 결함과 대비).
 **다음**: `gitops.base_sha` = `fcf97cf6…` 로 r3 — `handoff-2026-09-21-afternoon-main-unfenced-r3-next.md` §3.
 
-## 12. 부록 (2026-09-21 밤) — 같은 publisher 로 파이프라인 결함 3건을 main 에 올린다 · **준비 완료 — 실행 전(§12.4 의 확인 관문 대기)**(§12.5)
+## 12. 부록 (2026-09-21 밤) — 같은 publisher 로 파이프라인 결함 3건을 main 에 올린다 · **운영 반영 완료(2026-09-23, §12.6)**
 
 **왜**: 2026-09-21 의 사고 세 건(`handoff-2026-09-21-night-session-close.md` §3) 가운데 둘의 근본 원인과, 그날 드러난 수동 의존 하나가 gitops 통제면에 남아 있다.
 전부 main 대상 PR 이 막히는 경로(`apps/**` · `scripts/release/**`)라 §1 의 publisher 가 정식 경로다.
@@ -382,6 +382,23 @@ main 이 r3 의 mission-on 커밋에서 벗어나는 순간부터 다음 릴리�
 
 **끝난 검증(9/22)**: 기준선 `tests/release` 347 OK(skipped 3) → target 트리 **354 OK**(새 테스트 7건은 RED 확인 뒤 GREEN) · 9개 앱 kustomize 렌더 diff = 서비스마다 `startupProbe` 7줄, migration 은 `imagePullSecrets` 2줄, 삭제 0 · `_probe_api` 실물: `https://leva.ai.kr` 수락, **9/21 사고의 함수 없는 배포 `9814656f.devpath-home-page.pages.dev` 는 `HTTPError 404` 로 거부** · `prove_next_base.py` 7/7(target 은 gitops chain base 요건과 shared 의 실제 렌더 경로 `set-migration-release` → build → `validate-migration-render` 를 통과, 대조군 3건은 거부) · 헬퍼는 9/21 실행본 대비 치환표의 항목만 다름(diff 70줄) · 계약 테스트 16건: 9/21 워크플로에 RED(8건) → 새 워크플로에 GREEN · actionlint(헬퍼·디스패처) · 계약 변이 9종 전부 killed · step 변이: 실제 target 통과 / 11경로·13경로는 전체 목록 비교에서, 같은 12경로의 내용 변조는 트리 핀에서 사망 · 실행 스크립트는 9/21 실행본 대비 좌표 8줄만 다름, 단위 테스트 18 OK.
 
-**남은 준비**: 없음. **다음 = §12.4 의 확인 관문** — 실행 시점("지금" / "다음 릴리스 캠페인의 0단계") 과 F5 의 되돌림 방식((a) 보류 / (b) 되돌림 target 선제작) 을 함께 묻는다. 실행 절차 = 계획 문서 Part B(B2 는 §12.3 1단계의 강제 재조정으로 갱신됨). 실행 직전 preflight 를 다시 돌려 `origin/main == MAIN_SHA` 를 확인한다 — 움직였으면 핀 전부 무효.
+**남은 준비**: 없음. §12.4 의 확인 관문은 2026-09-23 에 통과했다(사용자 결정: "지금 실행" + 되돌림 "(a) 보류") → 실행 결과는 §12.6.
 
 §11 이 SA 를 분리하며 든 우려("M 렌더 검증에 걸릴 수 있어")는 실제 게이트 코드로 **해당 없음**을 확인했다 — shared 의 렌더 검증은 Job 문서만 본다.
+
+### 12.6 실행 결과 (2026-09-23 10:05~10:17 UTC — 무중단, 재시작 0)
+
+**결정(사용자, 2026-09-23)**: 지금 실행 · 되돌림은 (a) 보류. **결과**: gitops `main` = **`5961922b9a309055a75bc7302e5c852c5c51d59c`**(target, 트리 `85d71a7f…`) · 8개 JVM 서비스 전부 `startupProbe` 가 든 새 파드로 교체(재시작 0, 각 12~27초) · fence SA `imagePullSecrets` 가 git 에 선언됨 · landing-last 는 다음 실행부터 `/api/invite-rounds` 를 직접 확인한다. **다음 candidate 의 `gitops.base_sha` = `5961922b…`**. r3 자동 롤백 레인은 다음 승격까지 닫힘(§12.4).
+
+| 시각(UTC) | 단계 | 실측 |
+|---|---|---|
+| 10:05:28 | B1 | preflight 재실행 OK · 8개 `paused` 없음 · 재시작 0 · Argo 16개 `30c0e9f7` Synced(ollama-gpu Progressing 은 기존) · 부하 2.8/4 · fence SA 수동 `ghcr-pull` 생존 |
+| 10:06:03 | B2 | notification `rollout pause` + `argocd.argoproj.io/refresh=hard` → `reconciledAt` 즉시 갱신 · `Synced / Suspended` · `paused=true` 100초 유지 · 새 sync 작업 없음 · 파드 그대로 → **Argo selfHeal 은 sync 전 pause 도 되돌리지 않는다**(§12.3 1단계의 미실측이 닫힘) |
+| 10:08:04~06 | B3 | 나머지 7개 pause(+강제 재조정) → 8/8 `paused` · 8개 앱 `Synced / Suspended` · 재시작 0 |
+| 10:08:57~10:11:20 | B4 | `run_pipeline_defects_main_publish.py`(`--staged-sha cbf1538…`, `--helper-sha 0460230…`): 정책 추가 → 방아쇠 push → 헬퍼 런 **`35847142542`** `waiting`(10:09:21, 봇 디스패치, attempt 1) → 정책 `branch:main` 단독 복원 → 리뷰어 승인(배포 id `6611409255`) → 14 step 전부 success(target 전체 테스트 27초 · fast-forward 10:10:12~15) → main CI **`35847233195`** success → 사후 검증(룰셋 2종 active · `enforce_admins` · 환경 스냅샷 동일 · 사이트 200) — 2분 23초 |
+| 10:11:45 | B5 1차 | Argo 기본 폴링(3분) 중이라 16개 중 6개가 target · ai·lcs 템플릿에 `startupProbe`, paused 라 `updatedReplicas 0`·새 RS 없음 |
+| 10:12:27~10:13:08 | B5 2차 | 16개 앱 강제 재조정 → **16/16 `5961922b` Synced** · 8개 템플릿 `startupProbe`(5초×60, `/actuator/health/liveness`) · 새 RS 0 · 파드 8개 그대로 · fence SA live 유지(관리자는 9/21 의 `kubectl-patch`; git 과 같은 값이라 Argo 는 diff 없음으로 재적용하지 않음) |
+| 10:13:40~10:16:55 | B6 | `rollout resume` 하나씩: notification 17s → ai 21s → lcs 17s → community 21s → learning 21s → sandbox 27s(`maxSurge 0`, readiness 503 1회) → platform 22s → gateway 12s. 새 파드 전부 재시작 0 · `startupProbe` 적용 · 각 앱 `Synced / Healthy` · 부하 최대 2.3 |
+| 10:17:18~31 | B7 | `paused` 0 · Deployment 마다 활성 RS 1 · 전 파드 재시작 0 · 16개 앱 target Synced/Healthy · `app.leva.ai.kr` 200 · `leva.ai.kr` 200 · `/api/invite-rounds` 200 JSON · `api.leva.ai.kr/oauth2/authorization/{github,google}` 302 · 룰셋·`enforce_admins`·환경 정책 불변 · 진행/대기 런 0. 경고 이벤트 = 기동 중 `startupProbe` 의 `connection refused`(예산 안, 정상) |
+
+**남은 것**: origin 의 `fix/pipeline-defects-main-20260921` · `chore/pipeline-defects-publish-20260921` · `…-dispatcher-staged-20260921` · `automation/dispatch-pipeline-defects-main-publish` 는 9/21 선례처럼 감사 흔적으로 둔다. 로컬 워크트리·dev 브랜치는 삭제. 로그 `plans/2026-09-21-gitops-main-pipeline-defects-via-publisher/review-2026-09-23/logs/16~25`, 절차 스크립트 `part-b-*.sh`.
