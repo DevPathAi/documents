@@ -398,16 +398,16 @@ A	tests/release/test_production_startup_budget.py
 
 ---
 
-## Part B — 실행 (사용자 확인 뒤, 스펙 §12.3)
+## Part B — 실행 (사용자 확인 뒤, 스펙 §12.3) — **2026-09-23 완료**(아래 「실행 기록 — Part B」)
 
-- [ ] **B1:** `--preflight-only` 재실행(`main moved` 면 중단) + 클러스터 읽기 점검(8개 Deployment `paused` 없음 · 재시작 0 · Argo 전부 Synced/Healthy · 노드 load).
-- [ ] **B2:** `kubectl -n devpath rollout pause deployment/devpath-notification-svc` → 90초 동안 15초 간격으로 `spec.paused` 와 Argo `sync.status` 관찰. Argo 가 되돌리면 **중단**(resume 후 재설계).
-- [ ] **B3:** 나머지 7개 pause → 8개 전부 `paused: true` 확인.
-- [ ] **B4:** `run_pipeline_defects_main_publish.py --repo-dir … --staged-sha … --helper-sha … --comment …` — 환경 정책 임시 추가 → 방아쇠 push → waiting 확인 → main-only 복원·검증 → 승인 → 전 step success → post_verify. `RestoreError` 면 승인하지 않는다.
-- [ ] **B5:** `main == TARGET_SHA` · main CI success → Argo sync 뒤: 8개 Deployment 템플릿에 `startupProbe` · ReplicaSet 수와 파드가 그대로 · fence SA `imagePullSecrets` 유지.
-- [ ] **B6:** notification → ai → lcs → community → learning → sandbox → platform → gateway 순으로 하나씩 `rollout resume` → `rollout status --timeout=6m` → 새 파드 `restartCount == 0` · `startupProbe` 존재 확인 → 다음. 실패 시 그 Deployment 를 다시 pause + 새 ReplicaSet `scale --replicas=0`, 중단하고 보고.
-- [ ] **B7:** 사후 — 8개 앱 Synced/Healthy · `paused` 없음 · 전 파드 재시작 0 · `app.leva.ai.kr`·`leva.ai.kr` 200 · OAuth 시작 경로 302 · 룰셋·`enforce_admins`·환경 정책 불변.
-- [ ] **B8:** 스펙 §12.6 실행 결과 · 핸드오프 · 메모리. 다음 candidate 의 `gitops.base_sha` = `TARGET_SHA`.
+- [x] **B1:** `--preflight-only` 재실행(`main moved` 면 중단) + 클러스터 읽기 점검(8개 Deployment `paused` 없음 · 재시작 0 · Argo 전부 Synced/Healthy · 노드 load).
+- [x] **B2:** `kubectl -n devpath rollout pause deployment/devpath-notification-svc` → 90초 동안 15초 간격으로 `spec.paused` 와 Argo `sync.status` 관찰. Argo 가 되돌리면 **중단**(resume 후 재설계).
+- [x] **B3:** 나머지 7개 pause → 8개 전부 `paused: true` 확인.
+- [x] **B4:** `run_pipeline_defects_main_publish.py --repo-dir … --staged-sha … --helper-sha … --comment …` — 환경 정책 임시 추가 → 방아쇠 push → waiting 확인 → main-only 복원·검증 → 승인 → 전 step success → post_verify. `RestoreError` 면 승인하지 않는다.
+- [x] **B5:** `main == TARGET_SHA` · main CI success → Argo sync 뒤: 8개 Deployment 템플릿에 `startupProbe` · ReplicaSet 수와 파드가 그대로 · fence SA `imagePullSecrets` 유지.
+- [x] **B6:** notification → ai → lcs → community → learning → sandbox → platform → gateway 순으로 하나씩 `rollout resume` → `rollout status --timeout=6m` → 새 파드 `restartCount == 0` · `startupProbe` 존재 확인 → 다음. 실패 시 그 Deployment 를 다시 pause + 새 ReplicaSet `scale --replicas=0`, 중단하고 보고.
+- [x] **B7:** 사후 — 8개 앱 Synced/Healthy · `paused` 없음 · 전 파드 재시작 0 · `app.leva.ai.kr`·`leva.ai.kr` 200 · OAuth 시작 경로 302 · 룰셋·`enforce_admins`·환경 정책 불변.
+- [x] **B8:** 스펙 §12.6 실행 결과 · 핸드오프 · 메모리. 다음 candidate 의 `gitops.base_sha` = `TARGET_SHA`.
 
 ---
 
@@ -439,3 +439,22 @@ A	tests/release/test_production_startup_budget.py
 7. **(9/23) 헬퍼 커밋을 push 전에 교체했다** — 리뷰 F1/F2 로 계약 테스트만 바뀌었고 워크플로 blob 은 그대로다. 파생 사슬은 `render_contract_test.py`(9/21 선례 → 렌더) 뒤에 `strengthen_contract_test.py`(리뷰된 워크플로 바이트에서 리터럴을 뽑아 테스트에 박는다)를 잇는다 — REVIEW.md 의 레시피를 갱신했다. 테스트가 워크플로의 리터럴을 품는 것은 리뷰어의 F8 대로 "자기 바이트 자가 점검"이지만, 리뷰된 바이트에서 벗어난 편집(다음 publisher 를 이 템플릿에서 치환해 만들 때 포함)을 테스트 diff 로 드러내는 것이 목적이다. 라이브 경계는 여전히 실행 스크립트의 `--helper-sha` 핀이다.
 8. **(9/23) 리뷰 방식** — Codex 는 계정 한도(10/19 까지)로 쓸 수 없어 REVIEW.md 대로 새 컨텍스트 서브에이전트(읽기 전용, Scope Lock)를 썼다. 지시문에 줄바꿈 사실(패키지 LF · 작업 트리 CRLF)을 적어 9/22 의 "전 줄이 다르다" 헛걸음을 막았다. 리뷰어의 F7: 지시문에 적은 "sandbox-svc 는 컨테이너 2개" 전제가 틀렸다(1개, 113행의 `sandbox-runner-mtls` 는 볼륨) — 리뷰어가 YAML 파싱으로 바로잡았다.
 9. **(9/23) `steps.app_token` 출현 수** — 리뷰 보고의 "정확히 3곳"은 step 3개를 뜻하고 문자열 출현은 7회(checkout 1 + 인증 step 3 + push step 3)다. 보강 스크립트는 값을 워크플로에서 세어 테스트에 박는다.
+
+---
+
+## 실행 기록 — Part B (2026-09-23, 사용자 결정 "지금 실행" + 되돌림 "(a) 보류")
+
+전문은 스펙 §12.6. 로그 `review-2026-09-23/logs/16~25`, 절차 스크립트 `review-2026-09-23/part-b-*.sh`(SSH 로 노드에서 `sudo kubectl`).
+
+| 단계 | 결과 |
+|---|---|
+| B1 | 10:05Z preflight OK · 8개 `paused` 없음 · 재시작 0 · Argo 전부 `30c0e9f7` Synced · 부하 2.8/4 |
+| B2 | 10:06:03Z notification pause + 강제 재조정 → `Synced / Suspended`, `paused=true` 100초 유지, 새 sync 없음 — **Argo 는 sync 전 pause 를 되돌리지 않는다** |
+| B3 | 10:08Z 8/8 paused · 8개 앱 Suspended |
+| B4 | 10:08:57~10:11:20Z publisher: 런 `35847142542`(봇 디스패치·리뷰어 승인·14 step success·fast-forward 10:10:12~15Z) · main CI `35847233195` success · 배포 `6611409255` · 사후 검증 통과 · `main == 5961922b` |
+| B5 | 1차 10:11:45Z 6/16(Argo 3분 폴링) → 16개 강제 재조정 → 10:13:08Z **16/16 target Synced**, 8개 템플릿 startupProbe, 새 RS 0, 파드 그대로 |
+| B6 | 10:13:40~10:16:55Z 하나씩 resume: notification 17s · ai 21s · lcs 17s · community 21s · learning 21s · sandbox 27s · platform 22s · gateway 12s — 전부 재시작 0 · Synced/Healthy(첫 한 개는 단독 실행으로 startupProbe 동작 확인, 나머지 7개는 실패 시 자동 pause+RS 0 루프) |
+| B7 | 10:17Z 전부 통과(스펙 §12.6 표) |
+| B8 | 스펙 §12.6 · 이 기록 · 핸드오프 `handoff-2026-09-23-pipeline-defects-published.md` · 메모리 |
+
+**계획 대비 편차**: B2 의 "90초 관찰"에 리뷰 F3 의 강제 재조정을 앞세웠다(`reconciledAt` 즉시 갱신 확인) · B5 는 Argo 폴링을 기다리지 않고 16개 앱을 강제 재조정했다(40초) · B6 의 나머지 7개는 실패 시 자동 정지하는 루프로 돌렸다 · fence SA 의 "last-applied 에 반영"은 일어나지 않았다(live 가 이미 같은 값이라 Argo 가 재적용할 diff 가 없음 — 필드가 사라지면 selfHeal 이 되돌리므로 결함은 닫힘).
