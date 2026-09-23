@@ -307,7 +307,7 @@ gitops `main` 은 `c1d5e8cf` → **`fcf97cf686df8e8bad56597d4679f9a96fd597fc`**(
 이번에는 실행 중 드러난 결함이 없었다 — preflight 가 post_verify 의 읽기 경로를 전부 미리 지나간 덕이다(§10 의 결함과 대비).
 **다음**: `gitops.base_sha` = `fcf97cf6…` 로 r3 — `handoff-2026-09-21-afternoon-main-unfenced-r3-next.md` §3.
 
-## 12. 부록 (2026-09-21 밤) — 같은 publisher 로 파이프라인 결함 3건을 main 에 올린다 · **준비 진행 중(독립 리뷰 대기) — 실행 전**(§12.5)
+## 12. 부록 (2026-09-21 밤) — 같은 publisher 로 파이프라인 결함 3건을 main 에 올린다 · **준비 완료 — 실행 전(§12.4 의 확인 관문 대기)**(§12.5)
 
 **왜**: 2026-09-21 의 사고 세 건(`handoff-2026-09-21-night-session-close.md` §3) 가운데 둘의 근본 원인과, 그날 드러난 수동 의존 하나가 gitops 통제면에 남아 있다.
 전부 main 대상 PR 이 막히는 경로(`apps/**` · `scripts/release/**`)라 §1 의 publisher 가 정식 경로다.
@@ -347,14 +347,18 @@ smoke 를 `/api/invite-rounds` 하나로 한정하는 이유: 부작용 없는 G
 
 **이 커밋은 그대로 sync 되면 9/21 의 herd 를 재현한다** — 파드 템플릿 8개가 한 번에 바뀌어 단일 노드(4 CPU)에서 JVM 8개가 동시에 롤링된다. 새 파드는 `startupProbe` 덕에 죽지 않지만 옛 파드의 liveness(timeout 1초)가 CPU 기아로 실패할 수 있다. 그래서 publisher **밖에** 직렬화 절차를 둔다.
 
-1. `kubectl -n devpath rollout pause deployment/devpath-notification-svc` 하나만 먼저 → 1~2분 관찰: Argo 가 `Synced` 를 유지하고 `spec.paused` 를 되돌리지 않는지(9/21 의 복구는 sync **뒤** pause 였다 — 순서가 다른 이번 경우는 미실측). 되돌린다면 멈추고 재설계한다.
+1. `kubectl -n devpath rollout pause deployment/devpath-notification-svc` 하나만 먼저 → **강제 재조정** `kubectl -n argocd annotate application devpath-notification-svc argocd.argoproj.io/refresh=hard --overwrite` → 재조정 뒤 `spec.paused == true` 와 `Synced` 를 확인. 리뷰 F3(2026-09-23): ApplicationSet 은 `selfHeal: true` 만 두고 재조정 주기는 기본 3분이라, 강제 재조정 없이 1~2분만 보면 self-heal 이 한 번도 돌지 않은 채 관문을 지날 수 있다. Argo 가 `spec.paused` 를 되돌리는지는 이때 실측된다(9/21 의 복구는 sync **뒤** pause 였다 — 순서가 다른 이번 경우는 미실측). 되돌린다면 멈추고 재설계한다. pause 된 Deployment 의 Argo health 는 **`Suspended`**("Deployment is paused")다 — 4단계까지 기대값은 `Synced / Suspended` 이고 `Healthy` 는 resume 뒤에 돌아온다.
 2. 나머지 7개 pause.
 3. publisher: §5.2 와 같다(환경 브랜치 정책 임시 추가 → 봇 디스패치 → waiting 확인 → main-only 복원·검증 → 승인). `prevent_self_review` 불변.
-4. `main == target` · main CI 성공 확인 → Argo sync 뒤 8개 Deployment 의 템플릿에 `startupProbe` 가 있고 **새 ReplicaSet 이 없고 파드가 그대로**임을 확인. fence SA 는 `imagePullSecrets` 유지 + last-applied 에 반영.
+4. `main == target` · main CI 성공 확인 → Argo sync 뒤 8개 Deployment 의 템플릿에 `startupProbe` 가 있고 **새 ReplicaSet 이 없고 파드가 그대로**임을 확인. fence SA 는 `imagePullSecrets` 유지 + last-applied 에 반영. 8개 앱의 기대 상태는 이 시점에 `Synced / Suspended`(pause 중)다.
 5. 하나씩 `rollout resume` → `rollout status` 대기 → 새 파드 `restartCount == 0` 확인, 순서는 notification → ai → lcs → community → learning → sandbox → platform → gateway(덜 중요한 것에서 프로브를 먼저 검증하고 관문은 마지막). sandbox 는 `maxSurge: 0` 이라 교체 동안 끊긴다(9/21 실측 기동 ~23초 — 모든 릴리스에서 같은 일이 일어난다).
 6. 사후: 8개 앱 `Synced/Healthy` · `paused` 없음 · 전 파드 재시작 0(다음 릴리스의 런타임 검증기가 `restartCount == 0` 을 요구한다) · `app.leva.ai.kr`·`leva.ai.kr` 200 · OAuth 시작 경로 302.
 
 **실패 처리**: 새 파드가 Ready 가 안 되면 그 Deployment 를 다시 pause 하고 새 ReplicaSet 을 `scale --replicas=0`(9/21 에 Argo 와 충돌 없이 동작) — 기본 전략에서는 옛 파드가 계속 서비스한다. publisher 가 승인 전에 실패하면 main 은 그대로이므로 8개를 `resume` 하면 원상이다(템플릿 무변화 → 롤아웃 없음).
+
+**publisher 가 방아쇠 push 뒤·승인 전에 멈춘 경우의 정리**(리뷰 F4): 스크립트는 환경 정책을 복원하고 승인하지 않지만 **방아쇠 브랜치와 `waiting` 런(보류 배포)은 남는다** — 다음 preflight 는 `dispatcher branch already exists`·`repository has waiting workflow runs` 로 정확히 막히므로 사람이 정리한다. ① 보류 배포를 리뷰어 계정으로 거부: `gh api --method POST repos/DevPathAi/devpath-gitops/actions/runs/<run_id>/pending_deployments -F 'environment_ids[]=<env_id>' -f state=rejected -f comment=abandoned`(환경 id 는 `gh api repos/DevPathAi/devpath-gitops/environments/mission-spine-production-off --jq .id`, 정수형은 `-F`) ② 방아쇠 브랜치 삭제: `git -C <clone> push origin --delete automation/dispatch-pipeline-defects-main-publish` ③ 환경 정책이 `branch:main` 단독인지 다시 확인. 남은 `waiting` 런을 UI 에서 승인하지 않는다. 승인 뒤 `gh run watch` 만 죽은 경우는 `--post-verify-only` 로 사후 검증을 잇는다.
+
+**되돌림의 실체**(리뷰 F5): 위 "다시 pause + 새 RS `scale 0`" 은 되돌림이 아니라 **보류**다(옛 파드가 계속 서비스). `kubectl rollout undo` 는 Argo self-heal 이 git 템플릿으로 되돌려 새 RS 를 다시 만들므로 쓸 수 없고, 템플릿을 실제로 되돌리는 길은 8개 deployment.yaml 을 `MAIN_SHA` 의 blob 으로 되돌리는 **또 한 번의 publisher**(target·헬퍼·리뷰·승인 — 수 시간)뿐이다. r3 자동 롤백 레인은 §12.4 대로 닫혀 있다. 보류 상태(`Suspended`, `updatedReplicas: 0`)는 다음 캠페인의 런타임 검증(`restartCount == 0`)과 충돌하지 않지만 그 캠페인이 템플릿을 바꾸는 순간 풀린다. **선택지**(확인 관문에서 함께 묻는다): (a) 보류로 충분하다고 보고 되돌림 target 은 만들지 않는다 — `startupProbe` 는 새 파드를 더 오래 기다려 줄 뿐 옛 파드의 동작을 바꾸지 않으므로 실패 양상은 "새 파드가 안 뜬다"에 한정된다 (b) 실행 전에 되돌림 target(`TARGET_SHA` 의 자식, 8개 파일만 `MAIN_SHA` blob)과 헬퍼를 미리 만들어 둔다(준비 1세션 추가).
 
 ### 12.4 되돌릴 수 없는 지점과 확인 관문
 
@@ -364,18 +368,20 @@ main 이 r3 의 mission-on 커밋에서 벗어나는 순간부터 다음 릴리�
 
 스크립트: `plans/2026-09-21-gitops-main-pipeline-defects-via-publisher/`.
 
-### 12.5 준비 현황 (2026-09-22 새벽, 세션 종료 시점)
+### 12.5 준비 현황 (2026-09-23 — 준비 완료, 확인 관문 대기)
 
 | 좌표 | 값 | 상태 |
 |---|---|---|
-| `MAIN_SHA` = `HELPER_BASE_SHA` | `30c0e9f717efaad9bd46d47721a61495f4093e96` | 세션 종료 시 `origin/main` 과 일치 |
-| target `fix/pipeline-defects-main-20260921` | `5961922b9a309055a75bc7302e5c852c5c51d59c` · 트리 `85d71a7f6734d781df3ea0f287ae8569a1b801e4`(`make_pipeline_defects_target.py`, 두 번 실행해 같은 SHA) | **push 됨** |
-| 헬퍼 `chore/pipeline-defects-publish-20260921` | `3e67810471eaf90499e26134f2e76c942c25d711`(2경로: publisher · `tests/release/test_pipeline_defects_main_publish.py`) | **로컬 커밋만 — 리뷰 뒤 push** |
-| staged 디스패처 `chore/pipeline-defects-publish-dispatcher-staged-20260921` | `cbf153840adfba33c3460de0ae653cf54a02b4e2`(1경로 추가) | **로컬 커밋만 — 리뷰 뒤 push** |
+| `MAIN_SHA` = `HELPER_BASE_SHA` | `30c0e9f717efaad9bd46d47721a61495f4093e96` | 2026-09-23 preflight 시점 `origin/main` 과 일치 |
+| target `fix/pipeline-defects-main-20260921` | `5961922b9a309055a75bc7302e5c852c5c51d59c` · 트리 `85d71a7f6734d781df3ea0f287ae8569a1b801e4`(`make_pipeline_defects_target.py`, 두 번 실행해 같은 SHA) | **push 됨**(9/22) · 리뷰에서 변경 없음 |
+| 헬퍼 `chore/pipeline-defects-publish-20260921` | **`046023061409ba534d3abce5523aaf348ad70dfc`**(2경로: publisher blob `ef7b4def…` 은 9/22 와 동일 · 계약 테스트는 리뷰 F1/F2 로 보강, blob `dacf1dfd…`). 9/22 의 `3e67810…` 은 push 전에 교체됨 | **push 됨**(2026-09-23) |
+| staged 디스패처 `chore/pipeline-defects-publish-dispatcher-staged-20260921` | `cbf153840adfba33c3460de0ae653cf54a02b4e2`(1경로 추가) | **push 됨**(2026-09-23) |
 | 방아쇠 `automation/dispatch-pipeline-defects-main-publish` | — | **없음**(그 이름으로 push 하는 것이 실행) |
 
-**끝난 검증**: 기준선 `tests/release` 347 OK(skipped 3) → target 트리 **354 OK**(새 테스트 7건은 RED 확인 뒤 GREEN) · 9개 앱 kustomize 렌더 diff = 서비스마다 `startupProbe` 7줄, migration 은 `imagePullSecrets` 2줄, 삭제 0 · `_probe_api` 실물: `https://leva.ai.kr` 수락, **9/21 사고의 함수 없는 배포 `9814656f.devpath-home-page.pages.dev` 는 `HTTPError 404` 로 거부** · `prove_next_base.py` 7/7(target 은 gitops chain base 요건과 shared 의 실제 렌더 경로 `set-migration-release` → build → `validate-migration-render` 를 통과, 대조군 3건은 거부) · 헬퍼는 9/21 실행본 대비 치환표의 항목만 다름(diff 70줄) · 계약 테스트 16건: 9/21 워크플로에 RED(8건) → 새 워크플로에 GREEN · actionlint(헬퍼·디스패처) · 계약 변이 9종 전부 killed · step 변이: 실제 target 통과 / 11경로·13경로는 전체 목록 비교에서, 같은 12경로의 내용 변조는 트리 핀에서 사망 · 실행 스크립트는 9/21 실행본 대비 좌표 8줄만 다름, 단위 테스트 18 OK.
+**2026-09-23 검증(리뷰·보강·preflight)**: 리뷰 패키지를 `REVIEW.md` 레시피대로 커밋 바이트에서 재구성(렌더 결과 = 로컬 헬퍼 blob) · `mutation_check.py` 4/4 · `prove_next_base.py` 7/7 재실행 · **독립 리뷰(새 컨텍스트, 읽기 전용) 완료** — 판정 "Ready to publish = Yes(바이트 그대로, `--helper-sha` 정확 전달 조건)", 발견 Medium 1 · Low 4 · Info 4(전문 `plans/2026-09-21-gitops-main-pipeline-defects-via-publisher/review-2026-09-23/REPORT.md`) · **F1(Medium)** 계약 테스트가 push 관여 step 을 조각 문자열로만 고정 → 리뷰어의 변이 16종이 **전부 SURVIVED 로 재현**(`review-2026-09-23/logs/12-…`) → `strengthen_contract_test.py` 로 보강(mint 이후 step 은 리뷰된 문서와 dict 전체 동등 · step 이름 열·action 집합·`steps.app_token` 7회·runner 정확 · 게이트 4 step 본문 줄 단위 정확 · `|| :`/`true ||`/`printf -v`/`export`/핀 재할당 금지) → 변이 **25/25 killed**(`logs/13-…`), 새 테스트 18건이 헬퍼 워크플로에 GREEN · 9/21 워크플로에 RED(11건) · **F2(Low)** 같은 보강으로 해소 · **F3~F5(Low, 실행 절차)** 는 §12.3 에 반영 · **F6~F9(Info)** 변경 없음(F7: sandbox-svc 컨테이너는 1개 — 지시문의 "2개" 전제가 틀렸고 113행의 `sandbox-runner-mtls` 는 볼륨) · 리뷰 전후 5개 레포(gitops·documents·shared·홈·frontend) 스냅샷 동일 · 헬퍼 커밋 교체(워크플로 blob 불변) → 헬퍼·디스패처 push(워크플로 실행 없음 확인) · **live `--preflight-only` OK**(`{"preflight": "ok", "helper_sha": "0460230…"}`, `logs/14-…`) · **음성 대조**: 폐기된 `3e67810` 을 `--helper-sha` 로 → 첫 쓰기 전 `helper branch moved away from the reviewed commit` 거부(`logs/15-…`), 그 뒤 환경 정책 `branch:main` 단독·방아쇠 없음 유지.
 
-**남은 준비**: ① 독립 리뷰(새 컨텍스트, 읽기 전용) — 세션 종료 시점에 **진행 중이었고 결과를 받지 못했다.** 입력 패키지를 다시 만드는 명령과 지시문의 뼈대는 `plans/2026-09-21-gitops-main-pipeline-defects-via-publisher/REVIEW.md` 에 있다. 다음 세션은 리뷰를 **처음부터 다시** 돌린다 ② 발견 사항을 변이·재현으로 확인한 뒤 수정(헬퍼·target 이 바뀌면 핀을 다시 굴린다) ③ 헬퍼·디스패처 push ④ live `--preflight-only` + 음성 대조(틀린 `--helper-sha`) ⑤ §12.4 의 확인 관문.
+**끝난 검증(9/22)**: 기준선 `tests/release` 347 OK(skipped 3) → target 트리 **354 OK**(새 테스트 7건은 RED 확인 뒤 GREEN) · 9개 앱 kustomize 렌더 diff = 서비스마다 `startupProbe` 7줄, migration 은 `imagePullSecrets` 2줄, 삭제 0 · `_probe_api` 실물: `https://leva.ai.kr` 수락, **9/21 사고의 함수 없는 배포 `9814656f.devpath-home-page.pages.dev` 는 `HTTPError 404` 로 거부** · `prove_next_base.py` 7/7(target 은 gitops chain base 요건과 shared 의 실제 렌더 경로 `set-migration-release` → build → `validate-migration-render` 를 통과, 대조군 3건은 거부) · 헬퍼는 9/21 실행본 대비 치환표의 항목만 다름(diff 70줄) · 계약 테스트 16건: 9/21 워크플로에 RED(8건) → 새 워크플로에 GREEN · actionlint(헬퍼·디스패처) · 계약 변이 9종 전부 killed · step 변이: 실제 target 통과 / 11경로·13경로는 전체 목록 비교에서, 같은 12경로의 내용 변조는 트리 핀에서 사망 · 실행 스크립트는 9/21 실행본 대비 좌표 8줄만 다름, 단위 테스트 18 OK.
+
+**남은 준비**: 없음. **다음 = §12.4 의 확인 관문** — 실행 시점("지금" / "다음 릴리스 캠페인의 0단계") 과 F5 의 되돌림 방식((a) 보류 / (b) 되돌림 target 선제작) 을 함께 묻는다. 실행 절차 = 계획 문서 Part B(B2 는 §12.3 1단계의 강제 재조정으로 갱신됨). 실행 직전 preflight 를 다시 돌려 `origin/main == MAIN_SHA` 를 확인한다 — 움직였으면 핀 전부 무효.
 
 §11 이 SA 를 분리하며 든 우려("M 렌더 검증에 걸릴 수 있어")는 실제 게이트 코드로 **해당 없음**을 확인했다 — shared 의 렌더 검증은 Job 문서만 본다.

@@ -1,0 +1,28 @@
+[ok] unmutated helper passes
+[killed] step env shadows TARGET_SHA on the push step
+[killed] step env shadows TARGET_SHA and TARGET_TREE on the re-authentication step
+[killed] strict mode removed from the target test step
+[killed] strict mode weakened to `set +e` in the target test step
+[killed] one expected row dropped from the pinned listing
+[killed] the expected listing may be empty
+[killed] the whole-listing comparison removed
+[killed] the expected listing is reassigned from the target listing before the comparison
+[killed] the comparison is weakened to a prefix match
+[killed] F1-M1: TARGET_SHA reassigned in the push step right before the push
+[killed] F1-M1b: TARGET_SHA exported in the push step right before the push
+[killed] F1-M1c: TARGET_SHA rewritten with printf -v right before the push
+[killed] F1-M2: an unknown pinned action receives the App token after the mint
+[killed] F1-M3: a second push spelled pu""sh escapes the push regex
+[killed] F1-M4: the ref is moved through the API with a split 'git/refs' literal
+[killed] F1-M6: the App-authority checkout points at another repository
+[killed] F1-M8: an insteadOf rewrite redirects the push before it happens
+[killed] F1-M11: the job moves to a self-hosted runner
+[killed] F1-M13: the mint asks for workflows: write as well
+[killed] F1-M14: an extra run step appears after the mint
+[killed] F2-M5: the tree pin is followed by ` || :`
+[killed] F2-M5b: the tree pin is preceded by `true || `
+[killed] F2-M5c: the parent pin is followed by ` || :`
+[killed] F2-M10: the approver-login check is followed by ` || :`
+[killed] F2-M15: the attempt-one check is followed by ` || :`
+killed 25 of 25
+RC=0

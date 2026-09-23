@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "C:\Users\deepe\AppData\Local\Temp\claude\D--workspace-dpa\c0c28392-2493-4446-b557-a352f109ec42\scratchpad\PD\run_pipeline_defects_main_publish.py", line 343, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "C:\Users\deepe\AppData\Local\Temp\claude\D--workspace-dpa\c0c28392-2493-4446-b557-a352f109ec42\scratchpad\PD\run_pipeline_defects_main_publish.py", line 326, in main
+    state = preflight(ops, args.repo_dir, args.staged_sha, args.helper_sha)
+  File "C:\Users\deepe\AppData\Local\Temp\claude\D--workspace-dpa\c0c28392-2493-4446-b557-a352f109ec42\scratchpad\PD\run_pipeline_defects_main_publish.py", line 138, in preflight
+    _require(helper["sha"] == helper_sha, "helper branch moved away from the reviewed commit")
+    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\deepe\AppData\Local\Temp\claude\D--workspace-dpa\c0c28392-2493-4446-b557-a352f109ec42\scratchpad\PD\run_pipeline_defects_main_publish.py", line 66, in _require
+    raise PublishError(message)
+PublishError: helper branch moved away from the reviewed commit
+NEGATIVE_RC=1

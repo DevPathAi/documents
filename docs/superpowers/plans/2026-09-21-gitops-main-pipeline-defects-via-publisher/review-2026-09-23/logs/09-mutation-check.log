@@ -1,0 +1,5 @@
+[PASS] the pinned target itself (must pass): rc=0 died at: + echo STEP-ASSERTIONS-PASSED
+[PASS] mutant A: sandbox-svc left without a startup budget (11 paths): rc=1 died at: + test 'M	apps/devpath-ai-svc/base/deployment.yaml
+[PASS] mutant B: a thirteenth path rides along: rc=1 died at: + test 'M	apps/devpath-ai-svc/base/deployment.yaml
+[PASS] mutant C: same twelve paths, platform budget cut to 30s (tree pin must refuse): rc=1 died at: + test 09bac8a7e7658b09f014a38cec47dd4d00782eb0 = 85d71a7f6734d781df3ea0f287ae8569a1b801e4
+MUTATION_RC=0
