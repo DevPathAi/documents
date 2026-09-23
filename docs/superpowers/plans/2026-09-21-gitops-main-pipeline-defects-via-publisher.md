@@ -424,6 +424,9 @@ A	tests/release/test_production_startup_budget.py
 | 4 | 헬퍼 = 9/21 실행본에서 치환표대로만 파생(diff 70줄 전부 표의 항목) · 계약 테스트 16건: 9/21 워크플로에서 RED(8건 실패) → 새 워크플로에서 GREEN · actionlint 통과 · 계약 변이 9종 전부 killed · step 변이: 실제 target 통과, A(11경로)·B(13경로)는 전체 목록 비교에서, C(같은 12경로·내용 변조)는 트리 핀에서 사망 |
 | 5 | 디스패처 = 9/21 실행본에서 이름 4곳만 치환, actionlint 통과. 방아쇠 브랜치 없음 확인 |
 | 6 | 실행 스크립트 = 9/21 실행본에서 좌표 8줄만 치환, 단위 테스트 18 OK |
+| 7 (9/23) | 패키지를 `REVIEW.md` 레시피대로 커밋 바이트에서 재구성(렌더 = 로컬 헬퍼 blob) · `mutation_check.py` 4/4 · `prove_next_base.py` 7/7 재실행 · **독립 리뷰 완료**(새 컨텍스트, 읽기 전용, 지시문 `review-2026-09-23/INSTRUCTION.md`): Ready = **Yes**, Medium 1(F1) · Low 4(F2~F5) · Info 4(F6~F9) — `review-2026-09-23/REPORT.md` · 리뷰 전후 5개 레포 스냅샷 동일 · F1/F2 의 변이 16종을 `contract_mutants.py` 에 추가해 **전부 SURVIVED 로 재현**(`logs/12`) → `strengthen_contract_test.py` 로 테스트 보강 → **25/25 killed**(`logs/13`), 새 테스트 18건: 헬퍼 워크플로 GREEN · 9/21 워크플로 RED(11건) · 헬퍼 커밋 교체 `3e67810` → **`046023061409ba534d3abce5523aaf348ad70dfc`**(워크플로 blob `ef7b4def…` 불변, 테스트 blob `dacf1dfd…`, 부모 `MAIN_SHA`, 2경로) · 헬퍼·디스패처 push(워크플로 실행 0건 확인) |
+| 6(3·4, 9/23) | live `--preflight-only` OK(`{"preflight": "ok", "helper_sha": "0460230…"}`, `logs/14`) · 음성 대조: 폐기된 `3e67810` 을 `--helper-sha` 로 → 첫 쓰기 전 `helper branch moved away from the reviewed commit` 거부(`logs/15`) · 그 뒤 환경 정책 `branch:main` 단독 · 방아쇠 브랜치 없음 |
+| 8(1·2, 9/23) | 스펙 §12 갱신(제목 "준비 완료 — 실행 전", §12.3 에 F3·F4·F5 반영, §12.5 좌표·검증) · 이 PR(스크립트 2개 + 리뷰 기록 디렉터리) · 핸드오프 `handoff-2026-09-23-pipeline-defects-publisher-ready-gate-pending.md` |
 
 **계획 대비 편차**
 
@@ -433,3 +436,6 @@ A	tests/release/test_production_startup_budget.py
 4. **헬퍼·디스패처의 push 를 독립 리뷰 뒤로 미뤘다.** 헬퍼는 "MAIN 의 단일 자식 · 정확히 2경로"여야 해서 리뷰 뒤 수정은 커밋 교체(force-push)를 뜻한다. 로컬 커밋만 해 두고 리뷰 → push → live preflight 순으로 한다.
 5. `render_run_script.py` 는 선례를 작업 트리가 아니라 `git show` 의 커밋된 바이트에서 읽는다(같은 CRLF 물질화).
 6. 헬퍼 트리에서 `tests/release` 전체는 돌리지 않았다 — 헬퍼 트리는 main 에 오르지 않고, publisher 도 헬퍼에서는 계약 테스트만 돌린다(선례와 같다).
+7. **(9/23) 헬퍼 커밋을 push 전에 교체했다** — 리뷰 F1/F2 로 계약 테스트만 바뀌었고 워크플로 blob 은 그대로다. 파생 사슬은 `render_contract_test.py`(9/21 선례 → 렌더) 뒤에 `strengthen_contract_test.py`(리뷰된 워크플로 바이트에서 리터럴을 뽑아 테스트에 박는다)를 잇는다 — REVIEW.md 의 레시피를 갱신했다. 테스트가 워크플로의 리터럴을 품는 것은 리뷰어의 F8 대로 "자기 바이트 자가 점검"이지만, 리뷰된 바이트에서 벗어난 편집(다음 publisher 를 이 템플릿에서 치환해 만들 때 포함)을 테스트 diff 로 드러내는 것이 목적이다. 라이브 경계는 여전히 실행 스크립트의 `--helper-sha` 핀이다.
+8. **(9/23) 리뷰 방식** — Codex 는 계정 한도(10/19 까지)로 쓸 수 없어 REVIEW.md 대로 새 컨텍스트 서브에이전트(읽기 전용, Scope Lock)를 썼다. 지시문에 줄바꿈 사실(패키지 LF · 작업 트리 CRLF)을 적어 9/22 의 "전 줄이 다르다" 헛걸음을 막았다. 리뷰어의 F7: 지시문에 적은 "sandbox-svc 는 컨테이너 2개" 전제가 틀렸다(1개, 113행의 `sandbox-runner-mtls` 는 볼륨) — 리뷰어가 YAML 파싱으로 바로잡았다.
+9. **(9/23) `steps.app_token` 출현 수** — 리뷰 보고의 "정확히 3곳"은 step 3개를 뜻하고 문자열 출현은 7회(checkout 1 + 인증 step 3 + push step 3)다. 보강 스크립트는 값을 워크플로에서 세어 테스트에 박는다.
