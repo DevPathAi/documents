@@ -3,6 +3,8 @@
 > 같은 날 앞 문서 `handoff-2026-09-24-r3-released-cors-env-published.md` 의 **§4 「다음 착수점」** 을 이 세션이 처리했다. 이 문서가 그 §4 만 대체한다 — 앞 문서의 §1(릴리스 r3 운영 상태)·§2(타임라인)·§3(결함과 교훈)·§5(좌표)는 **그대로 유효**하다.
 > 정본: 계획 `plans/2026-09-24-s3-p1-semantic-tokens-2-0-0.md` · 설계 `specs/2026-09-19-web-native-redesign-and-mobile-split-design.md` §5.3·§5.4·§7 · 시안 https://claude.ai/artifact/DWi8kMV6QcAzBEQwbrNPNd (Version 2).
 
+**갱신(2026-09-24 09:00Z)**: frontend **PR #232 는 리뷰 지적 2건을 반영한 뒤 develop 에 머지됐다 — `17ce8a2`**(CI 6잡 전원 재통과: analyze-test 4m43s · browser-ux 5m23s · perf-gate 22m37s · produce-atomic-pair 9m21s · web-image-config-contract 8m14s/8m42s). 원격·로컬 브랜치와 워크트리 `frontend-s3p1-20260924` 는 삭제했고, 그 안에 있던 실행 원장과 리뷰 보고서는 `plans/2026-09-24-s3-p1-semantic-tokens-2-0-0/`(`execution-ledger.md`·`REVIEW.md`)로 옮겼다. **아래 §2·§4·§7 의 「#232 open · 머지 안 함 · 워크트리를 지우지 말 것」은 작성 시점 기록이다.** 남은 일은 **홈 미러 PR #93 차단 해제(§3)** 와 **S3-P2 계획**이다.
+
 ## 1. 이 세션이 한 일 (2026-09-24 04:30Z ~ 08:00Z)
 
 | # | 일 | 결과 |
