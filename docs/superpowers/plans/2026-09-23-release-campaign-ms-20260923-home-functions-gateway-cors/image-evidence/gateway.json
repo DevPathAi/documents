@@ -1,0 +1,12 @@
+{
+  "repository": "DevPathAi/devpath-gateway",
+  "source_sha": "391d984f4decff5d0abd2fa43a7f7bd2c8f8046f",
+  "image_repository": "ghcr.io/devpathai/devpath-gateway",
+  "image_digest": "sha256:8cf6af8d91d96d4cd7e66ea0d1175d11758b5f12dd3e6f528fd542219fd59095",
+  "_run_id": 35863094106,
+  "_artifact_id": 10751257885,
+  "_artifact_name": "devpath-gateway-immutable-image-391d984f4decff5d0abd2fa43a7f7bd2c8f8046f-run-35863094106-attempt-1",
+  "_expires_at": "2026-10-23T12:53:45Z",
+  "_release_pr": "DevPathAi/devpath-gateway#46 (squash of develop 1181de2e; content = #44 CORS dedupe)",
+  "_ghcr_tag": "391d984f4decff5d0abd2fa43a7f7bd2c8f8046f"
+}

@@ -1,0 +1,18 @@
+{
+ "visual": {
+  "input_provenance_sha256": "a116f34b53bfd4f673600bf0b2264da3aeb7404f45efa595bef8105a9a6bad26",
+  "input_provenance_file_sha256": "abfc2a3484e0f697d1a94eb207df84611f025a1518fa3dbdbdaed5c60f89aaf1",
+  "bytes": 1895,
+  "cr_bytes": 0,
+  "source_sha": "ee5a5add39c98bfb0db0db15f4b2388f2b9915c6",
+  "baseline_run_id": 35937165203
+ },
+ "a11y": {
+  "input_provenance_sha256": "5ec214b59e785a06a756e82bbc4fdac578b7d3c97c91b1b32a05ecaaf0ff6bfe",
+  "input_provenance_file_sha256": "3080c2754dd82a13a79b281c38ae91ccb2ca3bdfdd6b764a7838627cd84261d2",
+  "bytes": 1893,
+  "cr_bytes": 0,
+  "source_sha": "ee5a5add39c98bfb0db0db15f4b2388f2b9915c6",
+  "baseline_run_id": 35937165203
+ }
+}

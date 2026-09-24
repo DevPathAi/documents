@@ -1,0 +1,87 @@
+{
+ "DevPathAi/devpath-home-page:mission-spine-home-dist.yml": {
+  "run_id": 35937419487,
+  "head_sha": "ffaf4b33ca23d61dfd0304f666192a4e6c6ddfa3",
+  "conclusion": "success",
+  "artifacts": [
+   {
+    "id": 10783870255,
+    "name": "ms-20260923-home-functions-gateway-cors-r3-home-dist-run-35937419487-attempt-1",
+    "expires_at": "2026-10-24T00:13:38Z"
+   }
+  ]
+ },
+ "DevPathAi/devpath-frontend:et13-evidence.yml": {
+  "run_id": 35937561874,
+  "head_sha": "ee5a5add39c98bfb0db0db15f4b2388f2b9915c6",
+  "conclusion": "success",
+  "artifacts": [
+   {
+    "id": 10784266321,
+    "name": "ms-20260923-home-functions-gateway-cors-r3-frontend-visual-run-35937561874-attempt-1",
+    "expires_at": "2026-10-24T00:25:07Z"
+   },
+   {
+    "id": 10783563862,
+    "name": "et13-unsealed-raw-review-run-35937561874-attempt-1",
+    "expires_at": "2026-10-08T00:25:06Z"
+   },
+   {
+    "id": 10783431830,
+    "name": "et13-release-auth-ms-20260923-home-functions-gateway-cors-r3-run-35937561874-attempt-1",
+    "expires_at": "2026-09-25T00:15:41Z"
+   },
+   {
+    "id": 10783334322,
+    "name": "ms-20260923-home-functions-gateway-cors-r3-frontend-automated-a11y-run-35937561874-attempt-1",
+    "expires_at": "2026-10-24T00:25:09Z"
+   }
+  ]
+ },
+ "DevPathAi/devpath-frontend:mission-spine-manual-at-evidence.yml": {
+  "run_id": 35937563630,
+  "head_sha": "ee5a5add39c98bfb0db0db15f4b2388f2b9915c6",
+  "conclusion": "success",
+  "artifacts": [
+   {
+    "id": 10783870523,
+    "name": "ms-20260923-home-functions-gateway-cors-r3-manual-nvda-run-35937563630-attempt-1",
+    "expires_at": "2026-10-24T00:16:24Z"
+   },
+   {
+    "id": 10783552663,
+    "name": "ms-20260923-home-functions-gateway-cors-r3-unsealable-manual-nvda-approval-run-35937563630-attempt-1",
+    "expires_at": "2026-09-27T00:16:15Z"
+   },
+   {
+    "id": 10783238956,
+    "name": "ms-20260923-home-functions-gateway-cors-r3-unsealable-manual-at-review-run-35937563630-attempt-1",
+    "expires_at": "2026-10-08T00:15:41Z"
+   }
+  ]
+ },
+ "DevPathAi/documents:mission-spine-privacy-approval.yml": {
+  "run_id": 35937570293,
+  "head_sha": "7f732ac5ba31a91e81ea4e557cb7f67c8ee5ca36",
+  "conclusion": "success",
+  "artifacts": [
+   {
+    "id": 10783487707,
+    "name": "ms-20260923-home-functions-gateway-cors-r3-privacy-approval-run-35937570293-attempt-1",
+    "expires_at": "2026-10-24T00:15:53Z"
+   }
+  ]
+ },
+ "DevPathAi/devpath-ai-svc:mission-spine-release-eval.yml": {
+  "run_id": 35937578808,
+  "head_sha": "54f634b845befc7085e4b974a8b66120bf6c8856",
+  "conclusion": "success",
+  "artifacts": [
+   {
+    "id": 10783831009,
+    "name": "ms-20260923-home-functions-gateway-cors-r3-ai-eval-run-35937578808-attempt-1",
+    "expires_at": "2026-10-24T00:20:04Z"
+   }
+  ]
+ }
+}

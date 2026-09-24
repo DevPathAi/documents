@@ -1,0 +1,62 @@
+{
+  "release_id": "ms-20260923-home-functions-gateway-cors",
+  "release_id_r2": "ms-20260923-home-functions-gateway-cors-r2",
+  "pivot_2026-09-23T13:05Z": "first candidate refused (rollback.prior_digest must equal base web AND differ from candidate digests) -> frontend rebuild release (README note) and a new release id -r2; the first id's baseline approval run 35862514213 / artifact 10750996942 and provenance are orphaned",
+  "frontend_rebuild": {
+    "develop_pr": "DevPathAi/devpath-frontend chore/rebuild-release-evidence-20260923 (README note, fast-forward of main)",
+    "release_pr": "develop -> main (merge commit, required check analyze-test)",
+    "main_sha": null,
+    "web_off_digest": null,
+    "web_on_digest": null,
+    "admin_digest": null,
+    "raw_review_run_id": null,
+    "raw_review_artifact_id": null,
+    "raw_review_artifact_digest": null
+  },
+  "prior_release_id": "ms-20260920-community-flat-pages-r3",
+  "prior_candidate_spec_sha256": "b5ede99fa46a753202d9a4da1218c6fb9de1e7f0516063211648a4fd4c84cbcd",
+  "gitops_base_sha": "5961922b9a309055a75bc7302e5c852c5c51d59c",
+  "production_web_tag": "31a7785d5f3c73563c8ddb61b69a7a0e07f65f16-mission-on",
+  "production_web_digest": "sha256:a6466f5de1714e12b7fcd01766e0fc0e4f61cf4dab4e6155ea0948ee3fb1c4e1",
+  "frontend_source_sha": "31a7785d5f3c73563c8ddb61b69a7a0e07f65f16",
+  "home": {
+    "source_sha": "ffaf4b33ca23d61dfd0304f666192a4e6c6ddfa3",
+    "dist_sha256": "00794a107b370a28404edbed62ffdd71891491f8953998d54f7b9eeb740cc237",
+    "candidate_deployment_id": "2225c3fb-57f5-4dd6-89f7-eddda8b46f91",
+    "candidate_preview_url": "https://2225c3fb.devpath-home-page.pages.dev",
+    "prior_production_deployment_id": "005cf175-6e3e-4400-a201-1987ce9d8d84",
+    "release_pr": "DevPathAi/devpath-home-page#92"
+  },
+  "gateway": {
+    "sync_pr": "DevPathAi/devpath-gateway#45",
+    "release_pr": "DevPathAi/devpath-gateway#46",
+    "release_pr_head": "1181de2e6eb7a4b19e1f5bb4bb256175125dc55d",
+    "main_sha": "391d984f4decff5d0abd2fa43a7f7bd2c8f8046f",
+    "main_ci_run_id": "35863094106"
+  },
+  "et13_baseline": {
+    "raw_run_id": "35434688375",
+    "raw_artifact_id": "10581743618",
+    "raw_artifact_digest": "sha256:fa25b74322d9b1eabe3470f4197f410e5bf00498433ae17c553167091d7b1bdc",
+    "raw_workflow_sha256": "71ba5845635677793d97d1b30d01a7ad58fed2e8ca2e2e9cc1a437f89b7d323e",
+    "approval_run_id": "35862514213",
+    "approval_deployment_id": "6614259311",
+    "approved_artifact_id": "10750996942",
+    "approved_artifact_name": "ms-20260923-home-functions-gateway-cors-frontend-visual-approved-baseline-run-35862514213-attempt-1",
+    "approved_artifact_sha256": "863331870949032bf4f53373e18cb8455c98087e61602ed51e6ff7b83ac2243d",
+    "approved_artifact_expires_at": "2026-10-23T12:47:39Z",
+    "baseline_workflow_sha256": "24e959a7b34a02ca7f65e2a8f0af5d0a901a12d89deddc6f29ed564f868ef833",
+    "provenance": {
+      "visual": {"input_provenance_sha256": "25a1344309842c03fe37fb13d0de79787d06bb7be11a9b2c8104e8ed9f2c025e", "input_provenance_file_sha256": "89708b971de9cfe1c631471f7504ba31f0b1629499972f9e4195e77deb049a54"},
+      "a11y": {"input_provenance_sha256": "a3547acf5a0299a21b7017b026eaac717ecb0a3c261de757048b99bf6060fac3", "input_provenance_file_sha256": "f6920f38cbd644a93eab36e0e65767e3949bb49ce3bb946e9d02282ba6929dc3"},
+      "flutter": "3.44.1 (CI pin; local worktree of C:/tools/flutter at tag 3.44.1)"
+    },
+    "dispatcher_branch": "automation/dispatch-ms-20260923-home-functions-gateway-cors",
+    "dispatcher_commit": "9b10d47"
+  },
+  "decisions": {
+    "scope": "home + gateway CORS dedupe; other seven services keep r3 images",
+    "rebinding": "AI approves identical-target re-bindings after verifying byte identity (r3 policy)",
+    "production_changes": "confirm with the user right before migration/promote and landing-last"
+  }
+}
