@@ -1139,3 +1139,24 @@ Expected: 홈 CI 녹색 → 머지 후 `develop→master` 릴리스와 gitops la
 - **Placeholder scan**: 모든 코드 단계에 실제 코드·명령·기대값이 있다. "다른 실패가 나오면" 절은 판정 규칙(기호로 바꾸기, 러너 기준 불변)을 명시한다.
 - **Type consistency**: `DpDensity.controlHeight/rowPadding/minTarget`, `AppTokens.headerHeight`, `DpSemanticTokenKind.density`, `DpSemanticTokenUsage.interactionDensity`, `DpSemanticTokenManifest.density`, `header{Bg,Text,Muted,Faint,Active,Border}` — T1~T4·T7·T9 에서 같은 이름.
 - **Review Focus**: 1→T4 세 번째 테스트(간격 8) · 2→T4 TextButton 한 줄 테스트 · 3→T1 copyWith/lerp 테스트 · 4→T9 Step 1 새 `it` · 5→T2 대비 테스트 유지.
+
+---
+
+## 실행 기록 (2026-09-24, Native 실행)
+
+**Task 1~8 완료 · Task 9 차단.** 원장(모든 Ruling 포함) = `2026-09-24-s3-p1-semantic-tokens-2-0-0/execution-ledger.md`. 결과 보고 = `handoff-2026-09-24-s3-p1-token-contract-2-0-0.md`.
+
+| Task | 커밋 | 결과 |
+|---|---|---|
+| 1 반경·밀도·폭 | `19e790a` | dp_design 250 통과 |
+| 2 `rail*`→`header*` | `83f7791` | 12파일 + 산문 15곳, 251 통과 |
+| 3 매니페스트 2.0.0 | `c5ca292` | `--dp-density-*`·`--dp-layout-header-height`, 251 통과 |
+| 4 테마 30px | `9ac3b7c` | 255 통과. **계획 밖 판단 2건**: `SegmentedButton` 은 `minimumSize` 를 무시하므로 `VisualDensity.compact`(→32px) · `IconButton` 의 `fixedSize` 는 `flutter_quill` 툴바를 80px 오버플로시켜 제거 |
+| 5 browser-ux 24px | `2c89ab1` | node 3/3. 2026-09-17 발견 표의 대체된 조치에 주석 |
+| 6 DESIGN.md | `bbbd086` + `681d102` | §3·§5·§6 과 §1 계약 문단 |
+| 7 design-sync | `390578c` | 덤프 → 번들(97 토큰) → 검증기(경고 1=예상) → `Leva Design Tokens` 8파일 업로드 |
+| 8 PR | `e1bef21` | 로컬 게이트 전부 녹색 → **PR #232**. 린트 3건은 계획이 준 테스트 코드의 결함이라 수정 |
+| 9 홈 미러 | home `44b8212` | **차단** — 렌더 입력 변경 vs 미재기록 기준선(홈 드리프트 가드). **draft PR #93** |
+
+**머지는 아직 하지 않았다** — 전체 브랜치 리뷰 결과와 남은 CI 잡(`perf-gate`·`web-image-config-contract (off)`)을 받은 뒤가 맞다(핸드오프 §6).
+
