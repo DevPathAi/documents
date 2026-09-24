@@ -7,6 +7,13 @@ Steps (each idempotent-guarded, run in order):
   promote-on         gitops: empty nonce commit re-dispatches promote -> approve `mission-spine-staging` + `mission-spine-production-on`
   landing            gitops: switch the dispatcher to mission-spine-landing-last.yml -> approve `mission-spine-production-landing` -> live /api checks
 
+Cluster-side helpers (release_ops.py, over SSH):
+  preflight also checks the static sandbox-runner TLS secrets (>= 30 days left) and that no stale migration gate exists,
+  and prints the live gate measurement. promote-off places the `sandbox-migration-gate` ConfigMap from a fresh measurement
+  (+25% headroom) before dispatching and recalls it after success; promote-off/resume/on run a main watcher that forces an
+  Argo refresh of every Application whenever gitops main moves (Argo polls every 3 minutes; the runtime verifier does not
+  wait that long). Standalone: tls-check | gate-measure | gate-place | gate-recall | argo-refresh.
+
 Usage: promote_r2.py <coords.json> <step>
 """
 import json
@@ -39,6 +46,8 @@ MAIN_WT = pathlib.Path("D:/workspace/dpa/.worktrees/gitops-main-20260924")      
 SHARED_WT = pathlib.Path(f"D:/workspace/dpa/.worktrees/shared-dispatch-{TAG}-20260924")
 WF = ".github/workflows/mission-spine-release-gate-dispatch.yml"
 ENV = {**os.environ, "MSYS_NO_PATHCONV": "1", "PYTHONUTF8": "1"}
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import release_ops as ops  # noqa: E402  (cluster-side helpers: TLS expiry, migration gate, Argo refresh)
 
 
 def run(cmd, cwd=None, env=None, capture=True, check=True, inp=None):
@@ -113,6 +122,39 @@ def gitops_dispatcher_commit(rendered: bytes | None, message: str) -> str:
     return since
 
 
+def ensure_gate() -> None:
+    """Place the migration maintenance gate from a fresh measurement unless it is already there (resume case)."""
+    if ops.gate_exists():
+        print(f"{ops.GATE_NAME} already present (resume) — leaving it in place")
+        return
+    measured = ops.measure_gate()
+    bounds = ops.gate_bounds(measured)
+    print(f"placing {ops.GATE_NAME}: measured {measured} -> bounds {bounds}")
+    print(" ", ops.gate_place(bounds))
+    coords.setdefault("production", {})["migration_gate"] = {"measured": measured, "bounds": bounds, "placed_at": stamp()}
+    save()
+
+
+def recall_gate() -> None:
+    if not ops.gate_exists():
+        print(f"{ops.GATE_NAME} not present — nothing to recall")
+        return
+    print(f"recalling {ops.GATE_NAME}:", ops.gate_recall())
+    coords.setdefault("production", {}).setdefault("migration_gate", {})["recalled_at"] = stamp()
+    save()
+
+
+def watched(fn):
+    """Run fn() while a watcher forces an Argo refresh on every new gitops main head."""
+    watcher = ops.MainWatcher(GITOPS)
+    watcher.start()
+    try:
+        return fn()
+    finally:
+        watcher.stop()
+        print("argo refreshed for main heads:", [h[:8] for h in watcher.refreshed])
+
+
 if step == "preflight":
     v = coords["validate"]
     assert v.get("sealed_sha") and v.get("sealed_manifest_sha256"), "validate/seal not collected"
@@ -155,6 +197,15 @@ if step == "preflight":
     if out_file.exists():
         print(out_file.read_text(encoding="utf-8").strip())
     assert done.returncode == 0, "promotion chain verifier refused the current main as this release's base"
+    # static TLS secrets the sandbox runner depends on (2026-09-23: a 30-day staging certificate expired mid-campaign)
+    tls_ok, tls_failures, tls_rows = ops.tls_check(min_days=30)
+    for row in tls_rows:
+        print(f"  tls {row.label:55s} {'absent' if row.days_left is None else str(row.days_left) + 'd'}")
+    assert tls_ok, f"sandbox-runner TLS secrets absent or expiring within 30 days: {tls_failures}"
+    # migration maintenance gate: must not linger from an earlier release; show what promote-off will place
+    assert not ops.gate_exists(), f"stale {ops.GATE_NAME} ConfigMap present — run `gate-recall` before promoting"
+    measured = ops.measure_gate()
+    print("  migration gate measurement:", measured, "-> bounds", ops.gate_bounds(measured))
     # what production will receive
     spec = json.loads((OUT / f"candidate-spec-{TAG}.json").read_text(encoding="utf-8"))
     print("PRODUCTION CHANGES:")
@@ -190,24 +241,30 @@ elif step == "migration":
 elif step == "promote-off":
     run(["py", str(OUT / "render_dispatchers_r2.py"), str(coords_path), "promote"])
     rendered = (OUT / f"dispatchers-{TAG}" / "gitops-promote.yml").read_bytes()
+    ensure_gate()  # the migration Job's init container refuses without it (2026-09-24: ~6 min of fence downtime)
     since = gitops_dispatcher_commit(rendered, f"ci: dispatch {RID} production promotion")
-    r = wait_bot_run(GITOPS_REPO, "mission-spine-promote.yml", since, ["mission-spine-production-off"], "promote (migration -> services -> mission-OFF)")
+    r = watched(lambda: wait_bot_run(GITOPS_REPO, "mission-spine-promote.yml", since, ["mission-spine-production-off"], "promote (migration -> services -> mission-OFF)"))
     coords["production"]["promote_off_run"] = {"id": r["id"], "conclusion": r["conclusion"]}
     save()
-    assert r["conclusion"] == "success", "promote OFF run failed — inspect; a resume is an empty nonce commit (promote-on step) once the cause is fixed"
+    if r["conclusion"] == "success":
+        recall_gate()
+    assert r["conclusion"] == "success", "promote OFF run failed — inspect; the gate stays in place for `promote-resume`"
 
 elif step == "promote-resume":
     # r3 precedent: promote resolves its own phase, so after fixing the cause an empty nonce commit resumes the OFF job
     reason = sys.argv[3] if len(sys.argv) > 3 else "after all nine services converged"
+    ensure_gate()
     since = gitops_dispatcher_commit(None, f"ci: resume {RID} promotion {reason}")
-    r = wait_bot_run(GITOPS_REPO, "mission-spine-promote.yml", since, ["mission-spine-production-off"], "promote resume (services -> mission-OFF)")
+    r = watched(lambda: wait_bot_run(GITOPS_REPO, "mission-spine-promote.yml", since, ["mission-spine-production-off"], "promote resume (services -> mission-OFF)"))
     coords["production"].setdefault("promote_off_runs", []).append({"id": r["id"], "conclusion": r["conclusion"]})
     save()
+    if r["conclusion"] == "success":
+        recall_gate()
     assert r["conclusion"] == "success", "resumed promote OFF run failed — inspect before resuming again"
 
 elif step == "promote-on":
     since = gitops_dispatcher_commit(None, f"ci: promote {RID} mission ON and canary")
-    r = wait_bot_run(GITOPS_REPO, "mission-spine-promote.yml", since, ["mission-spine-staging", "mission-spine-production-on"], "promote (mission-ON + canary + staging rebaseline)")
+    r = watched(lambda: wait_bot_run(GITOPS_REPO, "mission-spine-promote.yml", since, ["mission-spine-staging", "mission-spine-production-on"], "promote (mission-ON + canary + staging rebaseline)"))
     coords["production"]["promote_on_run"] = {"id": r["id"], "conclusion": r["conclusion"]}
     save()
     assert r["conclusion"] == "success", "promote ON run failed — inspect before landing"
@@ -215,10 +272,32 @@ elif step == "promote-on":
 elif step == "promote-on-continue":
     # the ON run was already dispatched (nonce pushed); resume approving its gates in any order and wait
     since = coords["production"]["ci: promote ms-20260"]["at"]
-    r = wait_bot_run(GITOPS_REPO, "mission-spine-promote.yml", since, ["mission-spine-production-on", "mission-spine-staging"], "promote (mission-ON + canary + staging rebaseline)")
+    r = watched(lambda: wait_bot_run(GITOPS_REPO, "mission-spine-promote.yml", since, ["mission-spine-production-on", "mission-spine-staging"], "promote (mission-ON + canary + staging rebaseline)"))
     coords["production"]["promote_on_run"] = {"id": r["id"], "conclusion": r["conclusion"]}
     save()
     assert r["conclusion"] == "success", "promote ON run failed — inspect before landing"
+
+elif step == "tls-check":
+    tls_ok, tls_failures, tls_rows = ops.tls_check(min_days=30)
+    for row in tls_rows:
+        print(f"  {row.label:55s} {'absent' if row.days_left is None else str(row.days_left) + 'd'}")
+    print("ok:", tls_ok, "failures:", tls_failures)
+    assert tls_ok
+
+elif step == "gate-measure":
+    measured = ops.measure_gate()
+    print("measured:", measured)
+    print("bounds  :", ops.gate_bounds(measured))
+    print("present :", ops.gate_exists())
+
+elif step == "gate-place":
+    ensure_gate()
+
+elif step == "gate-recall":
+    recall_gate()
+
+elif step == "argo-refresh":
+    print(ops.argo_refresh_all())
 
 elif step == "landing":
     run(["py", str(OUT / "render_dispatchers_r2.py"), str(coords_path), "landing"])

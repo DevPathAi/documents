@@ -50,7 +50,7 @@
 
 ## 4. 다음 착수점
 
-1. **다음 릴리스 캠페인**: gitops `base_sha` = `5427fe1e` · 홈 prior deployment = `6f7a7e2b…` · 서비스 develop 백로그의 릴리스 여부는 사용자에게 · ai-svc 이미지 증거 만기 10/08. preflight 에 §3 의 3·4·6 을 넣는다(`promote_r2.py preflight` 확장).
+1. **다음 릴리스 캠페인**: gitops `base_sha` = `5427fe1e` · 홈 prior deployment = `6f7a7e2b…` · 서비스 develop 백로그의 릴리스 여부는 사용자에게 · ai-svc 이미지 증거 만기 10/08. §3 의 3·4·6 은 **`promote_r2.py` + `release_ops.py` 에 구현됨**(2026-09-24 05:0xZ, 같은 계획 디렉터리): `preflight` 가 sandbox-runner TLS 시크릿 잔여일(≥30일, staging·운영 5+5)과 stale 게이트 부재를 단언하고 게이트 측정값을 찍는다 · `promote-off`/`promote-resume` 가 `sandbox-migration-gate` 를 직전 실측(+25% 여유, MiB 올림, 행 +100)으로 선배치하고 성공 뒤 회수한다 · promote 단계마다 main 감시 스레드가 새 main 커밋에 Argo 16 앱 refresh 를 건다 · 수동 단계 `tls-check|gate-measure|gate-place|gate-recall|argo-refresh`. 측정은 `postgres:16-alpine` 일회용 파드가 `platform-db` 시크릿을 env 로 받아 preflight.sh 와 같은 쿼리를 읽기 전용으로 실행(5초). 단위 테스트 `test_release_ops.py` 14건. ★Windows 함정 2건: 텍스트 모드 stdin 은 CRLF 로 나가므로 ssh 원격 스크립트는 바이트로 · `kubectl run -i` 는 첫 출력 줄을 잃으므로 wait+logs★
 2. **staging 인증서 스크립트** — gitops `fix/staging-cert-lifetime-20260924`(`-days 30`→`3650` ×3) develop PR. main 반영은 다음 base-advancing publisher 번들에 포함(단독 publisher 는 과함).
 3. governance 룰셋 설계 충돌(et11) · S3 웹 재구성 계획 — 변동 없음.
 4. 정리: §5 의 r3 워크트리는 이 문서 머지 뒤 삭제해도 된다(origin 에 전부 있음).
