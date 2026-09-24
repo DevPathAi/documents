@@ -81,10 +81,18 @@ Docker 를 켜지 않은 이유: 이 레포의 상시 방침이 「무거운 Pla
 6. **백로그는 커밋 수가 아니라 `git diff --shortstat main develop` 로 잰다.** 11개 레포의 develop-only 커밋 4~42개는 전부 동기화 머지였고 실제 차이는 0이었다.
 7. **Windows**: 텍스트 모드 stdin 은 CRLF 로 나가 원격 bash 값 끝에 `\r` 을 남긴다(원격 스크립트는 바이트로 보낼 것) · `kubectl run -i` 는 첫 출력 줄을 잃는다(`wait` 뒤 `logs`) · `melos bootstrap` 은 핀 Flutter(`.worktrees/_tools/flutter-3.44.1/bin`)를 PATH 앞에 둬야 lockfile 을 받아들인다.
 
-## 6. 미결 — 다음 세션이 확인할 것
+## 6. 전체 브랜치 리뷰 — 완료, 지적 2건 반영됨
 
-- **전체 브랜치 리뷰**: 이 세션이 신선한 컨텍스트 리뷰어를 띄웠으나(1차는 Fable 사용량 한도로 중단, 2차 Opus 재기동) 세션 종료 시점에 **결과 미수신**. 리뷰 패키지는 `D:/workspace/dpa/.worktrees/frontend-s3p1-20260924/.superpowers/sdd/2026-09-24-s3-p1-semantic-tokens-2-0-0/review-de316b4..e1bef21.diff`(9 커밋), 판단 근거(Ruling)는 같은 폴더 `progress.md`. **머지 전에 리뷰를 한 번 받는다**(자체 리뷰로 갈음할지는 사용자 판단).
-- 리뷰가 볼 다섯 가지(계획 §Review Focus): 390px 에서 인접 24px 타깃 간격 · 30px 버튼의 한국어 두 줄 라벨 · `AppTokens.lerp/copyWith` 의 `headerHeight` · 홈 미러의 다크 선택자 형태 · `headerActive` 위 `headerMuted` 대비.
+신선한 컨텍스트 리뷰어(서브에이전트; 1차 Fable 은 사용량 한도로 중단, 2차 Opus)가 두 레포를 4패스로 읽고 `dp_design` 테스트를 독립 재실행했다. 보고서 전문 = `plans/2026-09-24-s3-p1-semantic-tokens-2-0-0/REVIEW.md`. **판정: 머지 가능. Critical 0 · Important 2 · Minor 8.**
+
+**Important 2건은 수정 커밋 `813dd9e` 로 반영했다.**
+
+1. **게시된 `conventions.md` 가 옆의 토큰과 모순됐다.** 이 파일은 `config.json` 의 `readmeHeader` 라 `ds-bundle/README.md` 맨 앞에 **그대로** 붙고, 그 README 가 Claude Design 에 올라간다. 2.0.0 개명이 이 파일에 닿지 않아 **없는 이름 6개**(`--dp-color-rail-*`)를 가르치고, 같은 번들의 `guidelines/DESIGN.md` 가 24×24 라고 말하는데 44×44 를 인용하며, 레이아웃은 1.0.0 숫자(1440/880/256/72)였고, 스니펫은 `minHeight: 44` 를 박아 뒀다. CSS 커스텀 속성은 **조용히 실패**하므로 이 헤더를 따른 사람은 투명한 요소를 얻고 오류도 못 본다. → 색·레이아웃·접근성 줄 재작성, 밀도 행 추가, 스니펫을 밀도 토큰으로. **게이트 신설** `packages/dp_design/test/theme/design_sync_conventions_test.dart`(가르치는 모든 `--dp-*` 이름이 매니페스트 투영에 존재할 것 · 게시된 모든 패밀리를 가르칠 것 · 접근성 하한과 레이아웃 숫자가 계약과 일치할 것). 번들 재빌드·재검증·**재업로드 완료**.
+2. **인접 간격 테스트가 동어반복이었다.** 세그먼트 테스트 3번째가 자기가 넣은 `SizedBox(width: 8)` 를 자기가 단언해, 테마에서 간격 규칙을 다 걷어내도 녹색이다. 즉 Review Focus 1 을 「커버됨」으로 보고했지만 **보장은 존재하지 않는다** — `shrinkWrap` 이 암묵적 48px 패딩을 없앴으므로 나란한 아이콘 버튼은 이제 맞닿는다. **리뷰어의 전제 교정**: WCAG 2.2 AA 2.5.8 은 24×24 이상이면 간격 없이도 충족이라 이것은 **접근성 위반이 아니라 조작성 변화**다. → 허위 단언을 지우고, DESIGN.md §6 에 「테마는 타깃 **크기**만 보장하고 **간격은 보장하지 않는다**; 간격은 화면·셸이 준다 — S3-P2/P3, `dp_chrome_bar` 가 첫 대상」을 명시.
+
+**Minor 8건은 고치지 않고 기록만 했다**(원장 `execution-ledger.md` 의 `minor (deferred)` 줄). 다음 단계에서 쓸 것만 추리면: `dp_chrome_bar` 의 오버플로 예산이 아직 48px 기준이라 액션이 필요보다 일찍 메뉴로 접힌다(P2) · `dp_chrome_bar_account_gap_test` 와 `dp_nav_rail.dart:99-106` 의 주석이 48/44px 산술로 세상을 설명한다(P2 함정) · `test/golden/goldens/` 가 `--exclude-tags golden` 때문에 **아무도 안 보는 채로 낡았다**(P5 재기록 목록에 추가) · DESIGN.md §3 은 컨트롤 30px 이라 하지만 `TextField` 는 약 34px(입력 예외 미공개) · `DpDensity.rowPadding` 은 아직 소비자가 없다(P3).
+
+리뷰어는 원장의 Ruling 11건을 전부 **동의**로 판정했고, 하나를 덧붙였다 — Task 7 의 판단이 `NOTES.md` 에서 멈추고 실제 산출물(업로드된 README)의 헤더를 놓쳤다는 것(위 1번).
 
 ## 7. 좌표
 
