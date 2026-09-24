@@ -1,0 +1,38 @@
+---
+name: Mission Spine Release Gate Dispatch
+
+'on':
+  push:
+    branches:
+      - automation/dispatch-ms-20260923-home-functions-gateway-cors-r3
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    name: Dispatch protected release gates
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Dispatch ET13 baseline approval as GitHub Actions automation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api \
+            --method POST \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/et13-baseline-approval.yml/dispatches" \
+            --input - <<'JSON'
+          {
+            "ref": "main",
+            "inputs": {
+              "release_id": "ms-20260923-home-functions-gateway-cors-r3",
+              "raw_run_id": "35933420238",
+              "raw_run_attempt": "1",
+              "raw_artifact_id": "10781674798",
+              "raw_artifact_digest": "sha256:9d3009f0c03458bd7068ed947e0b1092d85368404655ed303ef1f8c37f74e6ca",
+              "raw_workflow_sha256": "71ba5845635677793d97d1b30d01a7ad58fed2e8ca2e2e9cc1a437f89b7d323e"
+            }
+          }
+          JSON

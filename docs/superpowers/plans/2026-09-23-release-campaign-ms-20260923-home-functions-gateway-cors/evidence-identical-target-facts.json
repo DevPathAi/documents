@@ -1,0 +1,5 @@
+{
+ "nvda": "manual-nvda catalog tool/release-evidence/catalogs/manual-nvda.v1.json is byte-identical between r3 source 31a7785d and rebuilt source ee5a5add (sha256 f90067846406...)",
+ "privacy": "documents main is still 7f732ac5 (the exact source the r3 privacy approval reviewed)",
+ "ai_eval": "ai-svc main is still 54f634b8; the gitops base moved fcf97cf6 -> 5961922b but the only ai-svc change is the startupProbe block in apps/devpath-ai-svc/base/deployment.yaml (no model, prompt, or eval config change)"
+}

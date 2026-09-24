@@ -1,0 +1,31 @@
+{
+  "schema_version": "leva.et13.input-provenance.v1",
+  "kind": "a11y",
+  "source_sha": "ee5a5add39c98bfb0db0db15f4b2388f2b9915c6",
+  "catalog_sha256": "c5acc346a770f5890c6dd06ce616ffc1105eba12b7605e8ad985897e91b00c96",
+  "case_catalog_sha256": "cf664d46f5e0b0ea9ab789dbf4afca4dbc71778eff0db05779c3a48392622929",
+  "projection_contract_sha256": "158fdc882238c9459995c0572536a3cec3704e92bd1b28fa2d80907fc0435b78",
+  "assets_lock_sha256": "eb6f4dfdd108781ebf4e2a44f9f5489ca1b8db6f611a0b907f41fe8c24051378",
+  "renderer_lock_sha256": "af71b829ec7ba56a5a89ca2e11ea940136b70153cbd4f995c725d047d98cf20b",
+  "renderer_image_digest": "sha256:ffc33305f7b4b04057ae4a0caa70aad4fde87454fb403a1a22e7f931707dfcf9",
+  "build_marker_sha256": "a242423d3be9af4da99b5a34ff5d8812f09223896c65661131941c62771740f7",
+  "baseline_authentication": {
+    "release_id": "ms-20260923-home-functions-gateway-cors-r3",
+    "repository": "DevPathAi/devpath-frontend",
+    "workflow_path": ".github/workflows/et13-baseline-approval.yml",
+    "workflow_sha256": "24e959a7b34a02ca7f65e2a8f0af5d0a901a12d89deddc6f29ed564f868ef833",
+    "run_id": 35937165203,
+    "run_attempt": 1,
+    "head_sha": "ee5a5add39c98bfb0db0db15f4b2388f2b9915c6",
+    "artifact_id": 10783426360,
+    "artifact_name": "ms-20260923-home-functions-gateway-cors-r3-frontend-visual-approved-baseline-run-35937165203-attempt-1",
+    "artifact_archive_sha256": "8f6d56fcd66b7cc45ef7ae1abd31ab848112f8f8c9db5c97fbd3294996dc4b75",
+    "approval_document_sha256": "84133d240084c958611612ca01bbfdcf24498251e6bc1ba08efe134ecdf6c39c",
+    "approval_environment": "et13-baseline-approval",
+    "approval_environment_id": 20001533626,
+    "approved_by_id": 77432570,
+    "approved_by": "VelkaressiaBlutkrone",
+    "approval_effective_at": "2026-09-24T00:10:28Z"
+  },
+  "input_provenance_sha256": "5ec214b59e785a06a756e82bbc4fdac578b7d3c97c91b1b32a05ecaaf0ff6bfe"
+}

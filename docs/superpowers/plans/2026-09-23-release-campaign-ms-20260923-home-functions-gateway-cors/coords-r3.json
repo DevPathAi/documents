@@ -1,0 +1,354 @@
+{
+  "release_id": "ms-20260923-home-functions-gateway-cors-r3",
+  "out_dir": "D:/workspace/dpa/.release-artifacts/ms-20260923-home-functions-gateway-cors",
+  "gitops_base_sha": "5961922b9a309055a75bc7302e5c852c5c51d59c",
+  "frontend_sha": "ee5a5add39c98bfb0db0db15f4b2388f2b9915c6",
+  "frontend_release_pr": "DevPathAi/devpath-frontend#230 (develop->main; includes #229 README + #231 ET13 trigger marker)",
+  "web_off_digest": "sha256:fba587d5e52b2ba809f550fb470a47ab2c531263f3988afe5dfd57d999e7ff84",
+  "web_on_digest": "sha256:4fb7acbf90b74d9ea08f2708c00ac34d988a56592485ee093b8f54945ac21a7c",
+  "admin_digest": "sha256:ec6fd7147322916aa73f306a746328f914a029bee40b0d3cf8a4a752608f0086",
+  "worktree": "D:/workspace/dpa/.worktrees/frontend-et13-prov-r2",
+  "raw_build_marker": "D:/workspace/dpa/.release-artifacts/ms-20260923-home-functions-gateway-cors/raw-review-r2/build-marker.v1.json",
+  "raw_review": {
+    "run_id": "35933420238",
+    "run_attempt": "1",
+    "artifact_id": "10781674798",
+    "artifact_digest": "sha256:9d3009f0c03458bd7068ed947e0b1092d85368404655ed303ef1f8c37f74e6ca",
+    "artifact_name": "et13-unsealed-raw-review-run-35933420238-attempt-1",
+    "expires_at": "2026-10-07T23:33:08Z",
+    "workflow_sha256": "71ba5845635677793d97d1b30d01a7ad58fed2e8ca2e2e9cc1a437f89b7d323e",
+    "web_main_dart_js_sha256": "fff51714aa8790230e664047c11814b05096c106d695e9bed1fa564869490eaf",
+    "admin_main_dart_js_sha256": "17cf7e02c881dcb7c2350b017804c8ad13056e17acab5896e3e853e4471eecba"
+  },
+  "baseline": {
+    "run_id": "35937165203",
+    "artifact_id": "10783426360",
+    "artifact_name": "ms-20260923-home-functions-gateway-cors-r3-frontend-visual-approved-baseline-run-35937165203-attempt-1",
+    "archive": "D:\\workspace\\dpa\\.release-artifacts\\ms-20260923-home-functions-gateway-cors\\baseline-r3-artifact.zip",
+    "archive_sha256": "8f6d56fcd66b7cc45ef7ae1abd31ab848112f8f8c9db5c97fbd3294996dc4b75",
+    "workflow_sha256": "24e959a7b34a02ca7f65e2a8f0af5d0a901a12d89deddc6f29ed564f868ef833",
+    "dir": "D:\\workspace\\dpa\\.release-artifacts\\ms-20260923-home-functions-gateway-cors\\baseline-r3",
+    "dispatched_after": "2026-09-24T00:10:03Z",
+    "dispatcher_branch": "automation/dispatch-ms-20260923-home-functions-gateway-cors-r3",
+    "dispatcher_commit": "b4a631c023fcbd2571ed707554eca1efb89a30fd",
+    "artifact_digest": "sha256:8f6d56fcd66b7cc45ef7ae1abd31ab848112f8f8c9db5c97fbd3294996dc4b75",
+    "expires_at": "2026-10-24T00:11:12Z",
+    "approved_by": "VelkaressiaBlutkrone"
+  },
+  "candidate": {
+    "spec_sha256": "06cd05d95d2b380863f7aa8ec023e0eb2831b5344412223037d161a69d763bd2",
+    "run_id": "35937332719",
+    "artifact_id": "10783084611",
+    "branch": "release/candidate-ms-20260923-home-functions-gateway-cors-r3",
+    "commit": "687c616715113822c59b53deda0ee6888e4ec0f0",
+    "artifact_name": "ms-20260923-home-functions-gateway-cors-r3-candidate-spec-run-35937332719-attempt-1",
+    "artifact_digest": "sha256:361c9507ae1a7c5549abab59b3a36f9fc083c672d0cdda0a99e9b95975fbbbac",
+    "expires_at": "2026-10-24T00:12:23Z"
+  },
+  "home": {
+    "source_sha": "ffaf4b33ca23d61dfd0304f666192a4e6c6ddfa3",
+    "dist_sha256": "00794a107b370a28404edbed62ffdd71891491f8953998d54f7b9eeb740cc237",
+    "candidate_deployment_id": "2225c3fb-57f5-4dd6-89f7-eddda8b46f91",
+    "candidate_preview_url": "https://2225c3fb.devpath-home-page.pages.dev",
+    "prior_production_deployment_id": "005cf175-6e3e-4400-a201-1987ce9d8d84",
+    "catalog_sha256": "a3c338c6dd9da493df0ee660772359bed76440ecf693e64ef5486f79eb3b6078",
+    "rendered_product_sha": "3995dfc7730bdf564db3ea564ea4835b61c33c50",
+    "rendered_product_tree_sha256": "c1d42d9ce3e030d32ed9a5c1798f433733ccc0cf18434511a1cfc531cd1f0c54",
+    "new_production_deployment_id": "6f7a7e2b-522f-4bf1-b134-2dd2b345f83c",
+    "live_check_after_landing": {
+      "/": 200,
+      "/api/invite-rounds": 200,
+      "/api/stats": 200,
+      "/updates": "308->200",
+      "index_vs_candidate_2225c3fb": "identical except 2 Cloudflare email-protection lines",
+      "checked_at": "2026-09-24T04:00Z"
+    }
+  },
+  "ci_run_id": "35933420253",
+  "pivot_r3": "r2 ai-svc release eval 35936200798 failed: candidate does not bind exact ET9 release inputs — ai_release_eval_config.rendered_config_sha256 was copied from r3 (bb9f18df..., rendered at gitops fcf97cf6) but the new base 5961922b adds a startupProbe to apps/devpath-ai-svc/base/deployment.yaml; correct value bfa0126d... Evidence producers are eligible by run success + artifact name (release id), not by spec sha, so the four successful r2 evidence runs would make the seal's exactly-one rule fail under the same id -> new id -r3 (r2->r3 precedent).",
+  "ai_rendered_config_sha256": "bfa0126d2cd8f97245ead1ab9d4c3c0fb2b20e3c29025055fa4f743554dbd41e",
+  "kustomize_exe": "C:/Users/deepe/AppData/Local/Temp/claude/D--workspace-dpa/9cb80789-bf71-49bb-8e11-bbc8f847c922/scratchpad/kustomize/kustomize.exe",
+  "r2_orphans": {
+    "baseline": {
+      "run_id": "35935446441",
+      "artifact_id": "10782424744",
+      "dispatcher_branch": "automation/dispatch-ms-20260923-home-functions-gateway-cors-r2",
+      "dispatcher_commit": "423f1a1a7b9e4c7a7e2c2749cc28079baf16e31b"
+    },
+    "candidate": {
+      "spec_sha256": "19c2e8317fd4b1bb47876d86d702aa3542cb848d097125cb648f764cf450c50a",
+      "run_id": "35935826601",
+      "artifact_id": "10783066919",
+      "branch": "release/candidate-ms-20260923-home-functions-gateway-cors-r2",
+      "commit": "c45750ae55e915694ef64ca6d7ea80ca09c4563c",
+      "artifact_name": "ms-20260923-home-functions-gateway-cors-r2-candidate-spec-run-35935826601-attempt-1",
+      "artifact_digest": "sha256:c3f69d038533ad225396605cf965990c8f365f3a619d0f1b670a505c1344286e",
+      "expires_at": "2026-10-23T23:53:52Z"
+    },
+    "evidence": {
+      "DevPathAi/devpath-frontend:et13-evidence.yml": "35936178711",
+      "DevPathAi/devpath-frontend:mission-spine-manual-at-evidence.yml": "35936180081",
+      "DevPathAi/documents:mission-spine-privacy-approval.yml": "35936190636",
+      "DevPathAi/devpath-ai-svc:mission-spine-release-eval.yml": "35936200798"
+    }
+  },
+  "evidence": {
+    "dispatched_after": "2026-09-24T00:13:00Z",
+    "frontend_dispatcher_commit": "3ede4337d3190ae675e44f635e453bc7d4414997",
+    "documents_dispatcher_commit": "a02e3ddba8ad264b924c59d6ff4f959d76542563",
+    "ai-svc_dispatcher_commit": "1ab57afb81d29a4912d4e93cd968613fea8be5b7",
+    "runs": {
+      "DevPathAi/devpath-frontend:et13-evidence.yml": "35937561874",
+      "DevPathAi/devpath-frontend:mission-spine-manual-at-evidence.yml": "35937563630",
+      "DevPathAi/documents:mission-spine-privacy-approval.yml": "35937570293",
+      "DevPathAi/devpath-ai-svc:mission-spine-release-eval.yml": "35937578808"
+    },
+    "summary": {
+      "DevPathAi/devpath-home-page:mission-spine-home-dist.yml": {
+        "run_id": 35937419487,
+        "head_sha": "ffaf4b33ca23d61dfd0304f666192a4e6c6ddfa3",
+        "conclusion": "success",
+        "artifacts": [
+          {
+            "id": 10783870255,
+            "name": "ms-20260923-home-functions-gateway-cors-r3-home-dist-run-35937419487-attempt-1",
+            "expires_at": "2026-10-24T00:13:38Z"
+          }
+        ]
+      },
+      "DevPathAi/devpath-frontend:et13-evidence.yml": {
+        "run_id": 35937561874,
+        "head_sha": "ee5a5add39c98bfb0db0db15f4b2388f2b9915c6",
+        "conclusion": "success",
+        "artifacts": [
+          {
+            "id": 10784266321,
+            "name": "ms-20260923-home-functions-gateway-cors-r3-frontend-visual-run-35937561874-attempt-1",
+            "expires_at": "2026-10-24T00:25:07Z"
+          },
+          {
+            "id": 10783563862,
+            "name": "et13-unsealed-raw-review-run-35937561874-attempt-1",
+            "expires_at": "2026-10-08T00:25:06Z"
+          },
+          {
+            "id": 10783431830,
+            "name": "et13-release-auth-ms-20260923-home-functions-gateway-cors-r3-run-35937561874-attempt-1",
+            "expires_at": "2026-09-25T00:15:41Z"
+          },
+          {
+            "id": 10783334322,
+            "name": "ms-20260923-home-functions-gateway-cors-r3-frontend-automated-a11y-run-35937561874-attempt-1",
+            "expires_at": "2026-10-24T00:25:09Z"
+          }
+        ]
+      },
+      "DevPathAi/devpath-frontend:mission-spine-manual-at-evidence.yml": {
+        "run_id": 35937563630,
+        "head_sha": "ee5a5add39c98bfb0db0db15f4b2388f2b9915c6",
+        "conclusion": "success",
+        "artifacts": [
+          {
+            "id": 10783870523,
+            "name": "ms-20260923-home-functions-gateway-cors-r3-manual-nvda-run-35937563630-attempt-1",
+            "expires_at": "2026-10-24T00:16:24Z"
+          },
+          {
+            "id": 10783552663,
+            "name": "ms-20260923-home-functions-gateway-cors-r3-unsealable-manual-nvda-approval-run-35937563630-attempt-1",
+            "expires_at": "2026-09-27T00:16:15Z"
+          },
+          {
+            "id": 10783238956,
+            "name": "ms-20260923-home-functions-gateway-cors-r3-unsealable-manual-at-review-run-35937563630-attempt-1",
+            "expires_at": "2026-10-08T00:15:41Z"
+          }
+        ]
+      },
+      "DevPathAi/documents:mission-spine-privacy-approval.yml": {
+        "run_id": 35937570293,
+        "head_sha": "7f732ac5ba31a91e81ea4e557cb7f67c8ee5ca36",
+        "conclusion": "success",
+        "artifacts": [
+          {
+            "id": 10783487707,
+            "name": "ms-20260923-home-functions-gateway-cors-r3-privacy-approval-run-35937570293-attempt-1",
+            "expires_at": "2026-10-24T00:15:53Z"
+          }
+        ]
+      },
+      "DevPathAi/devpath-ai-svc:mission-spine-release-eval.yml": {
+        "run_id": 35937578808,
+        "head_sha": "54f634b845befc7085e4b974a8b66120bf6c8856",
+        "conclusion": "success",
+        "artifacts": [
+          {
+            "id": 10783831009,
+            "name": "ms-20260923-home-functions-gateway-cors-r3-ai-eval-run-35937578808-attempt-1",
+            "expires_at": "2026-10-24T00:20:04Z"
+          }
+        ]
+      }
+    }
+  },
+  "validate": {
+    "dispatched_after": "2026-09-24T00:43:13Z",
+    "dispatcher_commit": "1f7eed2d37ea3faa7fcd5bb4c2548584cddd9334",
+    "failed_runs": [
+      "35938438966"
+    ],
+    "run_id": "35939693144",
+    "sealed_sha": "4a2ab53a91f049d13799932a35c48c1c8fe17734",
+    "sealed_manifest_sha256": "c95cc64184eb6f25cd5712b41df593aaf8b4f379ebd7227f7350836286481375",
+    "artifacts": [
+      {
+        "id": 10784870117,
+        "name": "ms-20260923-home-functions-gateway-cors-r3-journey-contextual-practice-attempt-1",
+        "expires_at": "2026-10-24T00:49:20Z"
+      },
+      {
+        "id": 10784750333,
+        "name": "ms-20260923-home-functions-gateway-cors-r3-journey-activation-attempt-1",
+        "expires_at": "2026-10-24T00:49:19Z"
+      },
+      {
+        "id": 10784631529,
+        "name": "ms-20260923-home-functions-gateway-cors-r3-home-visual-a11y-attempt-1",
+        "expires_at": "2026-10-24T00:44:53Z"
+      },
+      {
+        "id": 10784473343,
+        "name": "ms-20260923-home-functions-gateway-cors-r3-sealed-validation-attempt-1",
+        "expires_at": "2026-10-24T00:52:27Z"
+      }
+    ]
+  },
+  "production": {
+    "migration_dispatched_after": "2026-09-24T01:10:03Z",
+    "migration_run": {
+      "id": 35941728847,
+      "conclusion": "success"
+    },
+    "ci: dispatch ms-2026": {
+      "commit": "b21cd9b6743bc640e7c5b6168e7e1bf0ba375bac",
+      "at": "2026-09-24T03:57:00Z"
+    },
+    "promote_off_run": {
+      "id": 35941807967,
+      "conclusion": "failure"
+    },
+    "ci: resume ms-202609": {
+      "commit": "11920e222d515a9df665e70002047293c41dc598",
+      "at": "2026-09-24T03:08:07Z"
+    },
+    "promote_off_runs": [
+      {
+        "id": 35942936280,
+        "conclusion": "failure"
+      },
+      {
+        "id": 35950184028,
+        "conclusion": "success"
+      }
+    ],
+    "ci: promote ms-20260": {
+      "commit": "28d95b721900f6dc2a3c85566cb335b17d501a37",
+      "at": "2026-09-24T03:12:55Z"
+    },
+    "promote_on_run": {
+      "id": 35950519691,
+      "conclusion": "success",
+      "jobs": {
+        "mission_on_canary": {
+          "started": "2026-09-24T03:14:48Z",
+          "completed": "2026-09-24T03:33:45Z"
+        },
+        "rebaseline_staging": {
+          "started": "2026-09-24T03:33:58Z",
+          "completed": "2026-09-24T03:34:48Z"
+        }
+      }
+    },
+    "gitops_main_commits": {
+      "migration": "a2c677a",
+      "services": "8b036dc",
+      "service_applied_revision_fix": "8b01c02d",
+      "mission_off": "1d45b63",
+      "mission_on": "eae5c42"
+    },
+    "web_runtime_after_promote_on": {
+      "pod": "devpath-web-594c4fcf89-ppxpq",
+      "created": "2026-09-24T03:17:10Z",
+      "digest": "sha256:4fb7acbf90b74d9ea08f2708c00ac34d988a56592485ee093b8f54945ac21a7c",
+      "argo": {
+        "sync": "Synced",
+        "revision": "eae5c42e",
+        "health": "Healthy",
+        "op": "Succeeded"
+      },
+      "smoke": {
+        "app": 200,
+        "api_health": 200,
+        "landing": 200
+      },
+      "checked_at": "2026-09-24T03:40Z"
+    },
+    "landing_status": "done",
+    "landing_run": {
+      "id": 35953575812,
+      "conclusion": "success",
+      "deployment": 6629847441,
+      "approved_at": "2026-09-24T03:57:28Z",
+      "completed_at": "2026-09-24T03:58:53Z",
+      "evidence_artifact": 10789682304,
+      "evidence_expires": "2026-10-24T03:58:50Z"
+    },
+    "ci: dispatch landing": {
+      "commit": "b21cd9b6",
+      "at": "2026-09-24T03:57Z"
+    },
+    "sandbox_migration_gate_configmap": "deleted 2026-09-24T04:0xZ (created 01:17:53Z by hand during promote OFF)"
+  },
+  "cors_env_publisher": {
+    "source_commit": "abd75bd8b431f7500d1c4d8bf293ce9921a53e53",
+    "dev_branch": "dev/gateway-edge-cors-20260924",
+    "target": "5427fe1e6e5729309687c0ddec3fc1a8b16683f1",
+    "target_tree": "0c22b0f3db052ab5a99fa7bfa11a7c01fb37091f",
+    "target_parent": "eae5c42ef33b1a633a632766410e63d655b409fb",
+    "target_branch": "fix/gateway-edge-cors-main-20260924",
+    "helper": "25b30686719ade07b11c4152aecac1f7de13dcbb",
+    "helper_branch": "chore/gateway-edge-cors-publish-20260924",
+    "staged": "60219f13767281b3af4e395b1d0615d96af5dbdb",
+    "staged_branch": "chore/gateway-edge-cors-publish-dispatcher-staged-20260924",
+    "dispatch_branch": "automation/dispatch-gateway-edge-cors-main-publish",
+    "checks": {
+      "contract": "18 OK",
+      "runner_unit": "18 OK",
+      "full_suite": "rc 0 (361 incl. 2 new)",
+      "negative_controls": "5 mutations refused / control accepted",
+      "next_base_checks": "pass (control main pass)"
+    },
+    "publish": {
+      "helper_run": 35955319129,
+      "deployment": 6630129895,
+      "started": "2026-09-24T04:21:24Z",
+      "finished": "2026-09-24T04:23:55Z",
+      "main": "5427fe1e",
+      "post_verify": "ok",
+      "env_policy_after": [
+        "main"
+      ]
+    },
+    "runtime": {
+      "gateway_pod": "devpath-gateway-5649996b78-xc2pf",
+      "created": "2026-09-24T04:24:55Z",
+      "argo": "16/16 Synced at 5427fe1e (ollama-gpu Progressing = pre-existing pending GPU pod)",
+      "live_cors": {
+        "before": "ACAO x2, Vary x6",
+        "after": "ACAO x1, Vary x3",
+        "route": "GET /mentor-access/invite-rounds Origin https://leva.ai.kr",
+        "checked_at": "2026-09-24T04:27Z"
+      }
+    }
+  }
+}

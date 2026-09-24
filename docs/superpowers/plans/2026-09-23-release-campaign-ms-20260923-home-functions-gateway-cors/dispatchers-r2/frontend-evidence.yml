@@ -1,0 +1,60 @@
+---
+name: Mission Spine Release Gate Dispatch
+
+'on':
+  push:
+    branches:
+      - automation/dispatch-ms-20260923-home-functions-gateway-cors-r2
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    name: Dispatch protected release gates
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Dispatch release-ready ET13 evidence as GitHub Actions automation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api \
+            --method POST \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/et13-evidence.yml/dispatches" \
+            --input - <<'JSON'
+          {
+            "ref": "main",
+            "inputs": {
+              "release_id": "ms-20260923-home-functions-gateway-cors-r2",
+              "candidate_run_id": "35935826601",
+              "candidate_run_attempt": "1",
+              "candidate_artifact_id": "10783066919",
+              "candidate_spec_sha256": "19c2e8317fd4b1bb47876d86d702aa3542cb848d097125cb648f764cf450c50a",
+              "baseline_run_id": "35935446441",
+              "baseline_run_attempt": "1",
+              "baseline_artifact_id": "10782424744"
+            }
+          }
+          JSON
+
+      - name: Dispatch manual AT evidence as GitHub Actions automation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api \
+            --method POST \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/mission-spine-manual-at-evidence.yml/dispatches" \
+            --input - <<'JSON'
+          {
+            "ref": "main",
+            "inputs": {
+              "release_id": "ms-20260923-home-functions-gateway-cors-r2",
+              "candidate_run_id": "35935826601",
+              "candidate_run_attempt": "1",
+              "candidate_artifact_id": "10783066919",
+              "candidate_spec_sha256": "19c2e8317fd4b1bb47876d86d702aa3542cb848d097125cb648f764cf450c50a"
+            }
+          }
+          JSON
