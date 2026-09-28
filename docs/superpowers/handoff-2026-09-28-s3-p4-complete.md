@@ -7,10 +7,10 @@
 
 | 레포 | 브랜치 | 커밋 | 상태 |
 |---|---|---|---|
-| frontend | `develop` | **`<PRC_MERGE>`** | PR **#238**(PR-C) 머지 — CI 전 잡 pass/skipping |
+| frontend | `develop` | **`eaa7f77`** | PR **#238**(PR-C) 머지 — CI 전 잡 pass/skipping·실패 0 |
 | frontend | (그 직전) | `2c38bac` | PR **#237**(PR-B) 머지 커밋 |
 | frontend | (그 직전) | `7670447` | PR **#236**(PR-A) 머지 |
-| documents | `develop` | **`<DOCS_MERGE>`** | 이 핸드오프 + 기준선 영향 + 실행 원장 |
+| documents | `develop` | PR **#183** 머지 | 이 핸드오프 + 기준선 영향 + 실행 원장 |
 
 **워크트리 `D:\workspace\dpa\.worktrees\frontend-s3p4a-20260927` 를 지우지 말 것** — 실행 원장 원본(`.superpowers/sdd/2026-09-27-s3-p4-screen-groups/`, 판정 60여 건 + 로그 80여 개)이 git-ignored 로 그 안에 있다. 사본은 위 `execution-ledger.md`. 현재 그 워크트리는 `feat/s3-p4-account-screens` 를 물고 있다.
 
@@ -22,7 +22,7 @@ documents 워크트리 `.worktrees/documents-s3p4a-baseline`(이 PR 브랜치)�
 |---|---|---|---|
 | PR-A | 1~7 | dp_design 준비(`DpCols`) + 학습 5화면(오늘·경로·콘텐츠·실습·멘토) | #236 → `7670447` |
 | PR-B | 8~12 | 커뮤니티 9화면(목록 3·상세 2·작성·수정 3) | #237 → `2c38bac` |
-| PR-C | 13~18 | dp_design 온보딩 3종 + 계정·온보딩 9화면 | #238 → `<PRC_MERGE>` |
+| PR-C | 13~18 | dp_design 온보딩 3종 + 계정·온보딩 9화면 | #238 → `eaa7f77` |
 
 PR-C 커밋 5개:
 
@@ -33,6 +33,7 @@ PR-C 커밋 5개:
 | 15 | 동의 `.narrow` 760 + `.chk` 패널 2개 · 베타 대기 중앙 정렬 | `ddd4218` |
 | 16 | 진단 3단계 `.steps` + `.opt` + `.next` | `f03d629` |
 | 17 | 설정 `.rowline` 패널 3개 · 마이페이지 `.cols` · placeholder | `e8f66d6` |
+| 18 | 독립 리뷰 Important 7 + 재등급 Minor 5 수정(§7) | `9c3bdfa` |
 
 ## 3. 다음 착수점 — S3-P5 (기준선 재기록)
 
@@ -129,3 +130,20 @@ P5 의 성격: **ET13 visual/a11y baseline 재승인은 사람 단계다.** P1 �
 - `dart format` 0 changed · 변경 파일에 설정 파일 0건
 - 390px 가로 넘침 없음 · 200% 배율에서 **라벨 폭을 직접 측정**(동의) · `DpSteps` 현재 단계 대비를 라이트·다크 둘 다 측정해 AA 확인
 - CI 1차: `analyze-test` pass(5m17s) · `browser-ux` **pass**(5m23s) · `produce-atomic-pair` pass(9m5s) · 이미지 계약 2건 pass · `perf-gate` 1차 fail(하네스 flake) → 재실행 **pass**(22m37s). 수정 패스 뒤 2차 CI 결과는 아래 §9.
+
+## 9. 수정 패스 뒤 2차 CI (머지 근거)
+
+머지 커밋 `eaa7f77`. head `9c3bdfa` 에서 **실패 0 · `mergeStateStatus=CLEAN`**:
+
+| 잡 | 결과 | 시간 |
+|---|---|---|
+| `analyze-test` | pass | 4m9s |
+| `browser-ux` | **pass** | 5m43s |
+| `perf-gate` | pass | 22m49s |
+| `produce-atomic-pair` | pass | 7m18s |
+| `web-image-config-contract` (off/on) | pass | 7m54s · 8m54s |
+| `admin-image`·`web-image`·`web-image-release-contract`·ET13 auth | skipping | 0 |
+
+`browser-ux` 가 **역할 변경 뒤에도 통과**한 것이 중요하다 — 문항 보기를 라디오에서
+버튼으로 바꾸고 그 묶음의 `SemanticsRole.radioGroup` 을 걷어냈는데 axe 가 통과했다.
+트랙 묶음의 radioGroup 은 남아 있고 역시 통과한다.
