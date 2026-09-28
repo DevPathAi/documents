@@ -547,3 +547,414 @@ Task 12: 기록: 아티팩트 다운로드는 **런이 둘로 갈린다**(`produ
 36319166720, 나머지는 36319166732). `gh api .../artifacts --jq '.artifacts[0].name'`
 로 첫 아티팩트를 집으면 `.dockerbuild`(zip 아님)를 받아 실패한다 — 이름으로
 `leva-browser-ux-*` 를 골라야 한다.
+
+## PR-C (Task 13~18) — 브랜치 `feat/s3-p4-account-screens`, BASE `2c38bac`
+
+Task 12: complete (commits f7ef216..931206c, PR #237 머지 = merge commit `2c38bac`;
+전 잡 pass/skipping·실패 0 — analyze-test/browser-ux/perf-gate(21m42s)/produce-atomic-pair/
+이미지계약2 SUCCESS, admin-image·web-image·web-image-release-contract·ET13auth SKIPPED).
+앞 세션이 CI 대기 중에 끝나 완료선이 빠져 있었다 — `origin/develop` 이 `931206c` 를
+포함하는 것을 실측해 소급 기록한다.
+
+Pre-flight (PR-C, Task 13~18) — 공유 인터페이스 3행:
+  row 1: Task 13 produces `DpCheckRow` → Task 15 consumes. 순서 정상(13 이 먼저). clean.
+  row 2: Task 13 produces `DpSteps`·`DpOptionRow` → Task 16 consumes. 순서 정상. clean.
+  row 3: Task 1(PR-A, 머지됨) produces `DpRowLine`·`DpKeyValues`·`DpWebTable`·`DpCols`·
+         `DpSide` → Task 17 consumes. 실측: 그 5종 + P3 의 `DpPanel`·`DpListLines`·
+         `DpLink`·`DpStatusText` 전부 BASE `2c38bac` 의 `packages/dp_design/lib` 에 존재. clean.
+  Task 14·Task 18 은 「새 공개 API 없음」 — row 없음.
+
+## Task 13: dp_design 온보딩 프리미티브 3종
+
+Task 13: Ruling: 브리프의 테스트 호스트(`MediaQuery(data: MediaQueryData(size:…))`)는
+`MaterialApp` 이 뷰에서 자기 MediaQuery 를 만들어 **덮는다** — 레포가
+`dp_cols_test.dart` 주석에 이미 그 함정을 적어 뒀다. `tester.view.physicalSize` 로
+바꿨다. 비용: 없다(같은 의도, 레포 관례).
+
+Task 13: Ruling: `node.hasFlag(SemanticsFlag.…)` → `isSemantics(…)`. `SemanticsFlag`
+는 이 Flutter 에 없고, 레포의 다른 관례(`flagsCollection`+`ui.Tristate`)는 로컬 3.47
+전용 API 에 테스트를 묶는다(CI 는 3.44.1 핀). 1차로 쓴 `containsSemantics` 는 3.40
+이후 deprecated 이고 `flutter analyze` 가 info 를 치명으로 다뤄 **rc=1 로 6건** 떴다
+→ 대체 매처 `isSemantics` 로 옮겨 analyze 0. 비용: 3.44.1 에 `isSemantics` 가 없으면
+컴파일 실패 — CI 가 즉시 드러낸다.
+
+Task 13: Ruling: `DpOptionRow`·`DpCheckRow` 의 키보드 도달을 브리프의
+`MouseRegion`+`GestureDetector` 대신 **`FocusableActionDetector`** 로 만들었다
+(P3 의 `DpLink` 실측 수정과 같은 형태). 브리프 형태로 구현해 키보드 테스트를 돌려
+**RED 를 실증**했다: Tab 뒤 `primaryFocus` 가 `_FocusScopeWithExternalFocusNode` —
+행을 건너뛰고 포커스가 라우트 스코프에 머문다. 라디오·동의 체크는 폼 컨트롤이라
+키보드 조작이 필수다. 비용: 포인터 클릭으로 포커스를 받아도 2px 링이 보인다
+(`DpLink` 가 이미 같은 대가를 택했다 — 링과 시맨틱스가 `_focused` 하나를 공유).
+
+Task 13: Ruling: 브리프의 `Semantics(container: true)` 만으로는 라벨·설명이 각자
+노드로 남아 `getSemantics(find.text(…))` 가 checked 플래그를 보지 못한다 →
+`MergeSemantics` 한 겹. 비용: 라벨과 설명이 한 문장으로 읽힌다 — 라디오·체크
+항목에는 오히려 맞다(무엇을 고르는지 + 골랐는지를 한 번에 읽는다).
+
+Task 13: Ruling: `DpCheckRow` 의 Material `Checkbox` 를 `IgnorePointer` +
+`ExcludeFocus` + `ExcludeSemantics` 로 감쌌다 — 브리프는 `ExcludeSemantics` 만 걸어
+체크박스가 **별도 탭 정지**로 남고(같은 항목에 두 번 멈춘다), `DpPanel` 안의 Material
+위젯 함정(Task 3 실패 7건)에도 노출된다. 시각만 남기고 포커스·활성화는 행 래퍼가
+갖는다. 비용: 체크박스 자체의 ripple·hover 오버레이가 사라진다(시안에 그림자·잉크가
+없으므로 시안 충실도는 오히려 오른다).
+
+Task 13: Ruling: 배럴 삽입 순서 — 브리프는 「알파벳 순서」라 했으나
+`lib/dp_design.dart` 는 **디렉터리별 묶음** 순이다. 묶음에 맞춰 넣었다
+(layout 묶음의 `dp_panel` 뒤, interaction 묶음의 `dp_interactive_card` 앞뒤).
+비용: 없다.
+
+Task 13: 기록: 리터럴 `vertical: 10`·`fontSize: 13` 은 Global Constraints 의
+「새 리터럴 숫자 금지」와 충돌해 보이지만, P3 의 `dp_row_line.dart:59`·
+`dp_list_lines.dart:44`·`dp_web_table.dart:208` 이 이미 쓰는 **시안 파생값**이다
+(시안 `.chk{padding:10px 16px}`). 선례를 따랐다 — 토큰을 새로 만들지 않았다.
+
+Task 13: 기록: `test/golden/state_golden_test.dart` 의 `DpKillSwitch` 라이트·다크
+골든 2건이 이 PC 에서 **100% 픽셀 차**(1474200px)로 실패한다. 배럴을 BASE 로
+되돌린 상태에서 다시 돌려 **같이 실패하는 것을 실측** — 내 변경과 무관한 로컬 렌더
+환경 차이다. CI 는 `flutter test --exclude-tags golden` 이라 범위 밖이다.
+
+Task 13: 기록: **Task 16 으로 넘기는 실측 항목** — `DpOptionRow` 가
+`inMutuallyExclusiveGroup` 을 선언하므로 Flutter 웹이 `role="radio"` 로 투영하면
+axe 의 `aria-required-parent` 가 radiogroup 부모를 요구할 수 있다. Task 16 에서
+옵션 묶음을 감쌀 필요가 있는지 `browser-ux` 로 확인한다(로컬에서는 엔진 소스가
+SDK 에 없어 매핑을 확인할 수 없다 — 실측만이 답이다).
+
+Task 13: 기록: admin 156 PASS · dp_design 375 PASS(`--exclude-tags golden`) ·
+`flutter analyze` (dp_design) No issues · `dart format` 8파일 중 4 changed 후 재포맷 완료.
+커밋 `611a6da`. 로컬 툴이 다시 쓴 `analysis_options.yaml` 2개 + `pubspec.lock` 은
+되돌린 직후 커밋했다(커밋에 포함되지 않았다). 골든 실패 산출물
+`test/golden/failures/` 는 삭제했다.
+Task 13: complete (commits 2c38bac..611a6da, tests: bash -c 'cd /d/workspace/dpa/.worktrees/frontend-s3p4a-20260927/packages/dp_design && flutter test --exclude-tags golden' → 00:14 +375: All tests passed!)
+
+## Task 14: 로그인 + 인증 콜백
+
+Task 14: Ruling: 브리프의 새 `build()` 와 `_LoginStory` 는 `brandRow` + 테마 토글을
+**통째로 잃는다.** 유지했다(페이지 상단, 2열 그리드 위). 근거: 기존
+`login_header_test` 가 `brand-row` 키와 「테마 전환」 툴팁을 둘 다 단언하고,
+로그인은 셸 밖(bare 라우트)이라 브랜드·테마 전환이 갈 다른 자리가 없다.
+Global Constraints 「기능 보존이 시안 충실도보다 앞선다」. 비용: 시안 `.login` 에는
+상단 브랜드 행이 없다 — 시안과 한 줄 차이가 남는다.
+
+Task 14: Ruling: compact(390)에서는 스토리를 그리지 않는다. 브리프의 1열 분기는
+compact 에서도 스토리를 그리지만, 기존 테스트 「mobile login removes the story
+panel and keeps one focused flow」가 반대를 단언한다(의도된 UX 결정).
+`showStory = windowClass != compact` 로 두 요구를 모두 만족시켰다 — 브리프의
+medium(800) 1열 테스트는 그대로 통과한다. 비용: 시안의 compact 1열과 다르다.
+
+Task 14: Ruling: 브리프 Step 3 의 Expected(FAIL)가 **틀렸다.** 현재 코드도 1280 에서
+스토리가 좌측·패널이 우측이라 「2열 배치」 테스트가 **그냥 통과**했다(판별력 0).
+시안이 실제로 바꾸는 것 — `.flow` 가 칩 나열에서 제목+설명 2열 목록
+(`DpListLines` + 설명 문구)으로 바뀌는 것 — 을 단언해 판별력을 만들었다.
+비용: 없다(테스트가 더 정확해졌다).
+
+Task 14: Ruling: 「그라디언트를 쓰지 않는다」 테스트에서 `leva-brand-mark` 를
+제외했다. 실측: 남은 그라디언트 컨테이너는 브랜드 로고 하나뿐이고, 그것은 셸
+전체가 쓰는 dp_design 위젯이라 이 화면의 장식이 아니다. 비용: 로고의
+그라디언트 + boxShadow 는 Global Constraints 의 「그림자를 쓰지 않는다」와 어긋난
+채 남는다 — **P5/후속 관찰 항목**(셸 헤더도 같은 위젯을 쓰므로 바꾸면 ET13
+baseline 이 P4 범위를 넘어 움직인다).
+
+Task 14: Ruling: 콜백 narrow 폭은 렌더 폭이 아니라 **제약**을 단언한다.
+`ConstrainedBox(maxWidth: 760)` 의 렌더 폭은 자식의 고유 폭이다(실측 675) —
+처음 쓴 `getSize(...).width == 760` 은 기대가 틀린 테스트였다. 중앙 정렬은
+`getRect(...).center.dx` 로 따로 단언했다.
+
+Task 14: Ruling: `auth_callback_page_test` 의 호스트 3곳에 `theme: DpTheme.light()`
+를 줬다 — `context.appTokens` 가 `Theme.extension<AppTokens>()!` 이라 테마 없이는
+`_TypeError` 로 죽는다(옛 리터럴 420 은 테마를 안 읽어 통과했다). CLAUDE.md 의
+「`context.dpColors` 를 쓰는 위젯엔 `theme: DpTheme.light()` 를 준다」 관례.
+
+Task 14: 기록: auth 39 → **44 PASS** · web 전체 **1094 PASS** · `flutter analyze`
+(apps/web) 1건은 **기존** 경고(`current_mission_controller.dart:273`
+`unawaited_return_in_try_block`, 로컬 3.47 전용 린트 — CI 3.44.1 은 녹색, 핸드오프
+§6-11). 커밋 `7e0522d`. 로컬 툴이 다시 쓴 `analysis_options.yaml` 2개 +
+`pubspec.lock` 은 되돌린 직후 커밋했다.
+
+Task 14: 기록: **기준선 영향(Task 18 에서 baseline-impact.md 로 옮긴다)** —
+`/login`: 장식 배경·원·칩 제거, 2열 경계 900 → **840**(정정: `DpWindowClass.expanded`
+는 **840~1239** 다. 뒤집히는 구간은 840~899 이고 1240 에서는 구·신 모두 2열이라 차이가
+없다 — 독립 리뷰 I6), 로그인 패널 480 폭 제약 제거,
+페이지 헤더 → 패널 제목, `.flow` 제목+설명 목록 신설, 약관 문구 색
+`textFaint` → `textSecondary`(WCAG). **랜딩과 함께 첫인상이 바뀌는 화면.**
+`/auth/callback`: 중앙 narrow 420 → 760, 오류색 `colorScheme.error` → `DpColors.danger`,
+진행 상태도 같은 프레임을 쓴다.
+Task 14: complete (commits 611a6da..7e0522d, tests: bash -c 'cd /d/workspace/dpa/.worktrees/frontend-s3p4a-20260927/apps/web && flutter test' → 00:42 +1094: All tests passed!)
+
+## Task 15: 동의 + 베타 대기
+
+Task 15: Ruling: 동의 항목은 **4개가 아니라 5개**다(필수 TERMS·PRIVACY + 선택
+MARKETING·LCS_ATTACH·ERROR_LOG). 브리프의 `findsNWidgets(4)` 를 5로 교정했다.
+
+Task 15: Ruling: 브리프의 단일 `DpPanel`(`_ConsentKind.values` 전체를 한 패널에)은
+기존 정보 구조를 지운다 — 현재 화면은 필수 2행 → **출생 연도 필드** → 「선택 동의」
+라벨 → 선택 3행 순서다. 필수·선택 **두 `DpPanel`** 로 나눠 그 구조를 보존했다.
+각 패널의 마지막 행에만 `last: true`. 비용: 시안의 단일 `.chk` 패널과 다르다 —
+그 대가로 출생 연도 입력이 필수 동의 바로 뒤에 남는다.
+
+Task 15: Ruling: 동의 화면의 `DpPageHeader` 는 **유지**한다. 브리프는 베타 화면에
+대해서만 제거를 지시했고, 동의는 테스트 4건이 title·description 을 단언한다 —
+재동의/신규 분기 문구(「서비스 이용약관 재동의」 ↔ 「가입 전 동의」)가 거기 있다.
+
+Task 15: Ruling: `DpLink` 에 `semanticsLabel` 을 더했다(dp_design 변경 — Task 13 이
+그 담당이었지만 필요가 여기서 드러났다). 근거: 기존
+`TextButton(child: Text('전문 보기', semanticsLabel: '${k.title} 전문 보기'))` 를
+`DpLink.inline` 으로 바꾸면 같은 라벨 「전문 보기」 2개가 되어 **접근성이 후퇴한다**.
+RED→GREEN 으로 추가했다(dp_link 10 PASS). 비용: dp_design 공개 API 가 Task 13 밖에서
+한 개 늘었다 — 최종 리뷰가 볼 수 있게 여기 적는다.
+
+Task 15: Ruling: 베타 대기의 상태 아이콘(`hourglass_top`/`lock_clock`)을 `DpTag`
+(`베타 대기`/`대기 만료`)로 바꿨다 — 상태를 **텍스트로** 알려 스크린리더가 읽을 수
+있고 시안의 면 문법과도 맞는다. 브리프 스니펫은 pending 문구만 담고 `_expired`
+분기(만료 문구 + 「다시 로그인」)를 잃었는데 **둘 다 보존**했다. 비용: 아이콘의
+시각적 즉시성을 잃는다.
+
+Task 15: Ruling: 베타 대기의 `brandRow` 를 유지했다 — 브리프 스니펫에는 없다.
+기존 테스트가 `brand-row` 키를 단언하고, 셸 밖 화면의 유일한 제품 정체성이다
+(Task 14 의 로그인과 같은 판정).
+
+Task 15: Ruling: `CheckboxListTile` 을 읽던 테스트 3곳을 행 키
+(`consent-<name>-row`)로 읽게 바꿨다 — `DpCheckRow` 의 라벨은 `Widget`(제목 +
+필수/선택 태그)이라 `find.widgetWithText` 로 행을 특정할 수 없다.
+
+Task 15: 기록: 「전문 보기」 링크가 갈 곳은 **있다**(`docUrl` =
+`https://leva.ai.kr/terms`·`/privacy`, `externalLinkOpenerProvider` 로 새 탭). 브리프
+Ruling 표의 「없으면 신설하지 않는다」 조건은 해당하지 않는다 — 이미 있는 링크를
+`DpLink.inline` 으로 옮겼고 `consent-*-doc` 키를 유지해 기존 테스트가 그대로 돈다
+(전문 링크 탭이 동의로 번지지 않는 계약도 `DpCheckRow` 구조가 지킨다 — trailing 은
+행 제스처 밖이다).
+
+Task 15: 기록: consent 25 PASS · beta 3 PASS · dp_design **376 PASS** · admin 156 PASS ·
+web 전체 **1098 PASS** · analyze: dp_design 0, web 1건(기존
+`current_mission_controller.dart:273`). 커밋 `ddd4218`. 설정 파일 4개
+(`analysis_options.yaml` 3 + `pubspec.lock`)는 되돌린 직후 커밋했다.
+
+Task 15: 기록: **기준선 영향(Task 18 에서 baseline-impact.md 로)** —
+`/consent`: 폭 440 → 760, 체크 행 `CheckboxListTile` → `DpCheckRow`(테두리 패널 2개),
+항목마다 필수/선택 태그 신설, 「전문 보기」가 버튼 → 인라인 링크, prefill 로딩이
+맨 스피너 → `DpLoading`. 차단 화면 폭 360 → 760.
+`/beta`: 페이지 헤더 → 중앙 태그 + 제목, 폭 440 → 760, 상태 아이콘 → 태그,
+폴링 스피너 → `DpLoading`.
+Task 15: complete (commits 7e0522d..ddd4218, tests: bash -c 'cd /d/workspace/dpa/.worktrees/frontend-s3p4a-20260927/packages/dp_design && flutter test --exclude-tags golden && cd /d/workspace/dpa/.worktrees/frontend-s3p4a-20260927/apps/web && flutter test' → 00:43 +1098: All tests passed!)
+
+## Task 16: 진단 3단계
+
+Task 16: Ruling: 트랙 선택은 라디오가 아니라 **`DropdownButtonFormField`** 였다
+(브리프 Ruling 표가 Step 1 실측으로 갱신하라고 한 줄). 시안 `dstart` 의 `.opt` 대로
+`DpOptionRow` 목록으로 바꿨다 — 트랙은 이 화면의 본 결정이라 접어 두지 않는다.
+다만 트랙은 **8개**다(시안 예시는 3개). 비용: 시작 화면이 길어져 CTA 가 기본 테스트
+뷰포트(800×600) 밖으로 나간다 — 페이지는 `SingleChildScrollView` 안이라 실제로는
+스크롤되지만, 탭하는 테스트에 `tallView(1200×2400)`/`ensureVisible` 을 넣어야 했다.
+
+Task 16: Ruling: `trackDescriptions` 는 **존재하지 않는다**(브리프 스니펫이 참조).
+보기 행은 라벨만 둔다 — 없는 문구를 만들지 않는다(Global Constraints: 새 API·데이터를
+추가하지 않는다).
+
+Task 16: Ruling: 문항 보기는 「고른 뒤 제출」이 아니라 **누르는 즉시 제출**이다
+(`OutlinedButton` 이 `submitAnswer` 를 바로 불렀다). `DpOptionRow` 의 라디오
+시맨틱스를 그대로 쓰되, 트랙·보기 두 묶음을 `Semantics(role: SemanticsRole.radioGroup)`
+으로 감쌌다 — Task 13 이 남긴 「`role="radio"` 에 radiogroup 부모가 필요할 수 있다」
+(axe `aria-required-parent`)를 여기서 선제 처리한다. `SemanticsRole` 은
+`dp_loading.dart` 가 이미 쓰므로 CI 3.44.1 에도 있다. 비용: 웹 렌더 매핑은
+`browser-ux`(Task 18)에서만 실측된다 — 로컬에는 엔진 소스가 없다.
+
+Task 16: Ruling: `DpOptionRow.onSelect` 를 nullable 로 바꿨다(dp_design 변경).
+기존 `OutlinedButton` 은 `busy || answerFailed` 에 `onPressed: null` 로 잠겼고, 그
+동작을 잃으면 **중복 제출**이 생긴다. 잠긴 보기는 포커스 순회에서도 빠진다 —
+누를 수 없는 보기에 탭이 멈추면 원인을 알 수 없다. RED→GREEN 으로 추가(dp_design 377).
+
+Task 16: Ruling: 시안 `.bars`(개념별 결과) 패널을 **만들지 않았다.** 실측:
+`AssessmentResult` 는 `diagnosedLevel`·`confidenceWeight` 둘뿐이고 개념별 점수가
+없다. 브리프가 「데이터가 없으면 만들지 말고 Ruling 에 적으라」고 한 경우다.
+비용: 시안 `dresult` 의 `.bars` 는 P4 에서 구현되지 않는다 — 백엔드 계약이 먼저다
+(baseline-impact.md 의 「구현하지 않은 시안 요소」에 더한다).
+
+Task 16: Ruling: 「결과 형태 미리보기」 키-값 3행을 브리프 예시
+(「강점·보강 개념」)가 아니라 **기존 세 문구**(`현재 레벨`·`진단 신뢰도`·
+`맞춤 학습 경로`)로 만들었다. 테스트 3건이 그 문구를 단언하고, 개념별 점수가 없는데
+「강점·보강 개념」을 약속하면 결과 화면이 그것을 못 지킨다.
+
+Task 16: Ruling: `_primaryAction` 을 `DpNextActionBand` 로 옮겼다. 브리프가 예로 든
+「경로 만들기」 단일 버튼은 **이 화면에 없다** — 상태에 따라 아홉 갈래다
+(저장하고 계속·저장 다시 시도·결과 저장 중·학습 경로로 계속·기존 경로로 계속·
+경로 상태 확인 필요·경로 확인 중·경로 상태 다시 확인·새 진단 시작·필수 동의 확인).
+`DpNextActionState`(ready·pending·disabled·retry)로 남김없이 옮기고 문구는 그대로
+뒀다. 비용 2건: ① 밴드는 `InkWell` 이라 `widget<FilledButton>` 으로 CTA 비활성을
+읽던 테스트를 밴드 상태(`state`·`onPressed`)로 읽게 고쳤다 ② 밴드는 접근성 이름에
+`, 예상 결과: …` 를 붙이므로 `bySemanticsLabel('새 진단 시작')` 을 정규식으로 고쳤다.
+
+Task 16: Ruling: 답변 실패 시 보기에 붙던 `'✓ ${option}'` 글자를 없애고 `selected`
+(시안 `.opt.sel`)로 표시한다 — 글자로 상태를 만들면 스크린리더가 「체크」를 문자로
+읽는다. 키(`diagnostic-option-selected-$index`)는 그대로 두어 기존 테스트가 돈다.
+
+Task 16: Ruling: `_QuestionView` 의 `DpSteps` 는 `missionSpineEnabled` 일 때만 그린다 —
+legacy 흐름(`_legacyBody`·`_LegacyPreview`)에는 단계 표시가 없었고 그 흐름은 보존
+대상이다. 세 단계가 시작·문항·결과에서 각각 0·1·2 다.
+
+Task 16: 기록: diagnostic 77 → **88 PASS** · web 전체 **1104 PASS** ·
+dp_design **377 PASS** · admin 156 PASS · analyze: dp_design 0, web 1건(기존
+`current_mission_controller.dart:273`). 중간에 내가 만든 lint 2건(테스트 지역변수
+`_stepLabels` · 이제 안 쓰는 `flutter/widgets.dart` import)은 고쳤다. 커밋 `f03d629`.
+
+Task 16: 기록: **기준선 영향(Task 18 에서 baseline-impact.md 로)** —
+`/diagnostic` 세 화면 전부. 시작: 칩 단계 표시 → `.steps` 테두리 한 겹, 온보딩
+surface 가 `DpPanel`, 트랙 드롭다운 → 보기 행 8개, 기대 결과 패널 → 키-값 3행.
+문항: 단계 표시 신설, 보기 버튼 → 보기 행(라디오 원), ✓ 글자 제거.
+결과: 단계 표시 신설, 패널 2곳 반경 16·12 → 카드 8, 「결과 형태 미리보기」 →
+키-값, primary action → `.next` 밴드(예상 결과 문구가 새로 보인다).
+**구현하지 않은 시안 요소 추가**: `dresult` 의 `.bars` 개념별 결과 — `AssessmentResult`
+에 개념별 점수가 없다(백엔드 계약 변경 필요).
+Task 16: complete (commits ddd4218..f03d629, tests: bash -c 'cd /d/workspace/dpa/.worktrees/frontend-s3p4a-20260927/apps/web && flutter test' → 00:42 +1104: All tests passed!)
+
+## Task 17: 마이페이지 + 설정 + placeholder
+
+Task 17: Ruling: 마이페이지에 시안의 「커뮤니티 활동」 **표를 만들지 않았다.**
+실측: 이 화면의 활동 데이터는 집계 수치뿐이다 — `MyActivity(questionCount,
+answerCount)` + `DashboardSummary.completedContentCount`. 제목·게시판·링크가 아예
+없어 `DpWebTable` 의 행을 만들 재료가 없다(브리프가 「작성」 칼럼만 없다고 본 것보다
+한 단계 더 없다). 집계 두 줄을 `DpPanel('활동')` 로 감싸는 것으로 끝냈고 문구 4종
+(성공 2 · 부분실패 2)은 그대로 뒀다. 비용: 시안 `mypage` 의 활동 표는 P4 에서
+구현되지 않는다 — baseline-impact.md 의 「구현하지 않은 시안 요소」에 더한다.
+
+Task 17: Ruling: 시안의 「프로필」 키-값 사이드 패널도 **만들지 않았다.** 이 화면의
+프로필은 읽기 표시가 아니라 **편집 폼**이다(자기소개·학습 목표·목표 트랙·경력 +
+저장). 같은 값을 kv 로 한 번 더 보이면 한 화면에 두 번 나온다. 대신 시안 `.prof` 의
+태그 자리에 그 세 값을 `DpTag` 로 요약했다. 비용: 시안의 사이드 kv 패널이 없다.
+
+Task 17: Ruling: `.prof` 에 **이름을 넣지 못했다** — 프로필 모델(`ProfileView`)에
+표시 이름 필드가 없다(avatar·bio·learningGoal·targetTrack·experienceYears 뿐).
+시안의 「이름」 자리에 소개(bio)를 `titleMedium` 으로 놓고, 없으면 「소개가 아직
+없어요」로 둔다. 비용: 시안보다 한 줄 적다 — 이름은 백엔드 계약이 먼저다.
+
+Task 17: Ruling: AI 멘토 패널은 브리프대로 사이드로 옮겼다(현재 화면에 이미 있었다 —
+브리프의 「없으면 만들지 않는다」 조건은 해당하지 않는다). 네 상태 분기
+(Loading·Failed·Ready(active)·Ready(waitlisted))를 그대로 보존했다.
+
+Task 17: Ruling: 설정 진입 `ListTile` → `DpRowLine` + 인라인 링크(「열기」).
+`leading: Icon(Icons.settings_outlined)` 는 **제거**했다 — 시안 `.rowline` 에 선행
+아이콘이 없고, `mypage_header_test` 가 그 아이콘의 부재를 단언한다(헤더에 설정
+버튼을 두지 않기로 한 앞선 결정). 링크에 `semanticsLabel: '설정 열기'` 를 줬다.
+
+Task 17: Ruling: 설정 테스트의 `find.text('로그아웃')`·`find.text('계정 삭제')`
+`findsOneWidget` 을 고쳤다. 시안 `.rowline` 은 **좌측 라벨과 우측 컨트롤을 둘 다**
+두므로 같은 문구가 행 이름과 버튼에 한 번씩 나온다(설정 UI 의 통상 형태다).
+버튼을 특정하는 `widgetWithText(OutlinedButton, …)` + 개수 `findsNWidgets(2)` 로
+바꿨다 — 문구를 비틀어 테스트를 맞추지 않았다.
+
+Task 17: Ruling: 브리프 스니펫의 `notifier.setConsent(type, v)` 는 **없는 이름**이다.
+실제는 `revokeConsent(type)` 이고 「현재 동의된 항목만 철회 가능」이라는 기존 동작이
+붙어 있다(재동의는 후속). 그 동작을 그대로 옮겼다.
+
+Task 17: 기록: 동의 행의 설명 줄은 `ConsentItemView.agreedAt`(nullable String)을 쓴다 —
+`'$agreedAt 동의'`. 브리프가 이름 확인을 남겨 둔 지점이다.
+
+Task 17: 기록: mypage+settings 17 → **22 PASS**(신설 `settings_rowline_test.dart` 4건 +
+마이페이지 `.cols` 1건) · web 전체 **1109 PASS** · analyze 1건(기존
+`current_mission_controller.dart:273`). 커밋 `e8f66d6`.
+
+Task 17: 기록: **기준선 영향(Task 18 에서 baseline-impact.md 로)** —
+`/settings`: 절 순서가 바뀐다(동의 관리 → 알림 → 계정 ⇒ **알림 → 동의 관리 → 계정**),
+`SwitchListTile`·`ListTile` → 테두리 패널 3개 + 구분선 행, 본문 폭 760 좌측 정렬,
+동의 행에 필수/선택 태그 신설, 로딩·실패 표현 교체.
+`/mypage`: 카드 5장 세로 나열 → `.cols` 2열, 프로필 카드 → 배경 없는 `.prof`,
+AI 멘토·설정이 사이드로, 설정 행의 선행 아이콘 제거.
+`/placeholder`: 중앙 narrow 760.
+**구현하지 않은 시안 요소 추가**: `mypage` 의 커뮤니티 활동 표(목록 API 없음) ·
+`mypage` 의 프로필 사이드 kv(편집 폼과 중복) · 프로필 표시 이름(모델에 없음).
+Task 17: complete (commits f03d629..e8f66d6, tests: bash -c 'cd /d/workspace/dpa/.worktrees/frontend-s3p4a-20260927/apps/web && flutter test' → 00:43 +1109: All tests passed!)
+
+## Task 18: PR-C 마무리
+
+Task 18: 기록: 변경 파일 **28개** — `packages/dp_design/{lib,test}/**`(Task 13·15·16) +
+`apps/web/lib/src/features/{auth,beta,common,consent,diagnostic,mypage,settings}/**` +
+`apps/web/test/**`. 설정 파일 0건. 커밋 5개(`2c38bac..e8f66d6`).
+
+Task 18: 기록: 전 패키지 검증 — analyze: dp_design 0 · dp_core 0 · admin 0 ·
+web 1건(`current_mission_controller.dart:273`). 그 1건은 `git show
+origin/develop:…` 로 **develop 에도 같은 코드가 있는 것을 실측**했고 그 파일은 변경
+목록에 없다(로컬 3.47 전용 린트, CI 3.44.1 은 녹색). 테스트: dp_design 377 ·
+dp_core 174 · admin 156 · web 1109 전부 통과. `dart format` 28파일 0 changed.
+
+Task 18: frontend PR **#238**. 1차 CI: `analyze-test` pass(5m17s) ·
+`browser-ux` **pass**(5m23s — Task 16 의 radiogroup 우려가 발현되지 않았다) ·
+`produce-atomic-pair` pass(9m5s) · 이미지 계약 2건 pass · **`perf-gate` fail(22m52s)**.
+
+Task 18: Ruling: `perf-gate` 실패는 **측정 하네스 flake** 로 판정하고 실패 잡만
+재실행했다(`gh run rerun 36368408512 --failed`). 근거 3가지: ① 실패 지점이 앱 단언이
+아니라 하네스의 부트스트랩 로케이터다 —
+`locator('flt-semantics-placeholder').first()` waitFor 120000ms 초과
+(`tools/perf/measure.mjs:223`) ② 같은 라우트(`desktop /mentor`)의 run 1/5·2/5 가
+**같은 잡 안에서 통과**했고 run 3/5 에서 멈췄다 ③ `/mentor` 는 이 PR 이 건드리지
+않았고, 실측으로 **변경된 위젯을 하나도 쓰지 않는다**
+(`grep -rln "DpLink|DpSteps|DpOptionRow|DpCheckRow" apps/web/lib/src/features/mentor/`
+= 0건). 기존 위젯 변경은 `DpLink.semanticsLabel` 하나뿐이고 `semanticsLabel ?? text`
+라 null 인 기존 호출부에서 **완전 무동작**이다(diff 전문 확인). 비용: 재실행도
+실패하면 flake 가 아니라는 뜻이므로 그때는 `measure.mjs` 의 대기 조건을 파야 한다
+(이 측정기는 타임아웃 이력이 있다 — 2026-09-17 PR #212).
+
+Task 18: 기록: `perf-gate` **재실행 pass(22m37s)** — flake 판정이 실측으로 확인됐다.
+PR #238 최종 CI: `analyze-test` pass(5m17s) · `browser-ux` pass(5m23s) ·
+`produce-atomic-pair` pass(9m5s) · `perf-gate` pass(22m37s) ·
+`web-image-config-contract` 2건 pass(7m6s·6m38s) · SKIPPED 4건
+(`admin-image`·`web-image`·`web-image-release-contract`·ET13 auth). **실패 0** ·
+`mergeStateStatus=CLEAN` · head `e8f66d6`. 사용자 기준(전 잡 pass/skipping·실패 0)을
+만족하지만 **최종 독립 리뷰 findings 를 받기 전에는 머지하지 않는다** — Critical 이
+있으면 develop 에 들어간 뒤 고치게 된다.
+
+## 최종 독립 리뷰 (Opus) 와 수정 패스
+
+Final review: 서브에이전트(Opus) 독립 리뷰 — Critical 0 · Important 7 · Minor 11.
+보고서: 같은 폴더 `review-report.md`. 리뷰어의 최종 메시지가 두 번 한 단어로만 와서
+보고서를 파일로 쓰게 지시해 받았다(다음에 서브에이전트 리뷰를 쓸 때는 **처음부터
+파일 경로를 지정**한다).
+
+Final: Ruling: 재등급 — 리뷰의 Minor 중 **5건을 Important 로 올려** 수정 패스에 넣었다.
+기준은 「사용자가 겪는 결과」다: M2(보이는 폼 라벨 소실)·M4(테스트 인자를 무시해
+검증했다고 믿게 만든다)·M5(실재하지 않는 색 조합을 재 계약을 못 지킨다)·M6a/b(아바타
+유무를 알 수 없고 500자 소개가 머리를 차지한다)·M10b/c(세로 중앙 정렬 상실·「저장 후」
+선행 조건 문구 소실). 비용: 수정 범위가 커졌다 — 대신 전부 RED→GREEN 으로 닫았다.
+
+Final: fixed I2 (DpCheckRow 라벨 짜부심) — 처음 쓴 위젯 단독 테스트가 **판별력이
+없었다**(뷰포트만 390 으로 두면 행이 전폭을 받는다 — 커밋본에서도 통과했다). 프로브로
+실제 화면을 재어 `Row` 형태 **폭 38.25 · 높이 495** vs `Wrap` 형태 **187.5 · 135** 를
+확인하고, 위젯 테스트는 실제 행 폭(340)으로 좁히고 화면 테스트는 폭 측정으로 강화했다.
+두 테스트 모두 커밋본에서 RED(110.75 · 38.25 < 150) → 수정본에서 GREEN.
+
+Final: fixed I1 (로그인 폭 상한) — `login-content` 캡 테스트 2건 RED→GREEN.
+Final: fixed I3 (원시 ISO 타임스탬프) — 포맷 테스트 + 해석 실패 테스트 RED→GREEN.
+Final: fixed I4 (즉시 제출에 라디오 역할) — `DpOptionRole` 신설. dp_design 역할 테스트
+2건 + 진단 소비처 테스트 2건 RED→GREEN.
+Final: fixed I7 (셸 밖 헤더 gutter) — 동의·진단 좌측선 테스트 2건 RED→GREEN.
+Final: fixed M2·M4·M5·M6a·M6b·M10b·M10c — 각각 테스트 RED→GREEN(M4·M5 는 테스트 자체
+수정이라 새 테스트 없이 기존 단언을 바로잡았다).
+Final: fixed I5 (baseline-impact 비어 있음) — documents 레포에 PR-A·B·C 25화면 +
+1:1 불가 8건 + PR-C 함정 7건을 채웠다.
+Final: fixed I6 (2열 경계 오기) — 원장·baseline-impact·핸드오프 세 곳을 「900 → 840,
+뒤집히는 구간 840~899」로 정정했다.
+
+Final: Ruling: `DpCols` 의 주석과 코드 모순(리뷰 I6 의 참고 지적)은 **P4 에서 고치지
+않는다.** `dp_cols.dart:10-12` 주석은 「경계를 1240 에 둔다」고 적었는데 코드는
+`expanded || large`(= 840부터) 2열이다. 어느 쪽이 의도였는지에 따라 6화면의 840~1239
+레이아웃이 바뀌고 그 화면들의 테스트·기준선이 함께 움직인다 — PR-C 범위 밖이고
+P5 가 기준선과 함께 확정해야 한다. baseline-impact 의 「P5 이월」에 적었다.
+비용: 그 구간의 의도가 확정되기 전까지 6화면의 2열 판정이 문서와 어긋난 채 남는다.
+
+Final: Ruling: M6c(`.prof` 태그가 편집 폼과 중복)를 **고치지 않는다.** 전체 패널을 한 벌
+더 만드는 것(kv 사이드 패널)과 한 줄 요약 태그 3개는 성격이 다르고, 시안 `.prof` 의
+태그 자리가 바로 그것이다. 비용: 원장 Ruling 의 「중복이라 만들지 않았다」는 문장이
+태그에는 적용되지 않는다는 구분을 P5 가 시안과 대조해 확정해야 한다.
+
+Final: minor (deferred): `DpSteps` 의 단계 높이가 서로 다를 수 있다(M1).
+Final: minor (deferred): `PlaceholderPage` 는 소비처가 0곳이다(M3).
+Final: minor (deferred): `.prof` 태그와 편집 폼의 중복(M6c — 위 Ruling 참조).
+Final: minor (deferred): 비활성 밴드가 실행 불가한 예상 결과를 읽는다(M7).
+Final: minor (deferred): `DpNextActionBand` 의 `boxShadow` 가 Global Constraints 와
+어긋난다 — PR-A 도 같은 위젯을 쓴다(M8).
+Final: minor (deferred): 폰에서 진단 시작 CTA 까지의 스크롤 깊이를 재는 단언이 없다(M9).
+Final: minor (deferred): 보기 목록 마지막 행 뒤 여분 간격 8px(M10a).
+Final: minor (deferred): 탭 정지 개수를 고정하는 테스트가 없다(M11).
+
+Final: 기록: 수정 패스 뒤 dp_design **380** · dp_core 174 · admin 156 · web **1122**
+전부 통과 · analyze dp_design 0 / web 1건(기존) · format 0 changed. 커밋 `9c3bdfa`.
+리뷰가 「Declined to judge」로 남긴 2건은 **CI 가 답했다** — Flutter Web 의 ARIA 매핑은
+`browser-ux` pass 로, CI 핀 3.44.1 의 `SemanticsRole.radioGroup` 존재는 `analyze-test`
+컴파일 성공으로 확인됐다.
