@@ -273,6 +273,7 @@ I6). 코드를 정본으로 택하고 주석을 다시 썼다 — 시안 CSS 의
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
 EOF
 )"
+```
 ---
 
 ### Task 2: `DpSteps` 의 단계가 같은 높이를 갖는다 (M1)
