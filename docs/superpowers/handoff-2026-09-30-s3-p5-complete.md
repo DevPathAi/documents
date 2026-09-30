@@ -11,7 +11,7 @@
 | 레포 | 브랜치 | 커밋 | 상태 |
 |---|---|---|---|
 | frontend | `develop` | **`023eb22`** | PR **#240**(PR-2) 머지 — CI 전 잡 pass/skipping · 실패 0 |
-| documents | `develop` | `PENDING` | PR **#PENDING** — 핸드오프 · 원장 PR-2 절 · `baseline-impact-p5.md` · 스펙 §7 P5 정정 |
+| documents | `develop` | `517c948` (이 PR 직전) | PR **#188** — 핸드오프 · 원장 PR-2 절 · `baseline-impact-p5.md` · 스펙 §7 P5 정정 |
 
 **지우지 말 워크트리**
 - `D:\workspace\dpa\.worktrees\frontend-s3p5-20260928` — PR-1 의 git-ignored SDD 산출물(브리프 11 · 보고서 9 · 리뷰 9 · diff 11).
