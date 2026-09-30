@@ -454,3 +454,212 @@ CI **전 잡 pass/skipping · 실패 0 · `mergeStateStatus=CLEAN`**:
 3. **`browser-ux` 통과** — 시맨틱스 변경 셋(`ExcludeSemantics`·밴드 라벨 분기·패널 `Material`)이 axe 를 깨지 않았다.
 
 **다음: PR-2 (Task 12~17) — 컨트롤러가 직접(Native) 수행한다.**
+
+---
+
+# PR-2 (Task 12~17) — 컨트롤러 직접(Native) 실행
+
+실행 스킬: `superpowers:executing-plans`(인라인). 워크트리 `D:\workspace\dpa\.worktrees\frontend-s3p5pr2-20260930` · 브랜치 `feat/s3-p5-gate-baseline` · base **`c8edb82`** · PR **#240**.
+
+**Ruling(설정)**: 계획 Global Constraints 는 PR-2 도 `frontend-s3p5-20260928` 워크트리에서 하라고 적었지만, 그 워크트리는 이미 머지된 `feat/s3-p5-carryover` 위에 있고 PR-1 의 git-ignored SDD 산출물을 담고 있어 핸드오프가 보존을 지시한다. `origin/develop` 에서 새 워크트리를 만들었다. — 비용: PR-2 의 경로가 계획 본문과 다르다(여기와 핸드오프에 적었다).
+
+**Ruling(범위 추가, 사용자 결정 2026-09-30)**: P4 리뷰가 P5 로 넘긴 시안 divergence **#2**(`DpSteps` 패딩·글자)와 **#3**(`apps/web` 리터럴 `TextStyle`)을 PR-2 에 포함한다. 둘 다 렌더를 바꾸고 Task 14 가 기준선을 굳히므로, 넣지 않으면 기준선을 두 번 기록해야 한다. **#1**(마이페이지 편집 폼을 별도 화면으로)은 라우트·상태·테스트 신설이라 이월. — 비용: PR-2 의 diff 가 계획의 File Structure 표보다 크다.
+
+## 사전 충돌 스캔 (Task 12~17 + 추가 범위)
+
+| # | 대상 | 발견 |
+|---|---|---|
+| 1 | Task 12(ROUTES +8) ↔ Task 13(`expectations.json`) | **충돌 없음.** `keyboard-traversal` 은 `/community` 1440px 을 **고정**으로 방문한다(`run.mjs:323-327`). `ROUTES` 를 읽는 것은 `overflow-and-targets`(:390)와 `axe`(:485) 둘뿐이다 |
+| 2 | Task 12 ↔ Task 14(perf 행 집합) | **충돌 없음.** perf 는 자기 목록을 갖는다(`tools/perf/measure.mjs:22` = `/login,/dashboard,/path,/mentor,/community`)이고 :74 가 그 밖의 라우트를 거부한다 |
+| 3 | Task 12 Step 8 의 미결 질문(`--only` 가 쉼표 목록을 받는가) | **이미 받는다**(`run.mjs:199`). 계획의 조건 분기는 타지 않는다 |
+| 4 | Task 15 ↔ PR-1 Task 1·5·6 | **충돌 없음.** DESIGN.md 산문이 부르는 이름이 전부 실재: `DpWebDensity`(`dp_spacing.dart:62`) · `DpPanel` 의 `Material(type: transparency)`(`dp_panel.dart:40`) · `DpCols` 840(`dp_cols.dart:36`) |
+| 5 | Task 15 Step 1(`DpInteractiveCard` 소비처) | **실측 = 0곳**. 위젯 정의·자기 테스트·주석 한 줄뿐이므로 §3 에서 지운다 |
+| 6 | Extra-A ↔ PR-1 Task 2 의 테스트 | **충돌.** `dp_steps_test.dart:86` 의 `heights[1] > 24` 는 글자를 13px 로 줄이면 한 줄 + 패딩도 넘겨 「줄바꿈했다」의 판별력을 잃는다. 같은 폭에서 한 줄 높이를 먼저 재 그보다 높은지 보게 고쳤다 |
+| 7 | Extra-A·B ↔ Task 14 | **순서 제약.** 둘 다 렌더를 바꾸므로 perf 아티팩트를 낳는 CI 실행 **전에** 커밋돼야 한다 |
+| 8 | Extra-B 범위 | 핸드오프가 과소 집계했다 — `apps/web` 리터럴은 **14곳**(10곳이 아니다: `qna_detail_page` 2곳·`support_dialog` 2곳 누락). `dp_design/lib` 은 13곳이지만 12곳이 `dp_typography.dart`(토큰 **정의** — 있어야 할 자리)이고 나머지 `dp_markdown.dart:46` 은 `bodyLarge` 의 값을 다시 적은 것이라 렌더가 같으므로 건드리지 않았다 |
+| 9 | Task 14 가 굳히는 행 중 하나가 **이름과 다른 것을 잰다** | `ci.yml:875` 가 `perf-gate` 를 `MOCK_PROFILE=onboarded` 로 빌드하고 perf 라우트에 `/login` 이 있는데, 그 빌드는 `/login` 을 `/dashboard` 로 돌려보낸다. 즉 `/login` 4행은 `/dashboard` 렌더를 잰다. **Ruling: perf ROUTES 를 건드리지 않는다** — 회귀 게이트로서는 매 실행 같은 것을 재므로 유효하고, 이름을 바꾸거나 라우트를 갈면 기준선 이력과의 비교 가능성을 버린다. 대신 기록한다: `/login` 자체 렌더는 perf 게이트 밖이다(다만 PR-2 가 axe·오버플로·타깃 게이트에는 `guest` 잡으로 넣었다). 정직한 해법은 guest 프로필 perf 레인이고 후속 과제다. — 비용: `/login` 전용 성능 회귀가 그 후속까지 안 보인다 |
+
+## Task 12 — browser-ux 가 P4 가 바꾼 화면을 보게 한다
+
+**Step 1~2 (도달 증명).** 기존 `gate_redirect_test.dart` 에 덧붙였다.
+
+- **Ruling**: 계획 스니펫이 없는 헬퍼(`_onboarded`·`_guest`·`_consentPending`)를 전제한다. 그 파일의 헬퍼는 `_user(OnboardingStatus, {consent})` 하나이므로 그것으로 세 상태를 지역 변수로 만들었다. — 비용: 없다(같은 상태, 새 헬퍼 없음).
+- **Ruling**: 계획의 `_consentPending` 은 온보딩 `done` 인데, 계획이 지시한 픽스처는 `consent` 프로필에 온보딩 **PENDING** 을 준다(`mockAuthRefreshUser` 는 `onboarded` 에만 DONE). 빌드가 실제로 만드는 (pending, pending) 조합으로 쟀다. 동의 게이트가 온보딩 게이트보다 앞서므로 `/consent` 는 통과하고 `/mypage` 는 `/consent` 로 간다. — 비용: 이 교정이 없었다면 테스트가 guest 잡이 만들지 않는 상태를 증명했을 것이다.
+- **실측 31/31 통과** — 계획의 도달 표가 가정이 아니라 확인된 사실이 됐다. 이 테스트는 특성화이고(계획의 Expected 자체가 PASS 다), 이 Task 의 RED → GREEN 짝은 Step 3~6 이다.
+
+**Step 3~4 (mock 프로필).** 계획의 Step 3(구현) → Step 4(테스트) 순서를 **테스트 우선으로 바꿨다**. RED = `Method not found: webMockFixturesFor` 4건.
+
+- **Ruling**: `webMockFixtures` 는 소비처가 셋인 최상위 `final Map` 이라(`mockCommunityPosts:33` · `createWebMockHttpAdapter:806` · `_WebMockHttpAdapter.fetch:828`) 함수로 바꾸면 파급된다. 리터럴을 `_baseFixtures` 로 바꾸고 `webMockFixturesFor(profile)` 이 그것을 펴 `POST /auth/refresh` 만 덮게 했으며 `webMockFixtures = webMockFixturesFor(mockProfile)` 로 파생시켰다. 두 접근자가 갈라지지 않도록 테스트로 묶었다. — 비용: 없다(키 집합이 구성상 동일하다).
+- **실측**: `guest` 는 401 이어야 미인증이 된다. `AuthController._performBootstrap` 의 `ApiException` 분기가 `AuthUnauthenticated` 로 가는 유일한 경로이고, `bootstrapSession` 이 `includeApiError: false` 로 불러 오류 배너도 나지 않는다. 401 본문에 사람이 읽는 문장을 둔 것은 `/auth/callback` 이 그 메시지를 렌더하기 때문이다.
+- **Ruling**: 내가 쓴 「ambient == webMockFixturesFor(mockProfile)」 테스트가 Expected·Actual 이 **동일하게 출력되면서** 실패했다. Dart 레코드 `(int, Map)` 의 `==` 는 Map 을 동일성으로 보므로 두 호출이 결코 같지 않다. **테스트를 고쳤다**(구성요소로 갈라 값 비교 + 키 집합 비교). 프로덕션 결함은 없었다. — 비용: 없다.
+- GREEN 51/51.
+
+**Step 5~6 (`--routes=` 옵션).** 역시 테스트 우선. 그리고 계획대로 구현하지 않았다.
+
+- **Ruling(계획 결함 — CI 를 붉게 만들 것이었다)**: `ci.yml` 은 `npm ci` **앞** 단계에서 러너 단위 테스트를 돌린다(browser-ux 잡). 그 시점에 node_modules 가 없고, `run.mjs` 는 최상위에서 playwright 를 require 하므로 계획대로 `run.mjs` 에서 `routesOf` 를 가져오면 그 단계가 죽는다. `ROUTES`·`routesOf` 를 playwright 없는 **`tools/browser_ux/routes.mjs`** 로 분리했다(`serve.mjs`·`report.mjs` 와 같은 분리). 다른 곳이 `run.mjs` 에서 `ROUTES` 를 가져오지 않음을 확인했다. **검증**: node_modules 없이 7/7 통과 = CI 그 단계와 같은 조건. — 비용: 작은 모듈 하나가 늘었다.
+- **Ruling(계획의 자기모순)**: 계획 본문의 `if (!options.routes) return ROUTES;` 는 계획 자신의 단언(빈 값이면 throw)을 만족시킬 수 없다(빈 문자열은 falsy). `undefined`/`null` 만 기본값으로 보게 했다. 조용히 넘어가면 온보딩 잡이 한 라우트가 아니라 16개를 재고도 초록으로 끝난다. — 비용: 빈 값이 이제 하드 에러다.
+- **Ruling(계획 결함)**: 계획은 변수명을 `routes` 로 하라고 적었는데 두 순회 블록이 이미 같은 블록에 보고서 누적용 `const routes = {}` 를 선언한다. 그대로면 객체를 순회하려다 죽는다. `sweepRoutes` 로 이름을 바꿨다. — 비용: 없다.
+- RED = 모듈 없음, GREEN 7/7. 계획에 없는 테스트 둘을 더했다: ROUTES 가 P4 의 8화면을 담는다 · ROUTES 가 onboarded 빌드가 돌려보내는 라우트 5개를 **하나도** 담지 않는다(Review Focus 5번의 잠금).
+
+**Step 8 (CI 잡).** `browser-ux-onboarding`(matrix guest/consent) 신설. PyYAML 로 파싱해 8잡·matrix 행·7스텝을 확인했다.
+
+- **Ruling**: matrix 값을 셸 명령 안에 직접 보간하지 않고 `env:` 로 넘겼다(라우트 목록이 셸에 재해석되지 않게). — 비용: 없다.
+- 계획의 「Unit-test the runner」 스텝은 뺐다 — browser-ux 잡이 이미 돌리고 routes.mjs 가 그 안에서 덮인다.
+- **계획에 없던 결합**: `frontend_reproducibility_contract_test.dart` 가 ci.yml 의 액션 핀 **순서**와 「일곱 개 잡」을 고정한다. 새 잡이 그 계약을 깼으므로 8잡으로 갱신했다(핀 3개를 browser-ux 와 perf-gate 사이에 삽입).
+
+### Step 7·9 — 로컬 핀 컨테이너 실측이 드러낸 것
+
+Docker Desktop 이 꺼져 있었다. **「없다」가 아니라 「안 켰다」이므로 켰다**(엔진 29.6.2).
+
+**1차 순회(16라우트, axe + overflow-and-targets): 10/10 실패.** 세 부류였다.
+
+**(1) 게이트 자체의 오보.** 전 폭에서 「external requests 42 > 40 (font fallback retry storm?)」.
+
+- **실측**: 라우트당 **+2 고정**(광고 스크립트 + 업데이트 피드, 각 14회 = 방문 라우트당 1회), `/sandbox` 만 폰트 청크 첫 수신으로 +12.
+- `external` 은 `openPage` 에서 **컨텍스트당 한 번** 만들어져 전 라우트에 누적된다. 8라우트 시절에 맞춘 고정 상한 40 은 라우트를 늘리는 것만으로 넘는다. 게다가 러너가 그 자리에서 break 해 **`/settings`·`/mypage` 를 아예 재지 못했다.**
+- **Ruling**: 폭주는 총합이 아니라 **비율**의 이상이다(2026-09-26 의 진짜 폭주는 한 라우트 230건, 최대 695건). `externalRequestFailure()` 로 라우트별 증가분(상한 40) + 라우트 수 비례 총합(8 × 라우트 수)으로 바꾸고 실측값으로 단위 테스트했다. — 비용: 라우트당 8건 미만의 균일하고 완만한 증가는 잡히지 않는다.
+- 이 결함은 S3-P5 가 만든 것이 아니다. **라우트를 늘리는 어떤 PR 에서도 게이트를 붉게 만들 것이었다.**
+
+**(2) 앱 결함 — `/settings` 스위치 5개** · axe `aria-toggle-field-name`(serious).
+
+- 러너 보고서는 위반을 (id, impact, 노드 수, help) 로만 요약해 원인을 못 짚으므로 **일회성 프로브**를 써 노드를 찍었다: `role="switch" aria-checked="true"` 인데 이름이 없다. 시안도 설정 화면의 각 입력에 aria-label 을 준다.
+- 행 라벨과 같은 상수를 쓰는 `Semantics(label:)` 로 고쳤다. RED(스위치 노드 라벨이 빈 문자열) → GREEN 13/13.
+- **Ruling**: `addTearDown(handle.dispose)` 는 프레임워크의 종료 검증보다 늦어 죽는다(「A SemanticsHandle was active at the end of the test」, 실측). 본문 끝에서 직접 dispose 한다. — 비용: 없다.
+- 프로브 자체에도 실측 교훈이 있다: 컨텍스트에 `locale` 을 주지 않으면 앱이 부트에서 `Invalid argument(s): Incorrect locale information provided` 로 죽어 시맨틱스가 아예 생기지 않는다. 러너의 `openPage` 는 `locale: ko-KR` 을 준다.
+
+**(3) 서드파티 결함 — 에디터 4화면** · axe `aria-command-name` + `aria-prohibited-attr`(둘 다 serious, 각 8노드).
+
+- 핀 소스를 읽어 원인을 확정했다: `flutter_quill` 11.5.1 의 `toggle_style_button.dart:121` 이 `UtilityWidgets.maybeTooltip(message: tooltip)` 로 Tooltip 을 씌우고, 그 안의 `QuillToolbarIconButton` 이 `IconButton(tooltip:)` 으로 **또** 씌운다. 웹 시맨틱스에서 바깥 Tooltip 이 role 없는 라벨 전용 노드(`aria-label="Bold"`, `pointer-events:none`)를, 안쪽 IconButton 이 라벨 없는 `role="button"` 노드를 만들어 **이름과 역할이 서로 다른 노드에 놓인다.** 앱에 개별 버튼을 감쌀 자리가 없다.
+- **Ruling: PR-2 에서 툴바를 다시 쓰지 않는다.** 정직한 해법은 시안 `.bar2` 의 **5버튼**(구현은 12버튼이고 툴팁도 영어다)을 `buttonOptions.childBuilder` 로 직접 그리는 것이며, 그러면 이 위반과 시안 divergence 가 함께 닫힌다. 그것은 기능 단위 작업이고, 테스트가 42px 로 고정한 툴바 높이를 건드리며, 시각 기준선 동결 직전이다. 대신 **좁은 유보**를 두었다: 라우트 + 규칙 id 단위로만, `why`·`followUp` 을 테스트가 요구하고, **낡은 유보는 그 자체가 실패**다(위반이 사라졌는데 항목이 남으면 실패). 예외가 버그보다 오래 살아 다음 회귀를 가리지 못하게 하는 장치다. 그 4화면의 다른 모든 serious·critical 규칙과 오버플로·타깃은 그대로 게이트를 지난다. — 비용: 그 두 규칙이 4화면에서 후속 과제까지 미강제.
+- 기각한 대안: `flutter_quill` 11.6.0 승급(이중 툴팁 수정 여부 미확인 + 시각 기준선 동결 직전의 리치텍스트 에디터 승급). 유보의 `followUp` 에 확인 과제로 남겼다.
+
+**2차 순회: 9/10.** axe 두 시나리오가 **둘 다 통과**했다(`/settings` 라벨이 웹 DOM 에 닿았고 유보가 작동). 여덟 오버플로 시나리오가 예산을 통과하고 **`/settings`·`/mypage` 가 처음 측정됐다.** 남은 1건이 **두 번째 러너 결함**이었다.
+
+**(4) 러너 결함 — 최소 타깃을 한 번만 쟀다.** `/settings` 390×100% 의 「로그아웃」이 **80×8** 로 최소 24 미달.
+
+- 라우트와 y 를 고정하고 뷰포트 높이만 바꿔 갈랐다: 390×900 에서 80×**8** @y=823, 390×2400 에서 80×**30** @같은 y. Flutter 는 스크롤 폴드에 잘린 위젯의 시맨틱스 노드를 **잘린 rect 로** 낸다. UI 결함이 아니라 측정 결함이다.
+- 또 실측: `scrollIntoViewIfNeeded()` 는 이 노드에 **무동작**이다(절대 배치된 오버레이라 80×8 그대로). `page.mouse.wheel` 은 통한다(80×30 @y=671).
+- **Ruling: 페이지가 아니라 러너를 고쳤다.** 작아 보이는 후보만 휠로 화면 가운데로 굴려 다시 재고 되돌린다. 이 오보도 옛 8라우트에 폴드에 걸리는 버튼이 없어 잠복해 있던 것이다. — 비용: 후보당 휠 왕복 한 번만큼 느려진다.
+- 재순회 **8/8 통과**.
+
+**Step 9(guest·consent).** 각각 빌드해 순회했고 **각 10/10 통과** — `/login`(P4 리뷰 I1 이 고친 화면이라 가장 위험했다)을 포함해 결함 0건.
+
+**도달 재확인**: 보고서의 `location` 으로 **21개 라우트/프로필 조합 전부 자기 URL 에 도달**했음을 확인했다(리다이렉트 0건). 순회가 통과했다는 것만으로는 리다이렉트되지 않았음을 증명하지 못하므로 따로 확인한 것이다.
+
+## Extra-A·B — 시안 divergence #2·#3 (핸드오프의 전제가 뒤집혔다)
+
+Global Constraints 가 「시각 판단은 시안의 CSS 를 근거로만」이라 하므로 시안 정본(Artifact `DWi8kMV6QcAzBEQwbrNPNd` v2)의 CSS 를 직접 읽었다.
+
+**실측**: `.meta{font-size:12px}` · `.ex{font-size:13px}` · `.steps li{font-size:13px}` · `.chk p` 와 `.rowline p{font-size:13px}` · `.ft{font-size:12px}` · `th{font-size:12px}` — **어느 것도 line-height 를 덮지 않는다.** 전부 `body{font-size:14px;line-height:1.6}` 을 물려받는다. 따라서 시안의 12px 행간은 **19.2** 이고 그것이 리터럴이 이미 내던 값이며, 토큰 `labelMedium`(12 / **16**)이 시안과 다른 쪽이다. 핸드오프 4절 3항은 반대로 적었다 — 그대로 실행하면 6화면이 토큰 정리처럼 보이면서 시안에서 **멀어진다.** 시안에 11px 은 아예 없다.
+
+- **Ruling**: 토큰 계약을 건드리지 않고 `labelMedium` 에 억지로 맞추지도 않는다. dp_design 에 **파생** 스타일 `context.dpMeta`(= `dpBody(12)`)와 `context.dpBody(크기)` 를 더했다(둘 다 `bodyMedium.copyWith`). 시맨틱 토큰 계약 2.0.0 — 홈 `tokens.css` 로 미러되는 버전 있는 계약 — 은 불변이다. — 비용: dp_design 에 파생 스타일 API 하나가 늘었다. 픽셀 이동 없음.
+- **Ruling**: 한 줄로 끝나는 상태·태그·표 머리는 계속 `labelMedium`(PR-1 Task 6 의 `DpStatusText` 와 같은 선택), 여러 줄로 흐르는 보조 문구는 `dpMeta`. `qna_detail` 의 배지 2개만 19.2 에서 16 으로 움직인다 — Extra-B 의 **유일한** 의도적 행간 변화다. — 비용: 한 줄 배지 두 개가 3.2px 낮아진다.
+- **Ruling**: `post_detail_page.dart:358` 의 11px 은 시안에 근거가 없다. 크기를 유지하고(`dpBody(11)`) 기록으로 남겼다 — 12 로 맞추는 것은 요청되지 않은 시각 변경이다. — 비용: 근거 없는 11px 이 살아남는다.
+- **Ruling**: `dp_markdown.dart:46` 은 그대로 두었다. `bodyLarge` 의 값을 다시 적은 것이라 픽셀이 움직이지 않고 diff 만 커진다. — 비용: bodyLarge 가 바뀌면 함정으로 남는다.
+- **결과**: `grep -rn "fontSize:" apps/web/lib` 가 **0건**이다(14곳이었다).
+
+**Extra-A**: `DpSteps` 를 시안 `.steps li{padding:6px 12px;font-size:13px}` 대로 맞췄다. 신설 `DpWebDensity.stepVerticalPadding = 6` — 값이 같은 `keyValueGap` 과 따로 둔 이유는 출처가 달라 한쪽이 바뀌어도 다른 쪽이 따라 움직이면 안 되기 때문이다. 처음 `bodySmall`(13 / 20)로 썼는데 위 실측으로 **틀렸음을 알고** `dpBody(13)`(13 / 20.8)로 고쳤다.
+
+**★ 새로 발견한 divergence(고치지 않음, 다음 단계 입력)**: 토큰 계약의 `bodySmall`(13 / 20)과 `labelMedium`(12 / 16)이 시안의 1.6(각 20.8 · 19.2)보다 좁다. 이것은 14개 사이트의 문제가 아니라 **계약 하나의 결정**이고, 통일하려면 계약 버전을 올려야 한다. DESIGN.md 2절에 사실만 적었다.
+
+## CI 1차(run 36649266533)가 잡은 것 — `/community/1` 폰트 폴백 폭주
+
+`analyze-test` pass 4m38s · **`browser-ux-onboarding (guest)` pass 3m3s** · **`(consent)` pass 2m28s** · `produce-atomic-pair` pass 9m18s · `web-image-config-contract` 2건 pass · **`perf-gate` pass 22m57s** · `browser-ux` **fail** 10m59s.
+
+실패는 `/community/1 did not settle: page.waitForLoadState: Timeout 30000ms` 로 8개 오버플로 + 2개 axe 시나리오였다. 아티팩트 실측: 그 한 화면에서 외부 요청 **2651건**, `notosanskr` 3청크와 `notocoloremoji` 2청크가 각각 **438 · 438 · 437 · 435 · 434** 회. 반복 횟수가 거의 같아 **원인 하나**가 한 라운드에 다섯 청크를 부른 것이다.
+
+원인은 렌더되는 문자열의 **픽토그래픽 이모지**였다. 번들에는 Pretendard·D2Coding 뿐이라 Noto Color Emoji 를 부르고, 차단된 다운로드는 재시도 금지 목록에 들어가지 않아 레이아웃마다 다시 나간다(2026-09-26 `/content` 와 같은 부류). 전 코드에 셋뿐이었고 **전부 이번에 게이트에 새로 들어온 화면**에 있었다.
+
+| 위치 | 문자열 | 라우트 |
+|---|---|---|
+| `lcs_context.dart:215` | 책 이모지 + 작성자 학습 맥락 | `/community/1` |
+| `qna_detail_page.dart:286` | 로봇 이모지 + AI 초안 | `/community/1` |
+| `question_create_page.dart:246` | 전구 이모지 + 비슷한 질문 | `/community/new` |
+
+- **Ruling**: DESIGN.md 4절이 이미 「와이어프레임의 이모지는 전부 Material Symbols 로 교체」를 규칙으로 두고 있고 시안에도 픽토그래픽 이모지가 없다. 셋을 지우고 그 규칙을 **소스 가드 테스트**로 게이트에 넣었다. 대상은 보충 평면 픽토그래프(U+1F300–U+1FAFF)와 U+FE0F 뿐이고 주석 줄은 뺀다 — 이 레포는 주석에 별표를 즐겨 쓰고, `dp_icons.dart` 의 이모지 주석이 그 규칙의 출처다. 체크·별표·원 기호는 Pretendard 에 있어 폴백을 부르지 않는다(그 기호를 쓰는 `/dashboard`·`/community` 는 라우트당 고정 요청만 냈다). — 비용: 이모지가 주던 시각 강조가 사라진다(시안에 없던 것이다).
+- **Ruling**: 유사질문 테스트의 목 항목 제목을 「유사 질문 예시」로 바꿨다. 패널 제목에서 이모지를 떼면 둘이 같은 문자열이 되어 두 단언이 서로를 가린다. — 비용: 없다(테스트 전용 데이터).
+- **실측 확인**: `/community/1` 의 라우트당 외부 요청이 **+5 에서 +2 로**(광고 스크립트 + 업데이트 피드뿐, 폰트 요청 0건), 3라우트 총 6건.
+
+**로컬이 놓친 이유**: 로컬에서 그 라우트는 +5 로 정착했다. 같은 결함의 작은 모습이고, CI 가 느려 레이아웃 패스가 많아 자기지속 루프로 넘어갔다. **로컬 통과가 CI 통과를 보장하지 않는 종류의 결함이 있다** — 폰트 폴백은 그 하나다.
+
+## Task 13 — expectations.json
+
+**값은 바뀌지 않았다.** 사전 스캔 1번이 예측한 대로 `keyboard-traversal` 은 `ROUTES` 를 읽지 않는다. CI 1차에서 첫 8 정지가 기록된 값과 **일치**했다(`status: passed`). `recorded_from` 이 S3-P2 커밋 `ff4a886` 에 남아 있던 것(PR #237 이 값과 notes 만 옮겼다)을 실측 브랜치 커밋 `13d81c94…` 로 맞추고, notes 에 「S3-P5 로 바뀐 것: 없다」와 그 근거, 그리고 `recorded_from` 이 측정 시점의 브랜치 커밋이라는 뜻을 적었다.
+
+## Task 14 — perf/baseline.json
+
+`built_from` **`a4753024`**(「font diet」 2026-09-17) → **`10f8a5b0`**(CI 36649266533) · `samples` 3 → **5**. 로컬 측정 대신 `perf-gate` 아티팩트를 그대로 옮겼다.
+
+- 전송량 cold **+6,153 B**(+0.03%) = js **+5,110**(P2~P5 앱 코드 전부 = 6.03 MB 의 0.08%) · other **+1,431** · fonts **−388**(P3·P4 위젯 교체로 아이콘 트리셰이킹이 더 줄었다).
+- 전송량 warm **+1,431 B**(+10.98%) — 전부 other 다. cold 의 other 증가와 **같은 값**이고, 원인은 develop 의 `c482b54`(2026-09-17 「paint a boot splash until the first Flutter frame」)가 `index.html` 에 더한 22줄이다. 퍼센트가 커 보이는 것은 warm 기준이 13 KB 뿐이기 때문이고 `perf/budget.json` 의 4 KB 바닥이 정확히 이 경우를 위해 있다(주석에 적혀 있다). **회귀가 아니다.**
+- 같은 `c482b54` 가 **`lcp_ms` 를 null 에서 48~52 ms 로** 바꿨다(`fcp_ms` 5916 → 48). 렌더가 빨라진 것이 아니라 브라우저에 LCP 후보가 생긴 것이다.
+- 안정 지표 **`ready_ms`(cold)는 전 라우트 +0.0 ~ +1.7%** 다. S3 네 단계의 첫 상호작용 비용이 사실상 없다는 뜻이다. warm `ready_ms` 는 −49.5 ~ +50.5% 로 흔들리는데 값이 1초 미만이라 신호가 아니다.
+- **절대 예산 위반(예산을 올리지 않고 보고한다)**: `inp_ms` 6행이 200 ms 초과 — `/dashboard`(desktop cold 352 · warm 328 · mobile cold 608 · warm 520)와 `/path`(desktop 304 · warm 304). `budget.enforce_absolute=false` 라 경고로만 기록된다. 다만 **INP 는 런 간 비교가 성립하지 않는다**: 같은 행에서 값이 붙었다 떨어진다(`/community` 4행은 옛 기준선에 값이 있었는데 이번엔 전부 null, `/dashboard/mobile/warm` 은 반대). 상호작용이 샘플 창에 잡혔을 때만 기록되기 때문이다. **INP 를 게이트로 쓰려면 측정 방식을 먼저 고쳐야 한다.**
+- 자기 자신과 비교해 회귀 0 을 확인했다(`perf-gate: PASS (20 rows)`).
+
+## Task 15 — DESIGN.md 2·3·5절
+
+- 3절의 소비 줄이 프로덕션 소비처를 잃은 `DpInteractiveCard` 를 「클릭 카드 베이스」로 가리키고 있었다(P3 리뷰 이월). 소비처 0곳을 실측해 지우고, 면은 `DpPanel` 이 담당한다는 사실과 `DpPanel` 의 잉크 표면·`DpWebDensity` 세 값을 적었다.
+- 2절에 시안이 line-height 를 덮지 않는다는 사실과 파생 스타일(`context.dpMeta`·`dpBody`), 그리고 미결 divergence(`labelMedium`·`bodySmall` 이 시안의 1.6 보다 좁다)를 적었다.
+- 5절에 `DpCols` 의 2열 경계 840 과 그것이 시안의 720 과 다른 이유를 적었다.
+- DESIGN.md 가 이름을 부르는 심볼 12개가 전부 코드에 실재함을 확인했다.
+
+## 로컬 툴체인 차이 (매 커밋마다 처리)
+
+- `flutter test`·`flutter build` 가 `apps/{web,admin}`·`packages/dp_design` 의 `analysis_options.yaml` 과 `pubspec.lock` 을 매번 다시 쓴다. 커밋마다 되돌렸다. lock 변경은 CI 의 `--enforce-lockfile` + sha256 동일성 검사를 깨뜨린다.
+- `dart format .` 은 이 브랜치가 건드리지 않은 파일 **4개**를 다시 쓴다(로컬 Dart **3.13.2** ≠ CI 핀 **3.12.1**). 네 파일 모두 `origin/develop..HEAD` 에 없음을 확인하고 되돌렸다. 검사는 항상 변경 파일만 대상으로 했고, 내 17개 dart 파일은 **0 changed** 다.
+- `flutter analyze` 가 `current_mission_controller.dart:273 unawaited_return_in_try_block` 1건을 낸다. 그 파일이 `origin/develop` 과 **byte-identical** 임을 확인했고 CI `analyze-test` 가 통과했다. 로컬 전용이다.
+
+## 최종 전체 리뷰(Opus, 신선한 컨텍스트) — Critical 0 · Important 9 · Minor 11
+
+전문: `final-review-pr2.md`(프론트엔드 워크트리의 SDD 폴더, 454줄). 리뷰어는 읽기 전용으로 돌았고 `flutter test` 는 돌리지 않았다(설정 파일을 건드리지 않았다).
+
+판정: **REVISE.** 「이 PR 의 주제가 게이트의 정확성인데, 새로 쓴 게이트 코드에 없애려던 바로 그 부류의 결함이 아홉 개 있다」. 재등급 결과 Important 9건 전부와 Minor 4건(M1·M2·M4·M7)을 **한 번의 수정 패스**로 고쳤다. 나머지 Minor 7건은 아래 이월 목록.
+
+### 고친 것
+
+| # | 무엇 | 어떻게 |
+|---|---|---|
+| F1 | matrix 잡의 체크 이름에 **라우트 목록이 들어간다** — 라우트를 한 줄 고치면 체크 이름이 바뀌어 필수 등록이 조용히 안 맞게 된다 | `name: browser-ux-onboarding (${{ matrix.profile }})` 로 고정 |
+| F2 | 첫 실패에서 `break` 해 **뒤 라우트를 아예 재지 못한다.** CI 1차가 그렇게 새 8화면 중 5화면을 놓쳤다 | 두 분기 다 `continue` · axe 순회에도 라우트별 try/catch |
+| F3 | 라우트당 상한 40 은 정상값(+2)의 **20배**라 그 사이 구간을 흘려보낸다. 실제로 `/community/1` 폭주는 로컬에서 **+5** 였다 | 판정을 **같은 URL 의 반복**으로 바꿨다(`MAX_SAME_URL_REPEATS = 3`). 폭주는 같은 청크를 다시 부르고, 정상 폰트 로딩은 서로 다른 청크를 한 번씩 받는다. 라우트당 상한은 16 으로 내려 두 번째 그물로 남겼다 |
+| F4 | 라우트 하나짜리 잡의 실질 상한이 **8** 이라 폰트 청크 첫 수신(실측 12)보다 엄격하다 — 라우트 수에 따라 반대로 조여지는, 이 PR 이 없앤 것과 같은 형태 | 비례 총합에 바닥 32 |
+| F5 | 유보가 **규칙 이름 단위**라 같은 라우트에 우리 코드가 만든 새 위반이 숨는다 · 낡음 판정이 **폭마다** 돌아 한 폭에서만 나는 규칙이 다른 폭에서 하드 실패가 된다 · `seen` 을 심각도 필터 **뒤에** 기록해 axe 승급 시 오보한다 | `rules` 를 `{규칙: 노드 수 상한}` 으로(늘면 막고 줄면 허용) · `staleWaiverFailures()` 가 전 폭을 모아 마지막에 한 번만 판정 · `seen.add` 를 필터 앞으로 |
+| F6 | `smallTargets` 가 스크롤을 건너 **인덱스 로케이터로 재측정**한다. 휠이 `flt-semantics` 노드를 더하고 지우므로 다른 요소를 재거나 라벨을 세 번째 트리 상태에서 읽는다 | 요소 핸들로 붙잡고 라벨은 굴리기 전에 읽는다 · 굴렸는데 `y` 가 안 움직였으면 두 번째 측정을 믿지 않고 첫 측정을 `unscrolled` 표시와 함께 보고 |
+| F7 | `built_from` 이 **존재하지 않는 SHA** 였다(`pull_request` 이벤트의 임시 머지 ref). 옛 값은 실재했으니 provenance 품질의 회귀다 | 측정이 이뤄진 **브랜치 커밋** `13d81c94…` 로 — `expectations.json` 의 `recorded_from` 과 같은 관례. 그 커밋이 최종 tip 이전이라는 사실과 CI 2차가 최종 tip 을 이 기준선과 비교해 통과했다는 사실을 `baseline-impact-p5.md` §5 에 적었다 |
+| F8 | 부트 스플래시가 모든 행에 LCP 후보를 만들어 `gate.mjs` 의 **`ready_ms` 절대 검사가 죽었다** — 모바일 cold 21.5초가 예산에서 사라졌다 | `lcp_ms` 와 `ready_ms` 를 **각각** 판정(테스트 먼저) · `budget.json` 의 이제 거짓이 된 주석 정정. 고친 뒤 새 기준선은 `ready_ms` 경고를 다시 낸다 |
+| F9 | 이모지 가드가 **지키려던 집합의 대부분을 놓친다**(국기·U+2705·U+274C·U+2B50·U+2728·U+26A1·U+2B1B…) · 꼬리 주석을 오탐한다 · 작업 디렉터리가 다르면 **아무것도 스캔하지 않고 통과**한다 | 기준을 `Emoji_Presentation=Yes` 로 다시 세웠다(보충 평면 전체 + BMP 의 기본 이모지 표현 문자들, `✓`·`★`·`●`·`☀` 는 제외 — 「U+2600–U+27BF 통째로」는 이 레포가 쓰는 `✓ 완료` 를 오탐한다) · 인용 상태를 따라가는 주석 제거기(테스트 7건) · 루트가 없으면 실패 · `filesScanned > 100` 단언 · `packages/dp_core/lib` 추가 |
+| M1 | DESIGN.md §2 가 「메타는 bodySmall 13px」과 「`.meta` 는 `dpMeta` 12/1.6」을 나란히 말한다 | 옛 줄에 우선순위를 명시 |
+| M2 | `baseline-impact-p5.md` 가 LCP 범위를 48~52 ms 로만 적었다 | 데스크톱 44~76 · **모바일 132~228** 로 정정 |
+| M4 | 사전 스캔 9번이 「이름을 바꾸면 기준선 이력과의 비교 가능성을 버린다」고 했는데, **이 재기록이 이미 그것을 버렸다**(samples 3→5 · fcp·lcp 성격 변화). 결정은 옳고 근거가 틀렸다 | 결정은 유지하고 근거를 정정한다: perf ROUTES 를 건드리지 않는 이유는 **PR-2 의 범위**이고, `/login` 이 `/dashboard` 를 잰다는 사실과 guest perf 레인이 정직한 해법이라는 것은 `baseline-impact-p5.md` §5 에 적혀 있다. 덧붙여 `/login` 4행은 `inp_ms` 만 빼면 `/dashboard` 4행과 동일하므로 **perf 는 실질적으로 4라우트를 잰다** |
+| M7 | `dp_steps_test` 의 패딩 산술이 상수를 양쪽에 써 어떤 값이어도 성립했다 | 시안 값 리터럴 `12` 로 |
+
+### 리뷰어의 `NEEDS_CONTEXT` — 실측으로 답했다
+
+**`browser-ux-onboarding` 은 필수 체크가 아니다. 어떤 게이트도 아니다.** 2026-09-30 실측: `develop` 은 보호 설정이 **아예 없다**(룰셋 0건 · classic protection 404), `main` 의 필수 체크는 **`analyze-test` 하나뿐**이다. 즉 `browser-ux`·`browser-ux-onboarding`·`perf-gate`·`produce-atomic-pair` 는 붉어도 머지를 막지 못한다 — 구속력은 머지하는 쪽이 결과를 읽는다는 사실뿐이고, 이 계획의 Global Constraints 가 바로 그 규칙(「CI 전 잡이 pass/skipping 이고 실패 0 이면 AI 가 머지한다」)이다.
+
+**Ruling**: 필수 체크 등록은 이 PR 에서 하지 않는다. 권한 변경이라 사용자 결정 사항이고(권한 자가 확장 금지), governance 룰셋 설계 충돌(et11)이 이미 열려 있는 자리다. F1 의 이름 고정은 그래도 했다 — 등록하는 날 이름이 안정되어 있어야 한다. `baseline-impact-p5.md` §9-4 에 캠페인 입력으로 적었다. — 비용: 그날까지 게이트는 권고다.
+
+### 이월한 Minor (고치지 않음)
+
+- **M3** `gate.sh` 의 `cmd | tail; echo $?` 는 `tail` 의 종료코드를 읽어 **실패를 0 으로 보고했다**(analyze·format 둘 다). 산출물이 아니라 SDD 폴더의 일회용 스크립트다. 레포 메모리에 이미 있는 함정이고, 두 실패는 로컬 툴체인 전용임을 따로 실측해 확인했다.
+- **M5** 24px 타깃 검사가 200% 배율에서는 돌지 않는다(`width === 390 && textScale === 100`). 기존 결함이고 타깃이 줄어들 가능성이 가장 큰 조건이다.
+- **M6** `smallTargets(page, HEIGHT)` 가 모듈 상수를 넘긴다 — `openPage` 가 항상 `HEIGHT` 를 쓰므로 오늘은 맞다.
+- **M8** `settings_page_test` 의 `tester.getSemantics` 는 래퍼 노드의 라벨을 읽을 수 있어 DOM 의 `role="switch"` 노드가 이름을 갖는지 증명하지 못한다. 수정 자체는 **실측으로 증명됐다**(같은 변경 전후로 axe 두 폭이 실패 → 통과). 약한 테스트일 뿐 틀린 수정이 아니다.
+- **M9** → 고쳤다(줄바꿈 복원).
+- **M10** 이모지 가드가 `apps/web` 에 있으면서 다른 패키지를 스캔한다 — admin 단독 실행 시 무방비. melos 가 전 패키지를 돌리므로 CI 에서는 덮인다.
+- **M11** Task 16·17 진행 중 상태(documents 미커밋) — 예상된 것이고 이 커밋들로 닫힌다.
+
+### 리뷰어가 확인해 준 판정
+
+- **뒤집힌 전제**: 「저자가 맞고 핸드오프가 틀렸다」 — `bodyMedium` 이 14/1.6 이므로 리터럴 `TextStyle(fontSize: 12)` 는 이미 12/19.2 로 그려졌고 `labelMedium`(12/16)이 시안과 다른 쪽이다. 12곳을 `labelMedium` 으로 바꿨다면 6화면이 토큰 정리처럼 보이면서 시안에서 멀어졌을 것이다. 파생 스타일로 가는 선택이 옳다.
+- **홈 `tokens.css` 미러 재동기화 불필요**도 확인됐다 — CSS 투영 덤프는 `DpSemanticTokenManifest`·`AppTokens`·브레이크포인트만 읽고 `DpWebDensity` 는 읽지 않는다(신설 `stepVerticalPadding` 포함).
+- **렌더 영향 주장 검증됨**: 12곳은 옛 리터럴과 **동일하게** 그려지고, 움직이는 것은 `qna_detail` 배지 2개의 행간뿐이다(`labelMedium` 이 w600 이라 굵기는 리터럴과 같다).
+- **기준선 동결 안전**: 게이트가 기준선과 비교하는 것은 `transfer_bytes` 뿐이고 CWV 는 현재 리포트의 절대 예산만 본다 ⇒ `inp_ms 608` 을 굳혀도 비용이 없다. warm +10.98% 는 진짜 비회귀다.
+- **툴바 유보 결정**: 옳은 판단·옳은 위험 교환. 유보의 **모양**만 고쳐야 했고(F5) 고쳤다.
+
+### 리뷰어가 판정을 보류한 것
+
+- 유보한 두 규칙이 4화면 × 2폭에서 **구조적으로** 8/8 노드인지(CI 2차의 `evidence/browser-ux/latest.json` 의 라우트별 `violations` 가 필요하다). 그래서 노드 수를 **정확히 8** 로 못박지 않고 **상한 8**(늘면 실패, 줄면 허용)로 뒀다 — 폭에 따라 줄어드는 경우에 거짓 실패를 만들지 않는다.
+- F6 의 실제 크기(휠이 `flt-semantics` 노드를 더하고 지우는지 그 라우트에서 확인). 프로브는 SDD 폴더에 있고 2분이면 된다 — 수정 자체는 보수적이라(움직이지 않으면 첫 측정을 쓴다) 확인 전에도 안전하다.
+- `unawaited_return_in_try_block` 이 CI 핀 분석기에 실제로 없는지. CI 2차 `analyze-test` 통과로 머지에는 충분하다.

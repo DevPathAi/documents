@@ -249,7 +249,7 @@ PR 이어야 회귀 원인을 좁힐 수 있다).
 | P2 | `DpWebShell` 신설(헤더·푸터·햄버거·계정 메뉴) → web `AppShellView` 교체. `DpAppShell`·`DpNavRail` 은 **`apps/admin` 이 쓰므로 남긴다**(실측: `admin_shell.dart`); web 만 쓰던 `compactDestinations` 배선과 `DpMobileNavigation` 은 admin 의 compact 동작을 확인한 뒤 정리 | 핸드오프 L3(`_AccountMenu` MenuAnchor a11y)는 여기서 흡수: 새 계정 메뉴는 열 때 첫 항목으로 focus 를 옮긴다. L4 문서 갱신도 같은 PR |
 | P3 | 공용 위젯 웹화: `DpListRow`(구분선 목록)·`DpPageHeader`(`titleMenu` 제거)·카드→목록·링크 문법·FAB 제거 | `dp_design` 단위 테스트 + browser-ux |
 | P4 | 화면군별 개편 3 PR: 학습(오늘·경로·콘텐츠·실습·멘토) / 커뮤니티 / 계정·온보딩(로그인·동의·진단·마이페이지·설정) | 시안과 1:1 대조 |
-| P5 | 기준선 재기록: ET13 visual/a11y baseline, browser-ux `expectations.json`, perf baseline, DESIGN.md §3·§5 개정 | ET13 baseline 승인은 사람 단계 |
+| P5 | 기준선 재기록: **browser-ux 게이트 커버리지 확장**(8항목 → 21 라우트/프로필 조합, mock 프로필 `guest`·`consent` 신설)·`expectations.json`·perf baseline·DESIGN.md §2·§3·§5 개정. P3·P4 이월 판단 12건 + 시안 divergence 2건 | **ET13 baseline 승인은 P5 가 아니라 릴리스 캠페인 단계다** — 커밋된 카탈로그는 `baseline_status` 를 스키마 상수로 `pending_external_review` 에 고정하고(`catalog.schema.json:61`), 승인 워크플로가 입력에 `release_id` 를 요구한다(S3-P5 실측). P5 의 몫은 카탈로그 정합성과 `produce-atomic-pair` 녹색 유지다. 상세=`plans/2026-09-28-s3-p5-baseline-rerecord/baseline-impact-p5.md` |
 
 원칙:
 
