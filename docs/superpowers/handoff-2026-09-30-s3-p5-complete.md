@@ -4,7 +4,7 @@
 > 계획: `plans/2026-09-28-s3-p5-baseline-rerecord.md` — 18 Task. PR-1 = Task 1~11, **PR-2 = Task 12~17**.
 > 실행 원장 전문: `plans/2026-09-28-s3-p5-baseline-rerecord/execution-ledger.md`(PR-1 절 + PR-2 절).
 > 릴리스 캠페인의 입력: 같은 폴더 **`baseline-impact-p5.md`** — 캠페인을 시작하기 전에 이것부터 읽는다.
-> 최종 전체 리뷰(Opus) 전문: frontend 워크트리 `.superpowers/sdd/2026-09-28-s3-p5-baseline-rerecord/final-review-pr2.md`.
+> 최종 전체 리뷰(Opus) 전문: 같은 폴더 `plans/2026-09-28-s3-p5-baseline-rerecord/final-review-pr2.md`(454줄) — PR-1 의 `final-review-pr1.md` 와 같은 자리다.
 
 ## 1. 좌표
 
@@ -15,7 +15,7 @@
 
 **지우지 말 워크트리**
 - `D:\workspace\dpa\.worktrees\frontend-s3p5-20260928` — PR-1 의 git-ignored SDD 산출물(브리프 11 · 보고서 9 · 리뷰 9 · diff 11).
-- `D:\workspace\dpa\.worktrees\frontend-s3p5pr2-20260930` — **PR-2 의 실행 원장·최종 리뷰 전문·프로브 3종**이 git-ignored 로 그 안에 있다(`final-review-pr2.md` 454줄 · `probe-axe.mjs` · `probe-targets.mjs` · `probe-scroll.mjs`). 원장과 리뷰 요지의 사본은 documents 에 있지만 리뷰 **전문**은 여기뿐이다.
+- `D:\workspace\dpa\.worktrees\frontend-s3p5pr2-20260930` — **일회용 프로브 3종**이 git-ignored 로 그 안에 있다(`probe-axe.mjs` = axe 위반의 노드 타깃 덤프 · `probe-targets.mjs` = 타깃 크기가 뷰포트 높이에 의존하는지 갈라 보기 · `probe-scroll.mjs` = `scrollIntoViewIfNeeded` vs 휠). 원장과 최종 리뷰 전문은 documents 로 옮겼으므로, 프로브를 다시 쓸 일이 없으면 이 워크트리는 지워도 된다 (핀 컨테이너에서 각 2분).
 - `D:\workspace\dpa\.worktrees\documents-s3p5-plan` — 계획·원장·핸드오프의 작업 워크트리.
 
 ## 2. S3-P5 가 끝낸 것
