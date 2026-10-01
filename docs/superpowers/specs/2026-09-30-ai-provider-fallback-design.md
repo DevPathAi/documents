@@ -210,3 +210,58 @@ public class OllamaAiReviewClient implements AiReviewClient
 - **래치 공유 저장소** — `replicas: 1` 전제(§2.2). 스케일아웃이 이 전제를 깬다.
 - **Ollama 모델 추가 학습** — 별도 프로젝트. 이 설계의 **수용 기준을 정한다**: review·retention 을 Ollama 로 넘길 수 있는지는 품질이 결정하고, 멘토를 Claude 우선으로 되돌릴지도 그렇다.
 - **ET9 평가 증거 계약 변경** — §8 은 해시를 새로 싣는 것까지다. 증거 계약 자체를 바꾸지 않는다.
+
+---
+
+# 보정 (2026-10-01) — §7 선행 실측 결과와 그에 따른 범위 결정
+
+§7 의 사전 과제 5건을 실측했다. **설계(§2~§5)는 전부 유지된다. §6.1 모델 계획만 현 클러스터에서 불가능하다.**
+
+## A. 통과 3건
+
+| § | 실측 |
+|---|---|
+| 7-3 SDK 예외 표면 | `com.anthropic:anthropic-java:2.34.0`. 타입 계층이 **이미** `ClaudeAiReviewClient:52-60` 에서 매핑돼 있다 — `RateLimitException`(429) · `InternalServerException` · `AnthropicIoException` · `AnthropicRetryableException` · `AnthropicException`. §3 분류표를 이 타입들에 직접 묶는다 |
+| 7-4 메트릭 | `spring-boot-starter-actuator` 있음(`build.gradle.kts:43`) → Micrometer 가용. **기존 커스텀 메트릭 0개**이므로 맞출 이름 규칙이 없다 — §10 이 자유롭게 정한다 |
+| 7-5 멘토 테스트 | `FallbackMentorClientTest` · `MentorClientConfigTest` · `MentorClientQualifierTest` · `MentorClientWiringIT` 존재 → 재사용 |
+
+## B. ★차단 2건 — 모델을 pull 할 수 없다★
+
+| § | 실측 |
+|---|---|
+| 7-1 보유 모델 | CPU Ollama(`ollama-7d9cf64bd7-bl8fw`)에 **`qwen2.5:3b`(1.9GB)** 와 `nomic-embed-text`(274MB) 둘뿐. §6.1 이 요구한 **`qwen2.5-coder:7b`·`qwen2.5:7b` 는 둘 다 없다** |
+| 7-2 여유 | PVC `ollama-models` 는 local-path 라 노드 `/dev/root`(49G) 위다 — **7.8G 여유 · 84% 사용**. 7b 두 개 ≈ **9.4GB → 들어가지 않는다**. 파드 메모리 limit **5Gi**(request 3Gi)인데 7b q4 는 상주 ~5GB → OOM 위험. 노드 가용 메모리 **3.9Gi** 라 limit 상향 여지도 좁다. (`/var/lib/rancher/k3s` 35G · 컨테이너 이미지 158개 = 회수 여지는 있다) |
+
+## C. 범위 결정 (사용자, 2026-10-01): **배선만 먼저, 모델은 별도 결정**
+
+- 래치·상태기·실패분류·리팩터를 구현한다. **`*_FALLBACK` 은 기본 빈 문자열로 두어 운영 동작은 지금과 동일**하다(§6 의 안전한 기본값 그대로).
+- 모델이 확보되면 **env 한 줄로 효력이 발생**한다. 따라서 §8 의 `rendered_config_sha256` 재렌더 위험도 그때까지 미뤄진다 — **이 작업은 gitops env 를 건드리지 않는다.**
+- 모델 선택지(별도 결정): ① 3b 로 낮춘다(`qwen2.5:3b` 기보유 + review 는 `qwen2.5-coder:3b` ~1.9GB) ② 디스크·메모리를 확보해 7b 유지 ③ 노드 상향.
+
+## D. ★스펙이 놓친 구조적 사실 2건 (계획이 반드시 다뤄야 한다)★
+
+**① `AnthropicClient` 빈 자체가 `provider == "claude"` 조건이다.**
+
+```java
+@Configuration
+@ConditionalOnProperty(name = "devpath.review.provider", havingValue = "claude")   // ClaudeClientConfig
+@ConditionalOnProperty(name = "devpath.community-seed.provider", havingValue = "claude")  // CommunitySeedClaudeConfig
+@ConditionalOnProperty(name = "devpath.retention.provider", havingValue = "claude")       // RetentionClaudeClientConfig
+```
+
+§2.5 가 말한 「키가 없으면 Claude 빈이 안 생긴다」는 **멘토에만 해당한다.** 세 기능은 *키*가 아니라 *provider 값*으로 빈을 가둔다. 그래서 `REVIEW_PROVIDER=claude`+`REVIEW_FALLBACK=ollama` 는 되지만, 반대 방향(`ollama` 주 + `claude` 상향)은 **빈이 없어 불가능**하다. 멘토가 이미 답을 갖고 있다:
+
+```java
+@ConditionalOnExpression("'${ANTHROPIC_API_KEY:}' != ''")   // MentorClaudeClientConfig
+```
+
+→ 세 설정을 이 조건으로 바꾸는 것이 배선의 **선행 작업**이다.
+
+**② 세 기능의 Claude 클라이언트는 SDK 기본 재시도를 쓴다.**
+
+`AnthropicOkHttpClient.fromEnv()` 는 SDK 기본 `maxRetries` 를 쓴다. 멘토만 `maxRetries(0)` + 명시 timeout 이다(`MentorClaudeClientConfig.buildClient`). SDK 내부 재시도는 **429 를 삼키고 실패를 느리게 만들어** §3 의 래치 판정을 왜곡한다 → 세 기능도 `maxRetries(0)` + 명시 timeout 으로 맞춘다.
+
+## E. 계획 분할
+
+- **계획 A(핵심, 이번)**: `ProviderChain` · `ProviderLatch` · 실패 분류 · Claude 빈 재조건화 · 세 기능 배선 · retention Ollama 클라이언트 · 복구 탐색 배경 작업. → **그 자체로 동작하는 폴백**이 된다.
+- **계획 B(후속)**: §10 관측 메트릭 · §5 review 재생성 엔드포인트. 둘 다 가산적이고 A 없이는 의미가 없다.
