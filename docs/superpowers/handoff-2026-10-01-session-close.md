@@ -122,20 +122,58 @@ docker run -d --name devpath-test-pg \
 
 ---
 
-## 4. ⚠ 다음 세션 첫 동작 — PR #83 최종 리뷰 처리
+## 4. ⚠ 다음 세션 첫 동작 — 최종 리뷰 **결과 처리**(리뷰는 끝났다)
 
-**이 세션에서 전체 브랜치 최종 리뷰어를 띄웠으나 결과를 받지 못한 채 세션을 닫았다.** 리뷰 결과는 그 세션에만
-도달하므로 **다음 세션에서 다시 돌려야 한다.**
+**최종 리뷰를 받았다 — 판정 `With fixes`.** 본문은 워크트리 안
+`.superpowers/sdd/2026-10-01-ai-provider-fallback-core/final-review.md`(394줄, git-ignored).
+★리뷰어 최종 메시지가 한 줄이라 본문이 유실될 뻔했고 재개해 파일로 받았다★
 
-1. `superpowers:requesting-code-review` 의 `code-reviewer.md` 로 리뷰어를 띄운다. 입력:
-   - 범위 `f8e9b59..5f4d3f4` (리뷰 패키지 diff 가 워크트리의 원장 디렉터리에 있다: `review-f8e9b59..5f4d3f4.diff`)
-   - 계획 · 스펙(보정 포함) · **원장의 `Ruling:` 줄**(위 §3 의 9건) — 이미 내린 판단을 다시 놀라움으로 보고하지 않게
-   - 계획의 **Review Focus 5건**을 그대로 전달(중복 fallback · 공백 CSV · 키 없는 claude fallback · 전부 차단 · transient+성공 교차)
-   - **중점 검토 지시**: `ProviderLatch` 는 요청 스레드와 스케줄러 스레드가 공유하는 가변 상태다 · `Fallback*Client` 의 `ThreadLocal` 은 풀 워커에서 **정리되지 않는다** · 래치 skip 루프가 호출자에게 뜻밖의 결과를 줄 수 있는지
-2. **재채점**(reviewer 의 severity 는 조언이다 — 효과로 다시 매긴다) → Critical/Important 만 **한 번의 수정 패스**(각 수정은 재현 테스트 RED→GREEN + 전체 스위트) → Minor 는 원장에 deferred
-3. 그 뒤 `superpowers:finishing-a-development-branch` 로 PR #83 머지
+### ★Critical 1건 (C1) — 컨트롤러가 직접 실측해 확인했다. 이것은 **계획의 결함**이다(구현은 계획에 충실했다)★
 
-**리뷰 전에 머지하지 말 것.** executing-plans 의 계약상 최종 리뷰는 이 실행 방식(Native)이 사는 유일한 신선한 검토다.
+**provider 기록이 폴백이 일어난 바로 그 경우에 틀린다** → 스펙 성공 기준 #3·#4 미달. 세 결함이 한 메커니즘에:
+
+- **(a) `ReviewService.java:91-92` 가 `providerName()` 을 `review()` 보다 먼저 읽는다**(실측 확인).
+  체인 ≥2 에서 첫 요청은 체인 머리를, 이후 요청은 **직전 요청의** provider 를 기록한다.
+  테스트가 못 잡은 이유: `FallbackAiReviewClientTest:146-155` 가 **운영과 반대 순서**로 호출하고,
+  기존 review Spring 테스트 12개는 `providerName()` 을 상수로 스텁한다.
+- **(b) `ThreadLocal` 을 어디서도 `remove()` 하지 않는다**(세 Fallback 클라이언트 모두). 풀 워커에서 값이
+  살아남고 `CommunitySeedService:50` 은 **실패 경로**에서 그 값을 발행한다 → 관여하지 않은 provider 를 실패로 지목.
+- **(c) 래퍼는 체인 키(소문자)를 저장하는데 구현체는 대문자**(`CLAUDE`/`OLLAMA`)를 돌려준다(실측 확인).
+  `ai_code_reviews.provider` 에 두 표기가 섞여 집계가 깨진다.
+
+★**멘토의 `FallbackMentorClient` 가 세 가지를 이미 다 해결해 두었는데 계획이 따르지 않았다**★ —
+`:27,:34,:38` `SERVED.remove()` · `:48` `d.providerName()` 저장 · `:62-65` read-once-and-clear ·
+`:32-40,:49` `providerSelected` 콜백으로 **thread-local 없이** 호출자에게 제때 알린다.
+
+**수정 방향(한 변경, 세 효과)**: 세 Fallback 클라이언트가 `e.getValue().providerName()` 을 저장하고
+entry·`finally` 에서 비운다. 그리고 `ReviewService` 의 순서를 바꾸거나 — **더 낫게, 멘토처럼** — 선택을
+콜백/결과로 보고해 thread-local 을 없앤다. 세 `reportsTheProviderThatActuallyServed` 를 대문자 단언으로
+바꾸고 I5 의 통합 테스트를 더한다.
+
+### Important 5건
+
+| # | 내용 |
+|---|---|
+| I1 | `ProviderLatch` 가변 상태를 동기화·`volatile` 없이 읽는다 |
+| I2 | 기한 만료가 **차단 해제와 탐색 예약을 동시에** 해서 결국 사용자 요청이 탐색을 문다(§3.1 의도 약화) |
+| I3 | `lastBackoff` 를 `RATE_LIMIT`·`TRANSIENT` 가 공유해 서로의 증가를 오염시킨다 |
+| I4 | `maxRetries(0)` 의 비용은 지금 내고 이득은 나중에 걷는다 |
+| I5 | **스펙 §9 의 통합 항목이 ruling 없이 계획에서 빠졌고, 그게 바로 C1(a)를 잡을 테스트다** |
+
+**Minor 12건 · Declined to judge 11줄** — 전부 `final-review.md` 에.
+
+### 다음 세션이 할 일
+
+1. **재채점** — reviewer 의 severity 는 조언이다. 효과로 다시 매긴다(Declined to judge 11줄도 각각 ruling 한다).
+2. **Critical/Important 만 한 번의 수정 패스** — 각 수정은 재현 테스트 **RED→GREEN** + 전체 스위트 녹색.
+   Minor 는 원장에 deferred 로 남기고 사용자에게 보고한다. 두 번째 수정 패스는 없다.
+3. 그 뒤 `superpowers:finishing-a-development-branch` 로 **PR #83 머지**.
+
+**리뷰 결과를 반영하기 전에 머지하지 말 것.**
+
+### (참고) 이 세션이 수정 패스를 하지 않은 이유
+
+사용자 지시로 30분 내 마무리·큰 작업 이관. 리뷰는 받았고 기록했으나 수정은 다음 세션 몫이다.
 
 ### 그다음 (순서대로)
 
