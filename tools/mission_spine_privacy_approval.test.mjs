@@ -481,6 +481,33 @@ test('candidate discovery enumerates every API page before uniqueness is decided
   assert.equal(runs.at(-1).id, later.id);
 });
 
+test('candidate discovery lists only the release candidate branch runs', async () => {
+  const branch = `release/candidate-${releaseId}`;
+  const listings = [];
+  const fetchImpl = async (input) => {
+    const url = new URL(input);
+    listings.push(url);
+    // Unfiltered, the listing carries every campaign's runs and outgrows the API bound.
+    const runs = url.searchParams.get('branch') === branch
+      ? []
+      : [{ id: 1, padding: 'x'.repeat(1024 * 1024) }];
+    return jsonResponse({ total_count: runs.length, workflow_runs: runs });
+  };
+  await assert.rejects(
+    discoverCandidateArtifact({
+      releaseId,
+      candidateSpecSha256: candidateSha,
+      approvalSourceSha: sourceSha,
+      token: 'test-token',
+      fetchImpl,
+    }),
+    /exactly one eligible/i,
+  );
+  assert.equal(listings.length, 1);
+  assert.match(listings[0].pathname, /\/actions\/workflows\/[^/]+\/runs$/);
+  assert.equal(listings[0].searchParams.get('branch'), branch);
+});
+
 test('candidate discovery follows a credential-free redirect and rejects a competing fresh run', async () => {
   const raw = candidateBytes();
   const rawDigest = sha256(raw);
@@ -521,6 +548,7 @@ test('candidate discovery follows a credential-free redirect and rejects a compe
       const path = url.pathname;
       if (url.hostname === 'artifact.example.invalid') return bytesResponse(zip);
       if (path.includes('/actions/workflows/') && path.endsWith('/runs')) {
+        assert.equal(url.searchParams.get('branch'), branch);
         return jsonResponse({ total_count: runIds.length, workflow_runs: runIds.map(run) });
       }
       const attempt = path.match(/\/actions\/runs\/(\d+)\/attempts\/2$/);
