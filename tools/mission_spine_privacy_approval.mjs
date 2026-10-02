@@ -1479,13 +1479,15 @@ export async function discoverCandidateArtifact({
   sha40(approvalSourceSha, 'approval_source_sha');
   if (typeof token !== 'string' || token.length < 1) fail('GITOPS_TOKEN is absent');
   const workflowId = encodeURIComponent(candidateWorkflow);
+  const expectedBranch = `release/candidate-${releaseId}`;
+  // The candidate workflow only succeeds on this ref, and the unfiltered run
+  // history grows past MAX_API_BYTES as campaigns accumulate.
   const runs = await listAllGitHubPages({
-    path: `/repos/${gitopsRepository}/actions/workflows/${workflowId}/runs?event=workflow_dispatch&status=completed&exclude_pull_requests=true`,
+    path: `/repos/${gitopsRepository}/actions/workflows/${workflowId}/runs?event=workflow_dispatch&status=completed&exclude_pull_requests=true&branch=${encodeURIComponent(expectedBranch)}`,
     field: 'workflow_runs',
     token,
     fetchImpl,
   });
-  const expectedBranch = `release/candidate-${releaseId}`;
   const matches = [];
   for (const listed of runs) {
     if (listed?.head_branch !== expectedBranch) continue;
