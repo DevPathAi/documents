@@ -1,0 +1,70 @@
+{
+  "release_id": "ms-20260923-home-functions-gateway-cors-r2",
+  "out_dir": "D:/workspace/dpa/.release-artifacts/ms-20260923-home-functions-gateway-cors",
+  "gitops_base_sha": "5961922b9a309055a75bc7302e5c852c5c51d59c",
+  "frontend_sha": "ee5a5add39c98bfb0db0db15f4b2388f2b9915c6",
+  "frontend_release_pr": "DevPathAi/devpath-frontend#230 (develop->main; includes #229 README + #231 ET13 trigger marker)",
+  "web_off_digest": "sha256:fba587d5e52b2ba809f550fb470a47ab2c531263f3988afe5dfd57d999e7ff84",
+  "web_on_digest": "sha256:4fb7acbf90b74d9ea08f2708c00ac34d988a56592485ee093b8f54945ac21a7c",
+  "admin_digest": "sha256:ec6fd7147322916aa73f306a746328f914a029bee40b0d3cf8a4a752608f0086",
+  "worktree": "D:/workspace/dpa/.worktrees/frontend-et13-prov-r2",
+  "raw_build_marker": "D:/workspace/dpa/.release-artifacts/ms-20260923-home-functions-gateway-cors/raw-review-r2/build-marker.v1.json",
+  "raw_review": {
+    "run_id": "35933420238",
+    "run_attempt": "1",
+    "artifact_id": "10781674798",
+    "artifact_digest": "sha256:9d3009f0c03458bd7068ed947e0b1092d85368404655ed303ef1f8c37f74e6ca",
+    "artifact_name": "et13-unsealed-raw-review-run-35933420238-attempt-1",
+    "expires_at": "2026-10-07T23:33:08Z",
+    "workflow_sha256": "71ba5845635677793d97d1b30d01a7ad58fed2e8ca2e2e9cc1a437f89b7d323e",
+    "web_main_dart_js_sha256": "fff51714aa8790230e664047c11814b05096c106d695e9bed1fa564869490eaf",
+    "admin_main_dart_js_sha256": "17cf7e02c881dcb7c2350b017804c8ad13056e17acab5896e3e853e4471eecba"
+  },
+  "baseline": {
+    "run_id": "35935446441",
+    "artifact_id": "10782424744",
+    "artifact_name": "ms-20260923-home-functions-gateway-cors-r2-frontend-visual-approved-baseline-run-35935446441-attempt-1",
+    "archive": "D:/workspace/dpa/.release-artifacts/ms-20260923-home-functions-gateway-cors/baseline-r2-artifact.zip",
+    "archive_sha256": "e750551c5ad56727dc883d9ef8d90dd12e78e2e60c12f2e15928d042309d6aec",
+    "workflow_sha256": "24e959a7b34a02ca7f65e2a8f0af5d0a901a12d89deddc6f29ed564f868ef833",
+    "dir": "D:/workspace/dpa/.release-artifacts/ms-20260923-home-functions-gateway-cors/baseline-r2",
+    "dispatcher_branch": "automation/dispatch-ms-20260923-home-functions-gateway-cors-r2",
+    "dispatcher_commit": "423f1a1a7b9e4c7a7e2c2749cc28079baf16e31b",
+    "artifact_digest": "sha256:e750551c5ad56727dc883d9ef8d90dd12e78e2e60c12f2e15928d042309d6aec",
+    "expires_at": "2026-10-23T23:51:08Z",
+    "approved_by": "VelkaressiaBlutkrone"
+  },
+  "candidate": {
+    "spec_sha256": "19c2e8317fd4b1bb47876d86d702aa3542cb848d097125cb648f764cf450c50a",
+    "run_id": "35935826601",
+    "artifact_id": "10783066919",
+    "branch": "release/candidate-ms-20260923-home-functions-gateway-cors-r2",
+    "commit": "c45750ae55e915694ef64ca6d7ea80ca09c4563c",
+    "artifact_name": "ms-20260923-home-functions-gateway-cors-r2-candidate-spec-run-35935826601-attempt-1",
+    "artifact_digest": "sha256:c3f69d038533ad225396605cf965990c8f365f3a619d0f1b670a505c1344286e",
+    "expires_at": "2026-10-23T23:53:52Z"
+  },
+  "home": {
+    "source_sha": "ffaf4b33ca23d61dfd0304f666192a4e6c6ddfa3",
+    "dist_sha256": "00794a107b370a28404edbed62ffdd71891491f8953998d54f7b9eeb740cc237",
+    "candidate_deployment_id": "2225c3fb-57f5-4dd6-89f7-eddda8b46f91",
+    "candidate_preview_url": "https://2225c3fb.devpath-home-page.pages.dev",
+    "prior_production_deployment_id": "005cf175-6e3e-4400-a201-1987ce9d8d84",
+    "catalog_sha256": "a3c338c6dd9da493df0ee660772359bed76440ecf693e64ef5486f79eb3b6078",
+    "rendered_product_sha": "3995dfc7730bdf564db3ea564ea4835b61c33c50",
+    "rendered_product_tree_sha256": "c1d42d9ce3e030d32ed9a5c1798f433733ccc0cf18434511a1cfc531cd1f0c54"
+  },
+  "ci_run_id": "35933420253",
+  "evidence": {
+    "dispatched_after": "2026-09-23T23:58:04Z",
+    "frontend_dispatcher_commit": "9e38b12c947ab8d3a74fbbaf96317f561e53a31d",
+    "documents_dispatcher_commit": "0f25683532ea29b98bc233286977773441e4c35e",
+    "ai-svc_dispatcher_commit": "2c1054088e3c7f624785b243ad315d6d408c4dd6",
+    "runs": {
+      "DevPathAi/devpath-frontend:et13-evidence.yml": "35936178711",
+      "DevPathAi/devpath-frontend:mission-spine-manual-at-evidence.yml": "35936180081",
+      "DevPathAi/documents:mission-spine-privacy-approval.yml": "35936190636",
+      "DevPathAi/devpath-ai-svc:mission-spine-release-eval.yml": "35936200798"
+    }
+  }
+}

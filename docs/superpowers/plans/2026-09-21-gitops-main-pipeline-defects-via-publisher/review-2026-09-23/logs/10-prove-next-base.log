@@ -1,0 +1,9 @@
+[PASS] chain base conditions @ 5961922b -> accepted
+[PASS] shared gate: writer fence render @ 5961922b -> accepted
+[PASS] shared gate: next migration render @ 5961922b -> accepted
+[PASS] shared gate: built next-release render incl. the fence ServiceAccount @ 5961922b -> accepted
+-- controls: the fenced M must be refused as a base; a still-suspended release Job must be refused
+[PASS] chain base conditions @ c1d5e8cf -> refused: devpath-platform-svc: sealed base must not retain a writer fence
+[PASS] shared gate: writer fence render @ c1d5e8cf -> refused: devpath-platform-svc sealed base already contains a replica override
+[PASS] shared gate: tampered next-release render @ 5961922b -> refused: migration Job must be unsuspended exactly once
+PROVE_RC=0

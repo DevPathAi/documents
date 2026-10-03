@@ -1,0 +1,37 @@
+---
+name: Mission Spine Release Gate Dispatch
+
+'on':
+  push:
+    branches:
+      - automation/dispatch-ms-20260923-home-functions-gateway-cors-r3
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    name: Dispatch protected migration release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Dispatch migration as GitHub Actions automation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api \
+            --method POST \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/mission-spine-migration-release.yml/dispatches" \
+            --input - <<'JSON'
+          {
+            "ref": "main",
+            "inputs": {
+              "release_id": "ms-20260923-home-functions-gateway-cors-r3",
+              "source_sha": "9793b8f92f92cca1ef57e28d2db6fb7d911741a3",
+              "sealed_release_sha": "4a2ab53a91f049d13799932a35c48c1c8fe17734",
+              "gitops_source_sha": "5961922b9a309055a75bc7302e5c852c5c51d59c",
+              "release_manifest_sha256": "c95cc64184eb6f25cd5712b41df593aaf8b4f379ebd7227f7350836286481375"
+            }
+          }
+          JSON

@@ -1,0 +1,36 @@
+deployment.apps/devpath-ai-svc paused
+deployment.apps/devpath-lcs-svc paused
+deployment.apps/devpath-community-svc paused
+deployment.apps/devpath-learning-svc paused
+deployment.apps/devpath-sandbox-svc paused
+deployment.apps/devpath-platform-svc paused
+deployment.apps/devpath-gateway paused
+### 10:08:26 deployments
+NAME                       PAUSED   READY   UPDATED   GEN   OBS
+devpath-notification-svc   true     1       1         11    11
+devpath-ai-svc             true     1       1         17    17
+devpath-lcs-svc            true     1       1         14    14
+devpath-community-svc      true     1       1         15    15
+devpath-learning-svc       true     1       1         18    18
+devpath-sandbox-svc        true     1       1         32    32
+devpath-platform-svc       true     1       1         29    29
+devpath-gateway            true     1       1         15    15
+### argo apps (8)
+devpath-notification-svc   sync=Synced health=Suspended reconciledAt=2026-09-23T10:06:03Z
+devpath-ai-svc             sync=Synced health=Suspended reconciledAt=2026-09-23T10:08:04Z
+devpath-lcs-svc            sync=Synced health=Suspended reconciledAt=2026-09-23T10:08:04Z
+devpath-community-svc      sync=Synced health=Suspended reconciledAt=2026-09-23T10:08:04Z
+devpath-learning-svc       sync=Synced health=Suspended reconciledAt=2026-09-23T10:08:05Z
+devpath-sandbox-svc        sync=Synced health=Suspended reconciledAt=2026-09-23T10:08:05Z
+devpath-platform-svc       sync=Synced health=Suspended reconciledAt=2026-09-23T10:08:06Z
+devpath-gateway            sync=Synced health=Suspended reconciledAt=2026-09-23T10:08:06Z
+### pods restarts
+devpath-ai-svc-5b44c4fb9-l4c5h                                    Running     0
+devpath-community-svc-5b69d8d95c-4m999                            Running     0
+devpath-gateway-6bdb89db44-9sbpd                                  Running     0
+devpath-lcs-svc-7b6bf4748-k46d7                                   Running     0
+devpath-learning-svc-67989d678-r82sm                              Running     0
+devpath-notification-svc-7bbfd448bf-h6xrh                         Running     0
+devpath-platform-svc-59dd96878b-84kqn                             Running     0
+devpath-sandbox-svc-66648f7fdb-7hz82                              Running     0
+### paused count: 8

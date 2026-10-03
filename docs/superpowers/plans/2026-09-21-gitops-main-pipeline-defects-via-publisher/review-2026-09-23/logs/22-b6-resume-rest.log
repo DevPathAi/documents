@@ -1,0 +1,142 @@
+=================== devpath-ai-svc ===================
+### 10:14:22 resume devpath-ai-svc
+deployment.apps/devpath-ai-svc resumed
+Waiting for deployment "devpath-ai-svc" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "devpath-ai-svc" rollout to finish: 1 old replicas are pending termination...
+deployment "devpath-ai-svc" successfully rolled out
+rollout rc=0 at 10:14:43
+### pods
+NAME                              PHASE     READY   RESTARTS   STARTED                SP
+devpath-ai-svc-56b6978666-n6qmp   Running   true    0          2026-09-23T10:14:23Z   5
+devpath-ai-svc-5b44c4fb9-l4c5h    Running   true    0          2026-09-10T09:49:48Z   <none>
+old=devpath-ai-svc-5b44c4fb9-l4c5h new=devpath-ai-svc-56b6978666-n6qmp
+### deploy
+NAME             PAUSED   READY   UPDATED   AVAILABLE   GEN   OBS
+devpath-ai-svc   <none>   1       1         1           19    19
+### argo
+sync=Synced health=Healthy
+### node load
+ 10:14:45 up 44 days,  6:15,  0 users,  load average: 2.03, 1.40, 1.41
+devpath-ai-svc rc=0
+=================== devpath-lcs-svc ===================
+### 10:14:45 resume devpath-lcs-svc
+deployment.apps/devpath-lcs-svc resumed
+Waiting for deployment "devpath-lcs-svc" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "devpath-lcs-svc" rollout to finish: 1 old replicas are pending termination...
+deployment "devpath-lcs-svc" successfully rolled out
+rollout rc=0 at 10:15:02
+### pods
+NAME                               PHASE     READY   RESTARTS   STARTED                SP
+devpath-lcs-svc-7b6bf4748-k46d7    Failed    false   0          2026-09-21T08:19:06Z   <none>
+devpath-lcs-svc-7c6895dbd9-j8wsd   Running   true    0          2026-09-23T10:14:46Z   5
+old=devpath-lcs-svc-7b6bf4748-k46d7 new=devpath-lcs-svc-7c6895dbd9-j8wsd
+### deploy
+NAME              PAUSED   READY   UPDATED   AVAILABLE   GEN   OBS
+devpath-lcs-svc   <none>   1       1         1           16    16
+### argo
+sync=Synced health=Healthy
+### node load
+ 10:15:03 up 44 days,  6:15,  0 users,  load average: 3.60, 1.82, 1.55
+devpath-lcs-svc rc=0
+=================== devpath-community-svc ===================
+### 10:15:04 resume devpath-community-svc
+deployment.apps/devpath-community-svc resumed
+Waiting for deployment "devpath-community-svc" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "devpath-community-svc" rollout to finish: 1 old replicas are pending termination...
+deployment "devpath-community-svc" successfully rolled out
+rollout rc=0 at 10:15:25
+### pods
+NAME                                     PHASE     READY   RESTARTS   STARTED                SP
+devpath-community-svc-5b69d8d95c-4m999   Running   true    0          2026-09-21T08:18:20Z   <none>
+devpath-community-svc-7584c8dc46-q9zlc   Running   true    0          2026-09-23T10:15:04Z   5
+old=devpath-community-svc-5b69d8d95c-4m999 new=devpath-community-svc-7584c8dc46-q9zlc
+### deploy
+NAME                    PAUSED   READY   UPDATED   AVAILABLE   GEN   OBS
+devpath-community-svc   <none>   1       1         1           17    17
+### argo
+sync=Synced health=Healthy
+### node load
+ 10:15:27 up 44 days,  6:15,  0 users,  load average: 3.23, 1.88, 1.57
+devpath-community-svc rc=0
+=================== devpath-learning-svc ===================
+### 10:15:28 resume devpath-learning-svc
+deployment.apps/devpath-learning-svc resumed
+Waiting for deployment "devpath-learning-svc" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "devpath-learning-svc" rollout to finish: 1 old replicas are pending termination...
+deployment "devpath-learning-svc" successfully rolled out
+rollout rc=0 at 10:15:49
+### pods
+NAME                                    PHASE     READY   RESTARTS   STARTED                SP
+devpath-learning-svc-669f7ff6cf-dtqsc   Running   true    0          2026-09-23T10:15:28Z   5
+devpath-learning-svc-67989d678-r82sm    Running   true    0          2026-09-21T08:19:29Z   <none>
+old=devpath-learning-svc-67989d678-r82sm new=devpath-learning-svc-669f7ff6cf-dtqsc
+### deploy
+NAME                   PAUSED   READY   UPDATED   AVAILABLE   GEN   OBS
+devpath-learning-svc   <none>   1       1         1           20    20
+### argo
+sync=Synced health=Healthy
+### node load
+ 10:15:51 up 44 days,  6:16,  0 users,  load average: 3.28, 1.99, 1.62
+devpath-learning-svc rc=0
+=================== devpath-sandbox-svc ===================
+### 10:15:51 resume devpath-sandbox-svc
+deployment.apps/devpath-sandbox-svc resumed
+Waiting for deployment "devpath-sandbox-svc" rollout to finish: 0 of 1 updated replicas are available...
+Waiting for deployment "devpath-sandbox-svc" rollout to finish: 0 of 1 updated replicas are available...
+deployment "devpath-sandbox-svc" successfully rolled out
+rollout rc=0 at 10:16:18
+### pods
+NAME                                   PHASE     READY   RESTARTS   STARTED                SP
+devpath-sandbox-svc-76b58dbbc7-52cvm   Running   true    0          2026-09-23T10:15:52Z   5
+old=devpath-sandbox-svc-66648f7fdb-7hz82 new=devpath-sandbox-svc-76b58dbbc7-52cvm
+### deploy
+NAME                  PAUSED   READY   UPDATED   AVAILABLE   GEN   OBS
+devpath-sandbox-svc   <none>   1       1         1           34    34
+### argo
+sync=Synced health=Healthy
+### node load
+ 10:16:19 up 44 days,  6:16,  0 users,  load average: 3.49, 2.19, 1.70
+devpath-sandbox-svc rc=0
+=================== devpath-platform-svc ===================
+### 10:16:19 resume devpath-platform-svc
+deployment.apps/devpath-platform-svc resumed
+Waiting for deployment "devpath-platform-svc" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "devpath-platform-svc" rollout to finish: 1 old replicas are pending termination...
+deployment "devpath-platform-svc" successfully rolled out
+rollout rc=0 at 10:16:41
+### pods
+NAME                                    PHASE     READY   RESTARTS   STARTED                SP
+devpath-platform-svc-59dd96878b-84kqn   Running   true    0          2026-09-21T08:30:51Z   <none>
+devpath-platform-svc-69d68b56c-kbq5c    Running   true    0          2026-09-23T10:16:20Z   5
+old=devpath-platform-svc-59dd96878b-84kqn new=devpath-platform-svc-69d68b56c-kbq5c
+### deploy
+NAME                   PAUSED   READY   UPDATED   AVAILABLE   GEN   OBS
+devpath-platform-svc   <none>   1       1         1           31    31
+### argo
+sync=Synced health=Healthy
+### node load
+ 10:16:42 up 44 days,  6:17,  0 users,  load average: 3.64, 2.35, 1.76
+devpath-platform-svc rc=0
+=================== devpath-gateway ===================
+### 10:16:43 resume devpath-gateway
+deployment.apps/devpath-gateway resumed
+Waiting for deployment "devpath-gateway" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "devpath-gateway" rollout to finish: 1 old replicas are pending termination...
+deployment "devpath-gateway" successfully rolled out
+rollout rc=0 at 10:16:55
+### pods
+NAME                               PHASE     READY   RESTARTS   STARTED                SP
+devpath-gateway-5c9f9dcb7c-j2cp2   Running   true    0          2026-09-23T10:16:44Z   5
+devpath-gateway-6bdb89db44-9sbpd   Running   true    0          2026-09-10T09:49:32Z   <none>
+old=devpath-gateway-6bdb89db44-9sbpd new=devpath-gateway-5c9f9dcb7c-j2cp2
+### deploy
+NAME              PAUSED   READY   UPDATED   AVAILABLE   GEN   OBS
+devpath-gateway   <none>   1       1         1           17    17
+### argo
+sync=Synced health=Healthy
+### node load
+ 10:16:57 up 44 days,  6:17,  0 users,  load average: 3.20, 2.31, 1.76
+devpath-gateway rc=0
+ALL 7 RESUMED OK
+
+[exited with code 0]

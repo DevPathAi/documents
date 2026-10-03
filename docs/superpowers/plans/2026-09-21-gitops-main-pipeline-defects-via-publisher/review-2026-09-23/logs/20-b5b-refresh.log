@@ -1,0 +1,57 @@
+refresh requested 10:12:27
+### SA managedFields for imagePullSecrets
+[]
+### 10:13:08 argo apps
+NAME                       SYNC     HEALTH        REV
+devpath-admin              Synced   Healthy       5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-ai-svc             Synced   Suspended     5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-community-svc      Synced   Suspended     5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-elasticsearch      Synced   Healthy       5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-gateway            Synced   Suspended     5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-lcs-svc            Synced   Suspended     5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-learning-svc       Synced   Suspended     5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-migration          Synced   Healthy       5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-notification-svc   Synced   Suspended     5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-ollama             Synced   Healthy       5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-ollama-gpu         Synced   Progressing   5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-platform-svc       Synced   Suspended     5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-redis              Synced   Healthy       5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-sandbox-runner     Synced   Healthy       5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-sandbox-svc        Synced   Suspended     5961922b9a309055a75bc7302e5c852c5c51d59c
+devpath-web                Synced   Healthy       5961922b9a309055a75bc7302e5c852c5c51d59c
+### apps at target: 16 / 16
+### deployments (template startupProbe / paused / RS)
+NAME                       PAUSED   READY   UPDATED   GEN   OBS   SP_PERIOD   SP_FT   SP_PATH
+devpath-notification-svc   true     1       <none>    12    12    5           60      /actuator/health/liveness
+devpath-ai-svc             true     1       <none>    18    18    5           60      /actuator/health/liveness
+devpath-lcs-svc            true     1       <none>    15    15    5           60      /actuator/health/liveness
+devpath-community-svc      true     1       <none>    16    16    5           60      /actuator/health/liveness
+devpath-learning-svc       true     1       <none>    19    19    5           60      /actuator/health/liveness
+devpath-sandbox-svc        true     1       <none>    33    33    5           60      /actuator/health/liveness
+devpath-platform-svc       true     1       <none>    30    30    5           60      /actuator/health/liveness
+devpath-gateway            true     1       <none>    16    16    5           60      /actuator/health/liveness
+### replicasets with desired>0 (expect exactly the 8 old ones)
+devpath-ai-svc-5b44c4fb9              devpath-ai-svc             1         2026-09-10T09:49:48Z
+devpath-community-svc-5b69d8d95c      devpath-community-svc      1         2026-09-21T08:08:25Z
+devpath-gateway-6bdb89db44            devpath-gateway            1         2026-09-10T09:49:32Z
+devpath-lcs-svc-7b6bf4748             devpath-lcs-svc            1         2026-09-21T08:08:24Z
+devpath-learning-svc-67989d678        devpath-learning-svc       1         2026-09-21T08:08:24Z
+devpath-notification-svc-7bbfd448bf   devpath-notification-svc   1         2026-09-21T08:08:25Z
+devpath-platform-svc-59dd96878b       devpath-platform-svc       1         2026-09-15T11:20:16Z
+devpath-sandbox-svc-66648f7fdb        devpath-sandbox-svc        1         2026-09-21T08:08:26Z
+### RS created today (expect none)
+0
+### pods (8 services)
+devpath-ai-svc-5b44c4fb9-l4c5h                                    Running     0          2026-09-10T09:49:48Z
+devpath-community-svc-5b69d8d95c-4m999                            Running     0          2026-09-21T08:18:20Z
+devpath-gateway-6bdb89db44-9sbpd                                  Running     0          2026-09-10T09:49:32Z
+devpath-lcs-svc-7b6bf4748-k46d7                                   Running     0          2026-09-21T08:19:06Z
+devpath-learning-svc-67989d678-r82sm                              Running     0          2026-09-21T08:19:29Z
+devpath-notification-svc-7bbfd448bf-h6xrh                         Running     0          2026-09-21T08:18:43Z
+devpath-platform-svc-59dd96878b-84kqn                             Running     0          2026-09-21T08:30:51Z
+devpath-sandbox-svc-66648f7fdb-7hz82                              Running     0          2026-09-21T08:30:27Z
+### fence SA
+[{"name":"ghcr-pull"}]
+(imagePullSecrets NOT in last-applied)
+### migration app
+Synced Healthy 5961922b9a309055a75bc7302e5c852c5c51d59c

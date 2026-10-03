@@ -1,0 +1,18 @@
+### 10:13:40 resume devpath-notification-svc
+deployment.apps/devpath-notification-svc resumed
+Waiting for deployment "devpath-notification-svc" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "devpath-notification-svc" rollout to finish: 1 old replicas are pending termination...
+deployment "devpath-notification-svc" successfully rolled out
+rollout rc=0 at 10:13:57
+### pods
+NAME                                        PHASE     READY   RESTARTS   STARTED                SP
+devpath-notification-svc-5f86d5b8b-k78xw    Running   true    0          2026-09-23T10:13:41Z   5
+devpath-notification-svc-7bbfd448bf-h6xrh   Running   true    0          2026-09-21T08:18:43Z   <none>
+old=devpath-notification-svc-7bbfd448bf-h6xrh new=devpath-notification-svc-5f86d5b8b-k78xw
+### deploy
+NAME                       PAUSED   READY   UPDATED   AVAILABLE   GEN   OBS
+devpath-notification-svc   <none>   1       1         1           13    13
+### argo
+sync=Synced health=Healthy
+### node load
+ 10:13:59 up 44 days,  6:14,  0 users,  load average: 1.25, 1.22, 1.35

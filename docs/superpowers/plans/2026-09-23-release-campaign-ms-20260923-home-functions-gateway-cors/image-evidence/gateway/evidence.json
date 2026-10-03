@@ -1,0 +1,32 @@
+{
+  "schema_version": "devpath.immutable-image.v1",
+  "status": "passed",
+  "repository": "DevPathAi/devpath-gateway",
+  "source_sha": "391d984f4decff5d0abd2fa43a7f7bd2c8f8046f",
+  "image_repository": "ghcr.io/devpathai/devpath-gateway",
+  "image_digest": "sha256:8cf6af8d91d96d4cd7e66ea0d1175d11758b5f12dd3e6f528fd542219fd59095",
+  "manifest_digest": "sha256:8cf6af8d91d96d4cd7e66ea0d1175d11758b5f12dd3e6f528fd542219fd59095",
+  "config_digest": "sha256:b539e6262f705067fb83c14094ba9e0130ac8ff84e8b8611463bfa30c5921e45",
+  "platform": {
+    "os": "linux",
+    "architecture": "amd64"
+  },
+  "rootfs_diff_ids": [
+    "sha256:31ad4a471c6852bfec14d757cc75a566c82a9769f12c3918cf6bf52cc0eeb3d0",
+    "sha256:751fe7c90841e5c1a9f465ef72cd52a86d5b6ebaa5cd2491cac866d856e12c07",
+    "sha256:0e04bb53876f9341ace2969204c0e1dc5734c8a41c8f8cd14f4cbab0ce1941cd",
+    "sha256:a2796c74836f25d848070dc0ed6ba094489eb8675c6663543a7daf9e83469ffd",
+    "sha256:c5c1224a5e9eb511af186d12593c63651a8474042469712928e6f7739571f8ef",
+    "sha256:d2b7fc1dfea71e595b1806059a7a3eeebf4d5910dfb28ef83cc2ab8041ee6099",
+    "sha256:384afe74c2b0e0943ce7db41f2e304f6db0f07406b91b4066188b9b28f1381a0",
+    "sha256:5c51a8cda02e31622fa2dcaf2296b1b1fa183c830eaf1882bf7d704a5ab8e732"
+  ],
+  "oci_labels": {
+    "org.opencontainers.image.source": "https://github.com/DevPathAi/devpath-gateway",
+    "org.opencontainers.image.revision": "391d984f4decff5d0abd2fa43a7f7bd2c8f8046f"
+  },
+  "producer_workflow_path": ".github/workflows/ci.yml",
+  "producer_workflow_sha256": "734153e550e5a153162dafd5085d6d6a527feb83c5fe4a8cdd15df3324ca9038",
+  "producer_run_id": 35863094106,
+  "producer_run_attempt": 1
+}
