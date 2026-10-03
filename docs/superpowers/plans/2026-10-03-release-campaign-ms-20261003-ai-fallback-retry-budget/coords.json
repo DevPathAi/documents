@@ -1,0 +1,208 @@
+{
+  "release_id": "ms-20261003-ai-fallback-retry-budget",
+  "scope": "ai-svc #86·#87(폴백을 쓸 수 없을 때 Claude 재시도 예산 유지) + documents develop→main(프라이버시 도구 #200) + frontend apps/web/README(새 웹 이미지 계약)",
+  "decided": {
+    "by": "user",
+    "on": "2026-10-03",
+    "approvals": "10/02 방침 — 인증·staging·운영 관문 AI 봇 디스패치, ET13 기준선·NVDA·프라이버시·AI 평가는 사용자"
+  },
+  "gitops": {
+    "repository": "DevPathAi/devpath-gitops",
+    "base_sha": "a97a175466962e33ca1823edbb6656091700db81",
+    "base_web_digest": "sha256:902f1ae1da304750d24225f39577ea03adf7b526d61e77d54edfbf32a45bdebf",
+    "live_release_id": "ms-20261002-ai-provider-fallback-gpu7b",
+    "prior_candidate_spec_sha256": "3423b8be5cde26420ed34f040447ce8db1ef516c7057ab76db7b57e5891a58a2",
+    "ai_rendered_config_sha256": "9b7d7031fafe5104ec51200e5c1b90ddd9bc38cd305683c672ee95f5238f4f4f"
+  },
+  "documents": {
+    "main": "f52b4a9a385b4eed18ec34f2e37cb35d17f80d78",
+    "release_pr": 208,
+    "main_before_release": "7f732ac5ba31a91e81ea4e557cb7f67c8ee5ca36"
+  },
+  "ai_svc": {
+    "repository": "DevPathAi/devpath-ai-svc",
+    "main_before_release": "83cfe792201b472aa97e0a2ce03aea79c23f483d",
+    "main": "c5614621d0076ced0342353c8dd211a0c0a46cff",
+    "release_pr": 88,
+    "sync_pr": 89,
+    "image_repository": "ghcr.io/devpathai/devpath-ai-svc",
+    "image_digest": "sha256:c3c29ade29d94309ec57cca7c503bce100699db86116a8e0523186118a56919f",
+    "prior_image_digest": "sha256:107fd20a93e1129d001594a19488f364f3c58e12a3f4e6e51e8a56f6b806ae23",
+    "ci_run_id": 37111365299,
+    "registry_evidence_artifact": 11270077605
+  },
+  "frontend": {
+    "repository": "DevPathAi/devpath-frontend",
+    "main_before_release": "a08feb6f0e28fdb3da45e601dc06ebb15e91e9f2",
+    "main": "b69e99909bd028682a9c0a3ca11489ac87f90fb9",
+    "release_pr": 246,
+    "change_pr": 245,
+    "worktree": "D:/workspace/dpa/.worktrees/fe-main-1003",
+    "flutter_pin": "D:/workspace/dpa/.worktrees/_tools/flutter-3.44.1/bin/flutter",
+    "web_mission_off": "sha256:16748f26833eeb76dea71fa255f853a92edb34a369c1c5f4a90defd6cf3cf15b",
+    "web_mission_on": "sha256:e3108c0901a48de92a4e4b4986cee1bcd6b13d9f4bd2b5e7d77f5867f19a790d",
+    "admin": "sha256:93b26f9c9708cfc36e34a216f7cb2932e22be61d43eadfd1162bb98574ccc71c",
+    "ci_run_id": 37112627035,
+    "registry_evidence": {
+      "web_off": 11271210969,
+      "web_on": 11270865716,
+      "admin": 11270881243,
+      "expires": "2026-11-02"
+    },
+    "raw_review": {
+      "run_id": 37112627137,
+      "run_attempt": 1,
+      "artifact_id": 11270965962,
+      "artifact_digest": "sha256:cd8e266d23c153bc5cd8f29ad8bbbaf5b808351900a8270802c4b71424e12ab9",
+      "artifact_name": "et13-unsealed-raw-review-run-37112627137-attempt-1",
+      "expires_at": "2026-10-17T09:28:57Z",
+      "workflow_sha256": "71ba5845635677793d97d1b30d01a7ad58fed2e8ca2e2e9cc1a437f89b7d323e",
+      "web_main_dart_js_sha256": "c8a2c38ac7c6af647cca80a365a7413c40d56f2c12f48482c566e9aea1b04a50",
+      "admin_main_dart_js_sha256": "2a6d2a1ccb937f85ce6a28fd45b9036bca1dc4e16e224b45d86439ec0d29f607"
+    },
+    "baseline_workflow_sha256": "24e959a7b34a02ca7f65e2a8f0af5d0a901a12d89deddc6f29ed564f868ef833",
+    "local_build_reproduced_ci": true,
+    "rollback_constraint_check": {
+      "prior_digest": "sha256:902f1ae1da304750d24225f39577ea03adf7b526d61e77d54edfbf32a45bdebf",
+      "distinct_all": true,
+      "off_ne_on": true
+    },
+    "baseline_diff": {
+      "cases": 104,
+      "changed": 0,
+      "resized": 0,
+      "added": 0,
+      "removed": 0,
+      "against": "10/02 approved baseline run 36922449776"
+    },
+    "baseline_approval": {
+      "dispatcher_branch": "automation/dispatch-ms-20261003-ai-fallback-retry-budget",
+      "dispatcher_commit": "0a2f221",
+      "dispatcher_run": 37113355753,
+      "approval_run": 37113362836,
+      "environment": "et13-baseline-approval",
+      "status": "success",
+      "approved_by": "사용자(VelkaressiaBlutkrone) 직접 승인 2026-10-03",
+      "approved_baseline_artifact": 11271468059,
+      "approved_baseline_name": "ms-20261003-ai-fallback-retry-budget-frontend-visual-approved-baseline-run-37113362836-attempt-1",
+      "approved_baseline_digest": "sha256:7e270bc7fc58a07261813f4e4fa08790850bbe450e9b71e74954bf8dd9ea4162",
+      "approved_baseline_expires_at": "2026-11-02T10:39:00Z"
+    },
+    "provenance": {
+      "visual": {
+        "input_provenance_sha256": "b9ad3f8897c52a539855bc4c5c30220613629b4fa8d52f966de7dc26de07f42a",
+        "input_provenance_file_sha256": "87615a55985957f4ef9877b6e84c3a41a2d4c7bf9e956876f4fce6d7a20b289e",
+        "bytes": 1883,
+        "cr_bytes": 0,
+        "source_sha": "b69e99909bd028682a9c0a3ca11489ac87f90fb9",
+        "baseline_run_id": 37113362836
+      },
+      "a11y": {
+        "input_provenance_sha256": "f15f7c4901814f7792a5b6112fc0c2827459dc7374893e1786210193a50c3203",
+        "input_provenance_file_sha256": "e677c944b10e97235e7fc8a97bfd9b01fe232f1777ab18f9cee7f20bb931b673",
+        "bytes": 1881,
+        "cr_bytes": 0,
+        "source_sha": "b69e99909bd028682a9c0a3ca11489ac87f90fb9",
+        "baseline_run_id": 37113362836
+      }
+    }
+  },
+  "home": {
+    "repository": "DevPathAi/devpath-home-page",
+    "master": "abdf57a7311115826528e068311c0e6ce997fe7f",
+    "dist_sha256": "51e8ef8382565691672e5a79a6ca04dedcc6b5fa97687d56f98ec8d398692bb8",
+    "dist_bytes": 707145,
+    "candidate_deployment_id": "3c7d8696-0c29-4d40-901d-10bba3f8a84c",
+    "candidate_preview_url": "https://3c7d8696.devpath-home-page.pages.dev",
+    "candidate_alias_url": "https://release-ms-20261003-ai-fallb.devpath-home-page.pages.dev",
+    "candidate_branch": "release-ms-20261003-ai-fallback-retry-budget",
+    "prior_production_deployment_id": "087c9235-51f3-493c-b56c-d81447e23a54",
+    "cloudflare_account_id": "f74eb88cda37ff4f8e6c27aaaf91631c",
+    "cloudflare_project": "devpath-home-page",
+    "catalog_sha256": "a3c338c6dd9da493df0ee660772359bed76440ecf693e64ef5486f79eb3b6078",
+    "rendered_product_sha": "44b82121e2372937e6057652d42e52339aa9f74b",
+    "rendered_product_tree_sha256": "4e4ec2bda6babd6bd43b0d8d17f770f2c5eec046eb2a60645d7eafe586c2b726",
+    "worktree": "D:/workspace/dpa/.worktrees/home-master-1002",
+    "wrangler": "4.146.0 (npx 캐시, 10/02 와 동일)",
+    "upload_note": "Uploaded 0 files (51 already uploaded)"
+  },
+  "out_dir": "D:/workspace/dpa/.release-artifacts/ms-20261003-ai-fallback-retry-budget",
+  "et13_baseline": {
+    "dir": "D:/workspace/dpa/.worktrees/fe-main-1003/build/et13/external/baseline",
+    "approval_run_id": "37113362836",
+    "approved_artifact_id": "11271468059",
+    "approved_artifact_name": "ms-20261003-ai-fallback-retry-budget-frontend-visual-approved-baseline-run-37113362836-attempt-1",
+    "approved_artifact_archive_sha256": "7e270bc7fc58a07261813f4e4fa08790850bbe450e9b71e74954bf8dd9ea4162",
+    "approval_workflow_sha256": "24e959a7b34a02ca7f65e2a8f0af5d0a901a12d89deddc6f29ed564f868ef833"
+  },
+  "candidate": {
+    "spec_sha256": "c23f3b8e1c1dfceb8c87e347a192c94b706d33c968624cd8dce06126ef94a3e1",
+    "spec_path": "release-manifests/candidates/ms-20261003-ai-fallback-retry-budget.candidate-spec.json",
+    "branch": "release/candidate-ms-20261003-ai-fallback-retry-budget",
+    "worktree": "D:/workspace/dpa/.worktrees/gitops-candidate-1003",
+    "changed_fields": 34,
+    "derived_from": {
+      "release_id": "ms-20261002-ai-provider-fallback-gpu7b",
+      "spec_sha256": "3423b8be5cde26420ed34f040447ce8db1ef516c7057ab76db7b57e5891a58a2"
+    },
+    "commit": "0ba21e38d7abbdd630ace574ad25a703cfe90571",
+    "run_id": 37117483543,
+    "run_attempt": 1,
+    "artifact_id": 11272196381,
+    "artifact_name": "ms-20261003-ai-fallback-retry-budget-candidate-spec-run-37117483543-attempt-1",
+    "artifact_digest": "sha256:143cb891305145e87f6366b974edd6a11d3daae401c45fc0924e8e483cf47cf0",
+    "artifact_expires_at": "2026-11-02T10:46:12Z",
+    "local_gates": [
+      "validate_release_manifest.py rc=0",
+      "verify_candidate_web_base.py rc=0",
+      "home harness loadReleaseContext ok",
+      "preverify_service_images 9/9 soonest 2026-10-15 07:12Z"
+    ]
+  },
+  "gitops_base_sha": "a97a175466962e33ca1823edbb6656091700db81",
+  "shared": {
+    "main": "9793b8f92f92cca1ef57e28d2db6fb7d911741a3"
+  },
+  "evidence": {
+    "et13": {
+      "run_id": 37117660640,
+      "attempt": 1,
+      "conclusion": "success",
+      "visual_artifact": 11271814308,
+      "a11y_artifact": 11272685067,
+      "raw_review_artifact": 11272323637,
+      "release_auth_artifact": 11272021969,
+      "auth_gate": "mission-spine-et13-release-auth — AI(deployment 6826651882)"
+    },
+    "manual_at": {
+      "run_id": 37117661880,
+      "conclusion": "success",
+      "nvda_artifact": 11271903958,
+      "auth_gate": "AI(6826652084)",
+      "human_gate": "manual-at-nvda — 사용자 직접 승인"
+    },
+    "privacy": {
+      "run_id": 37117661578,
+      "conclusion": "success",
+      "artifact": 11272566489,
+      "gate": "mission-spine-privacy-approval — 사용자 직접 승인"
+    },
+    "ai_eval": {
+      "run_id": 37117663881,
+      "conclusion": "success",
+      "artifact": 11271784344,
+      "gate": "mission-spine-ai-release-eval — 사용자 직접 승인"
+    },
+    "home_dist": {
+      "run_id": 37117678162,
+      "conclusion": "success",
+      "artifact": 11271968032
+    },
+    "dispatchers": {
+      "frontend": "eb37d31",
+      "documents": "c1ca2e5",
+      "ai_svc": "b6bfc3b"
+    },
+    "summary": "5/5 success · 워크플로별 producer 런 정확히 1개"
+  }
+}
