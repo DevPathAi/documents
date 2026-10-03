@@ -152,3 +152,15 @@ validate 런 **`37118424720`**(bot · main `a97a1754` · attempt 1) · `mission-
    아직 waiting 이면 `PYTHONUTF8=1 py -u validate_wait.py 2026-10-03T11:03:00Z` 재실행(대기 관문을 승인하고 완료까지 기다린다).
 2. sealed 매니페스트 → `sealed-release-manifest-budget.json` · coords `validate.*` 채우기 → `py promote.py coords.json preflight`(읽기 전용).
 3. **[사용자 확인]** 뒤 `migration --confirmed` → `promote-off` → `promote-on` → `landing`.
+
+### 8단계 1차 결과 — **validate 실패**(seal 단계) · 운영 무변경
+validate 런 `37118424720`: staging 2/2 AI 승인(6826784582 · 6826850724) · `Run candidate journeys` **success**
+(activation `11272935112` · contextual `11271964766` · home visual-a11y `11272117634`) · `Seal and validate staging` **failure** —
+`release seal failed: exactly one frontend producer run is required`(11:10:13Z).
+- 사실: ET13 런 `37117660640` 은 11:02:23Z 완료, 두 품질 아티팩트 11:02:20Z 생성(8분 전). **같은 main seal 코드를 실제 API 로 로컬 재현하면
+  `SELECTED 37117660640`**(`check_seal_selection.py`). 그 사이 바뀐 입력은 없다 → API 목록(런 `status=success` 필터 또는 `artifacts?name=`) 반영 지연으로
+  보이나 **증명은 못 한다**(지나간 시점).
+- 재디스패치 안전성: 저니 아티팩트는 매니페스트에 **artifact ID** 로 바인딩(`_require_artifact_identity`·다운로드는 `artifacts/{id}`), 이름 유일성 검색 없음 ·
+  「고유 producer 런」 검사는 증거 종류에만·`conclusion=success` 만 · 선례 9/23 r3(validate 1차 실패 → 같은 id 2차 성공).
+- ★정정★ `et13-release-auth` 아티팩트(10-04 만료)는 seal·검증기가 쓰지 않는다 — seal 이 확인하는 인증은 승인 baseline `11271468059`(11-02 만료).
+- 다음: `check_seal_selection.py` 로 선택 성공 재확인 → gitops 디스패처 브랜치에 봇 이름 **빈 nonce 커밋** push → `validate_wait.py <since>`.
