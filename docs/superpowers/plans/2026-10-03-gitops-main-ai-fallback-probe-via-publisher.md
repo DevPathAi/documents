@@ -1,6 +1,7 @@
 # GPU Ollama 폴백 env + Landing 프로브 재시도 publisher — 준비 기록 (2026-10-03)
 
-> **준비(Part A) 완료 — 실행(Part B, gitops main 이동)은 하지 않았다.** Part B 전에 ★리뷰 M1(사용자 결정 전제 정정)★을 다시 묻는다. 디렉터리
+> **Part A 준비 → 리뷰 → L1 보강 → Part B 실행까지 완료(2026-10-03). gitops main = `a97a1754`, 폴백 운영 활성.**
+> 실행은 리뷰 M1(재시도 2→0, GPU·7b 부재 시 이전보다 나빠짐)을 사용자가 알고 수용한 결정이다. 디렉터리
 > `2026-10-03-gitops-main-ai-fallback-probe-via-publisher/` 가 스크립트·렌더 산출물이다.
 > 선례: `2026-09-24-gitops-main-gateway-edge-cors-via-publisher.md`(렌더러 원형) ·
 > `2026-09-21-gitops-main-pipeline-defects-via-publisher.md`(publisher 원형, 같은 형태의 target).
@@ -80,7 +81,31 @@ main 과 바이트 동일함을 단언한다.
 - Low: L1 계약 테스트가 토큰 발급 전 step 의 `if`·`continue-on-error`·`defaults` 변조를 못 잡는다(9/24 에도 같은 틈, 현재 바이트는 안전) —
   고치면 헬퍼 SHA 가 바뀌어 재렌더·재리뷰. L2·L3 은 반영했다(증명 docstring 정정, admin 추가). L4 는 이름만의 문제.
 
-## Part B — 실행 (하지 않았다 · 다음 캠페인 시작 시 사용자 확인 후)
+## Part B 실행 결과 (2026-10-03 04:01~04:04Z) — **운영 반영 완료**
+
+사용자 결정(2026-10-03, 리뷰 후 다중 선택): 「Part B 지금 실행」 — **M1 조건을 알고 수용**, 자동 롤백 레인이 다음 승격까지 닫히는 것도 수용.
+L1 보강 뒤 헬퍼 `75f98ce` 로 실행했다.
+
+| 항목 | 값 |
+|---|---|
+| 운영 트랜잭션 | `run_ai_fallback_probe_main_publish.py --staged-sha 3b424ff… --helper-sha 75f98ce…` rc 0 (`publish-run.log`, 04:01:21~04:03:31Z) |
+| 디스패처 런 | `37095158298` success (방아쇠 `automation/dispatch-ai-fallback-probe-main-publish` = staged `3b424ff`) |
+| publisher 런 | `37095165766` success (봇 디스패치·attempt 1, 04:01:48~04:02:46Z) · 승인 deployment `6823007952` |
+| **gitops main** | `cea3610` → **`a97a175466962e33ca1823edbb6656091700db81`** · 환경 정책 `branch:main` 단독 복원 확인 |
+| main CI | `37095218387` success |
+
+런타임(Argo 16 앱 refresh 뒤 SSH 실측): 16 앱 전부 Synced/Healthy(rev `a97a1754`) ·
+`devpath-ai-svc` 새 파드(04:03:59Z, 재시작 0, 이미지 `107fd20a` 불변, 활성 RS 1) — spec·실행 파드 env **9개** ·
+`ollama-gpu` 새 파드(04:04:06Z, GPU 노드 `ip-172-31-52-85`, 재시작 0) — `strategy=Recreate`·`rollingUpdate` 없음·활성 RS 1 ·
+ai-svc 파드 → `ollama-gpu.devpath.svc:11434/api/tags` 도달, `qwen2.5:7b`·`3b` 보유 · 다른 서비스 이미지 9개 불변.
+7b 추론(노드 → Service, `num_predict` 40): **콜드 44.8초**(로드 22.7초, 파드 기동 직후 GPU 초기화 포함 — 10/02 콜드 24.8초보다 느림) ·
+**웜 0.94초·52.8 tok/s**. ⚠ 콜드는 폴백 타임아웃 60초 안이지만 여유가 작다 — Ollama keep_alive(기본 5분) 뒤 첫 폴백은 콜드다.
+ai-svc 이미지에는 `curl` 이 없다(`wget` 만) — 파드 안 측정은 `wget` 으로.
+
+**다음 candidate**: `gitops.base_sha` = **`a97a1754`** · `rendered_config_sha256` = target 렌더 해시(M3, 리뷰어 측정 `9b7d7031…` — 캠페인 때 고정 kustomize 로 재계산·대조).
+**자동 롤백 레인**: `ms-20261002-ai-provider-fallback-gpu7b` 의 롤백 워크플로는 이제 닫혔다(gitops main 이동).
+
+## Part B — 실행 절차 (기록용, 위에서 실행함)
 
 0. **M1 재확인** — 정정된 조건(재시도 2→0, GPU·7b 부재 시 이전보다 나빠짐)으로 폴백을 켤지 사용자에게 다시 묻는다.
 1. `git fetch` 후 `origin/main == cea3610` 확인 — 움직였으면 target·헬퍼·staged 핀이 전부 무효, Part A 를 새 main 위에서 다시.
@@ -93,7 +118,31 @@ main 과 바이트 동일함을 단언한다.
 
 ### 긴급 차단 (M2) — 폴백이 해를 끼칠 때 (사람 승인 필요)
 
-Argo 가 되돌리므로 순서가 중요하다: ① ApplicationSet 이 생성한 `devpath-ai-svc` Application 의 자동 동기화를 끈다
-(ApplicationSet 이 Application 을 다시 쓰므로 실행 시점에 방법을 실측해 정한다) → ② `kubectl -n devpath set env deploy/devpath-ai-svc
-RETENTION_FALLBACK- COMMUNITY_SEED_FALLBACK- REVIEW_FALLBACK-` → ③ 원인 해소 후 역방향 target 을 publisher 로 올리거나 자동 동기화를 되돌린다.
-GPU 스팟 회수 통지(런북 「스팟 회수 후 복구」)를 받으면 이 절차를 함께 검토한다.
+실측(2026-10-03): 16개 Application 은 전부 ApplicationSet `devpath-services` 소유이고, 그 AppSet 은 Argo 가 관리하지 않는
+**kubectl 직접 적용 객체**다(managedFields `kubectl-client-side-apply`·root app 없음). AppSet 에 `ignoreApplicationDifferences` 가 없어
+Application 의 syncPolicy 를 고쳐도 AppSet 컨트롤러가 되돌린다. Argo CD `v3.4.5`, CRD 가 `ignoreApplicationDifferences` 를 지원한다.
+순서(SSH → 노드 `sudo k3s kubectl`):
+
+1. `kubectl -n argocd patch applicationset devpath-services --type merge -p '{"spec":{"ignoreApplicationDifferences":[{"name":"devpath-ai-svc","jsonPointers":["/spec/syncPolicy"]}]}}'`
+2. `kubectl -n argocd patch application devpath-ai-svc --type json -p '[{"op":"remove","path":"/spec/syncPolicy/automated"}]'`
+3. `kubectl -n devpath set env deploy/devpath-ai-svc RETENTION_FALLBACK- COMMUNITY_SEED_FALLBACK- REVIEW_FALLBACK-` → 재시도 예산이 2 로 돌아간다
+4. 복구: 원인 해소 후 2→1 역순(automated 복원, ignore 항목 제거). 영구 해제가 필요하면 역방향 target 을 publisher 로 올린다.
+
+GPU 스팟 회수 통지(런북 「스팟 회수 후 복구」)를 받으면 이 절차를 함께 검토한다 — 회수 = M1 의 나쁜 상태다.
+
+## L1 보강 (2026-10-03, 사용자 결정 「L1 계약 테스트 보강」)
+
+`strengthen_contract_l1.py`(렌더 뒤 실행, 리터럴은 리뷰된 `rendered/helper.yml` 바이트에서 추출): mint **이전** 8단계를 YAML 원문으로
+통째 비교(`PRE_TOKEN_STEPS`) · 최상위·job 키 집합 고정 · 모든 단계에서 `if`·`continue-on-error`·`timeout-minutes`·`shell` 금지 ·
+메서드명 `…_five_pinned_paths`(L4).
+- **RED 먼저**: 확장한 `negative_controls.py`(변조 10종)를 보강 **전** 헬퍼 `868afac` 에 돌려 L1 변조 5종이 **수용됨**(rc=0)을 재현
+- **GREEN**: 보강 후 계약 **20/20**, 음성 대조 **11/11**(원본 수용 + 변조 10종 거부)
+- 헬퍼 `868afac` → **`75f98cef2fa1f5e65fad75a588c4c4109e8427fc`**(차이 = 계약 테스트 한 파일 +145/−1, `helper.yml` 바이트 불변) ·
+  원격 브랜치는 `--force-with-lease=…:868afac` 로 교체(일회용 브랜치) · 단위 18/18 · preflight ok
+- 리뷰: 테스트만 엄격해지는 변경이라 컨트롤러가 RED/GREEN 증거로 검토했다(서브에이전트 재리뷰 없음).
+
+## Part B 사전 확인 (2026-10-03, 실행 직전)
+
+- GPU PVC `ollama-gpu-models` 에 **`qwen2.5:7b` 이미 있음**(10/02 측정 때 받음, 디스크 여유 9.1G) → Recreate 재시작 뒤에도 PVC 가 유지되어
+  7b 다운로드 공백(M1 의 404 영구 실패 경로)이 없다
+- 긴급 차단 경로 실측(위 절)
