@@ -48,6 +48,9 @@ GPU 는 스팟이다(2026-09-08 회수 뒤 23일 방치 선례). GPU 가 없거�
 3. **세 래퍼**(`FallbackAiReviewClient` · `FallbackAiSeedClient` · `FallbackReEngagementClient`)는 `ProviderAttemptPlan` 을 따른다.
    provider 마다 `FAST` 구현체와 선택적 `LAST_RESORT` 구현체를 받는다(Claude 만 둘이 다르고, Ollama 는 같은 인스턴스).
    기능별 클라이언트 인터페이스(`AiReviewClient` 등)는 바꾸지 않는다. 실패·성공 기록은 지금처럼 래치에 남긴다.
+   단, 전부 막혀 래치를 무시하고 부른 1순위 시도(규칙 ③)의 **실패는 기록하지 않는다** — 이미 열린 래치에 다시 기록하면
+   사다리가 요청마다 자라(5→10→…60분) Ollama 가 돌아온 뒤에도 회복된 Claude 를 그만큼 건너뛴다. 성공은 기록한다
+   (최종 리뷰 I-1, 2026-10-03).
 4. **`OllamaProviderProbe`**(신규, `ProviderProbe` 구현). `GET {baseUrl}/api/tags` 를 연결 3초·읽기 5초로 호출하고, 응답 모델 목록에
    설정 모델(`devpath.<feature>.ollama-model`)이 없으면 실패로 던진다. 예외는 `ProviderFailures` 가 분류할 수 있는 형태 그대로 둔다.
    세 기능 각각, **그 기능의 fallback CSV 에 `ollama` 가 있고 1순위가 아닐 때만** 빈을 만든다.
@@ -79,6 +82,10 @@ GPU 는 스팟이다(2026-09-08 회수 뒤 23일 방치 선례). GPU 가 없거�
 1. 감지 전 ≤ 30초 구간에 Claude 와 GPU 가 **동시에** 실패한 요청은 재시도 없이 실패한다.
 2. Claude 가 429 로 차단되고 Ollama 가 살아 있다가 그 요청에서 실패하면, 폴백을 끈 상태처럼 Claude 를 다시 부르지 않는다
    (429 중인 Claude 는 다시 불러도 거의 실패하고 대기 지연만 커진다).
+3. GPU 가 죽어 있는 동안 Ollama 래치의 기한(1·2·4…30분 사다리)이 끝날 때마다, 다음 생존 탐색(≤ 30초)까지 죽은 Ollama 가
+   쓸 수 있어 보인다. 그 창에서 Claude 가 실패한 요청은 재시도 없이 죽은 Ollama 로 넘어가 실패한다. 「기한 만료 = 다음
+   탐색 전까지 닫힘」은 모든 provider 래치의 기존 계약이고, 창을 없애려면 생존 탐색이 열린 래치도 핑해 다시 열어야 해
+   §3.1-5(닫힌 대상만 핑)를 바꿔야 한다. 크기 ≈ GPU 장애 시간의 1~3% × Claude 일시 실패율(최종 리뷰 I-2, 2026-10-03).
 
 ## 4. 설정
 
