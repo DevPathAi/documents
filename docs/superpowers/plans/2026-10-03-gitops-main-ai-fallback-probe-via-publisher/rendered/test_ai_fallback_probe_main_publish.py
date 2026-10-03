@@ -138,6 +138,134 @@ GATE_BODIES = {
         "python -m unittest discover -s tests/release -p 'test_*.py'",
     ],
 }
+# L1 (2026-10-03 review): every step before the mint, verbatim from the reviewed helper bytes.
+PRE_TOKEN_STEPS = r"""
+- name: Checkout the exact helper branch
+  uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+  with:
+    ref: ${{ github.sha }}
+    fetch-depth: 2
+    persist-credentials: false
+    path: helper
+
+- name: Prove the exact one-shot helper context
+  working-directory: helper
+  env:
+    INPUT_FULL: ${{ inputs.full }}
+    GH_TOKEN: ${{ github.token }}
+  run: |
+    set -euo pipefail
+    test "$GITHUB_ACTOR" = "github-actions[bot]"
+    test "$GITHUB_TRIGGERING_ACTOR" = "github-actions[bot]"
+    test "$GITHUB_EVENT_NAME" = "workflow_dispatch"
+    test "$GITHUB_RUN_ATTEMPT" = "1"
+    test "$GITHUB_REF" = "refs/heads/$HELPER_BRANCH"
+    test "$GITHUB_REF_NAME" = "$HELPER_BRANCH"
+    test "$INPUT_FULL" = "true"
+    test "$MAIN_SHA" = "$HELPER_BASE_SHA"
+    test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+    test "$(git rev-parse HEAD^)" = "$HELPER_BASE_SHA"
+    helper_listing="$(git diff-tree --no-commit-id --name-only -r HEAD)"
+    mapfile -t helper_paths <<<"$helper_listing"
+    test "${#helper_paths[@]}" -eq 2
+    test "${helper_paths[0]}" = ".github/workflows/mission-spine-auth-smoke.yml"
+    test "${helper_paths[1]}" = "tests/release/test_ai_fallback_probe_main_publish.py"
+    current_main="$(
+      gh api -H "X-GitHub-Api-Version: $GITHUB_API_VERSION" \
+        "repos/$GITHUB_REPOSITORY/branches/main" --jq '.commit.sha'
+    )"
+    test "$current_main" = "$MAIN_SHA"
+
+- uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+  with:
+    python-version: "3.13"
+
+- name: Run the publisher contract test on the exact helper bytes
+  working-directory: helper
+  run: |
+    set -euo pipefail
+    python -m pip install --disable-pip-version-check PyYAML==6.0.2
+    python -m unittest discover -s tests/release -p 'test_ai_fallback_probe_main_publish.py'
+
+- name: Authenticate the live protected environment and this approval
+  env:
+    GH_TOKEN: ${{ github.token }}
+  run: |
+    set -euo pipefail
+    environment_json="$(
+      gh api -H "X-GitHub-Api-Version: $GITHUB_API_VERSION" \
+        "repos/$GITHUB_REPOSITORY/environments/$PROTECTED_ENVIRONMENT"
+    )"
+    test "$(jq -r '.name' <<<"$environment_json")" = "$PROTECTED_ENVIRONMENT"
+    test "$(jq -r '.can_admins_bypass' <<<"$environment_json")" = "false"
+    test "$(jq -r '.deployment_branch_policy.protected_branches' <<<"$environment_json")" = "false"
+    test "$(jq -r '.deployment_branch_policy.custom_branch_policies' <<<"$environment_json")" = "true"
+    test "$(jq -r '[.protection_rules[] | select(.type == "required_reviewers")] | length' <<<"$environment_json")" = "1"
+    test "$(jq -r '.protection_rules[] | select(.type == "required_reviewers") | .prevent_self_review' <<<"$environment_json")" = "true"
+    test "$(jq -r '[.protection_rules[] | select(.type == "required_reviewers") | .reviewers[] | "\(.type):\(.reviewer.login)"] | join(",")' <<<"$environment_json")" = "User:$APPROVER_LOGIN"
+    policies_json="$(
+      gh api -H "X-GitHub-Api-Version: $GITHUB_API_VERSION" \
+        "repos/$GITHUB_REPOSITORY/environments/$PROTECTED_ENVIRONMENT/deployment-branch-policies?per_page=100"
+    )"
+    test "$(jq -r '.total_count' <<<"$policies_json")" = "1"
+    test "$(jq -r '[.branch_policies[] | "\(.type):\(.name)"] | join(",")' <<<"$policies_json")" = "branch:main"
+    approvals_json="$(
+      gh api -H "X-GitHub-Api-Version: $GITHUB_API_VERSION" \
+        "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/approvals"
+    )"
+    test "$(jq -r 'length' <<<"$approvals_json")" = "1"
+    test "$(jq -r '.[0].state' <<<"$approvals_json")" = "approved"
+    test "$(jq -r '.[0].user.login' <<<"$approvals_json")" = "$APPROVER_LOGIN"
+    test "$(jq -r '[.[0].environments[].name] | join(",")' <<<"$approvals_json")" = "$PROTECTED_ENVIRONMENT"
+
+- name: Checkout the exact tested ai-fallback-probe target
+  uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+  with:
+    ref: ${{ env.TARGET_SHA }}
+    fetch-depth: 2
+    persist-credentials: false
+    path: target
+
+- uses: azure/setup-kubectl@829323503d1be3d00ca8346e5391ca0b07a9ab0d # v5.1.0
+  with:
+    version: v1.36.2
+
+- name: Test the exact ai-fallback-probe target
+  working-directory: target
+  run: |
+    set -euo pipefail
+    test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+    test "$(git rev-list --parents -n 1 HEAD)" = "$TARGET_SHA $MAIN_SHA"
+    test "$(git rev-parse 'HEAD^{tree}')" = "$TARGET_TREE"
+    test "$(git show -s --format=%s HEAD)" = \
+      'release: enable the GPU Ollama Claude fallback and retry the Landing probes'
+    test "$(git show -s --format=%an HEAD)" = 'devpath-gitops-release[bot]'
+    test "$(git show -s --format=%cn HEAD)" = 'devpath-gitops-release[bot]'
+    test "$(git show -s --format=%ae HEAD)" = \
+      '244265210+devpath-gitops-release[bot]@users.noreply.github.com'
+    test "$(git show -s --format=%ce HEAD)" = \
+      '244265210+devpath-gitops-release[bot]@users.noreply.github.com'
+    target_listing="$(git diff-tree --no-commit-id --name-status -r HEAD)"
+    test -n "$target_listing"
+    expected_listing="$(printf '%s\n' \
+      $'M\tapps/devpath-ai-svc/base/deployment.yaml' \
+      $'M\tapps/devpath-ollama-gpu/base/deployment.yaml' \
+      $'M\tdocs/runbook-k3s-bootstrap.md' \
+      $'M\tscripts/release/cloudflare_pages.py' \
+      $'M\ttests/release/test_cloudflare_api.py')"
+    test -n "$expected_listing"
+    test "$target_listing" = "$expected_listing"
+    mapfile -t target_rows <<<"$target_listing"
+    test "${#target_rows[@]}" -eq 5
+    git diff --check "$MAIN_SHA" "$TARGET_SHA"
+    python -m pip install --disable-pip-version-check \
+      jsonschema==4.25.1 PyYAML==6.0.2
+    python -m unittest discover -s tests/release -p 'test_*.py'
+"""
+TOP_LEVEL_KEYS = ['name', True, 'permissions', 'concurrency', 'jobs']
+JOB_KEYS = ['if', 'runs-on', 'timeout-minutes', 'environment', 'permissions', 'env', 'steps']
+STEP_ESCAPES = ('if', 'continue-on-error', 'timeout-minutes', 'shell')
+
 TOKEN_BEARING_STEPS = r"""
 - name: Mint the production-scoped release App token
   id: app_token
@@ -317,7 +445,7 @@ class AiFallbackProbeMainPublishTest(unittest.TestCase):
             self.assertIn(fragment, run)
         self.assertNotIn("VelkaressiaBlutkrone", run)
 
-    def test_target_changes_exactly_the_twelve_pinned_paths(self) -> None:
+    def test_target_changes_exactly_the_five_pinned_paths(self) -> None:
         # Only the parent is needed: the target is the single child of the completed release.
         self.assertEqual(2, self._step(STEP_TARGET_CHECKOUT)["with"]["fetch-depth"])
         run = self._run(STEP_TARGET_TEST)
@@ -473,6 +601,22 @@ class AiFallbackProbeMainPublishTest(unittest.TestCase):
         self.assertEqual("ubuntu-24.04", self.job["runs-on"])
         self.assertEqual(25, self.job["timeout-minutes"])
         self.assertEqual(APP_TOKEN_REFERENCES, self.text.count("steps.app_token"))
+
+
+    def test_pre_token_steps_are_the_reviewed_documents(self) -> None:
+        # L1: the gates before the mint are compared whole as well - not only their `run` text - so an
+        # `if: false`, a `continue-on-error`, or a changed `with:` cannot slip past GATE_BODIES.
+        mint = self.names.index(STEP_MINT)
+        self.assertEqual(yaml.safe_load(PRE_TOKEN_STEPS), self.steps[:mint])
+
+    def test_document_and_job_shape_is_exact(self) -> None:
+        # L1: no `defaults` (a workflow- or job-level shell would bypass the strict-mode check of every
+        # run block) and no step-level escape hatch anywhere, including the token-bearing steps.
+        self.assertEqual(TOP_LEVEL_KEYS, list(self.document))
+        self.assertEqual(JOB_KEYS, list(self.job))
+        for step in self.steps:
+            for escape in STEP_ESCAPES:
+                self.assertNotIn(escape, step, step.get("name"))
 
 
 if __name__ == "__main__":
