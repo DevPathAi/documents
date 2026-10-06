@@ -230,16 +230,20 @@ develop `a5221faf` 로 머지했다(CI 383 tests 통과 — 기존 377 + 새 6).
 
 ### 8-4. 사람이 해야 하는 것 — Slack 수신처
 
-`chatbot:DescribeSlackWorkspaces` 가 승인된 워크스페이스 0개를 돌려준다. Slack 계정으로 하는 OAuth 승인이라 도구로는 못 한다.
+`chatbot:DescribeSlackWorkspaces` 가 승인된 워크스페이스 0개를 돌려준다(18:40Z · 19:49Z 두 번 확인). 승인은 콘솔에서 Slack 인증 페이지로 넘어가
+본인 Slack 계정으로 Allow 하는 절차이고 그 단계의 API 는 없다. 순서는 AWS 문서 `slack-setup` 그대로다.
 
-1. AWS 콘솔 → Amazon Q Developer in chat applications(구 AWS Chatbot) → Configure new client → Slack → Allow.
-2. 받을 채널 이름을 세션에 알려 준다(비공개 채널이면 `@Amazon Q` 를 초대).
+1. Slack 에서 앱 「Amazon Q Developer」를 워크스페이스에 추가한다(Automations → Apps). 워크스페이스 관리자 승인이 필요할 수 있다.
+2. <https://console.aws.amazon.com/chatbot/> → Configure a chat client 에서 Slack → Configure → 워크스페이스 선택 → Allow.
+3. 받을 채널 이름을 세션에 알려 준다. 그 채널에서 `/invite @Amazon Q` 를 해 둔다.
+
+세션의 Slack 커넥터로는 채널이 조회되지 않았다(`general` 포함 검색 5건 모두 0건) — 채널 ID 는 이름을 받은 뒤 다시 찾는다.
 
 그 뒤는 세션이 한다: 채널 구성·IAM 역할 생성, 메시지 형식 맞추기, 종단 확인.
 Chatbot 이 받는 것은 지원 서비스 이벤트와 custom notification 형식(`version: "1.0"` · `source: "custom"` · `content.description` 필수, AWS 문서 `custom-notifs`)이고,
 지금 토픽에 싣는 메시지는 평문이라 그 형식이 아니다.
 
-### 8-5. 현재 상태 (2026-10-06 19:3xZ)
+### 8-5. 현재 상태 (2026-10-06 19:31Z 실측)
 
 | 항목 | 값 |
 |---|---|
