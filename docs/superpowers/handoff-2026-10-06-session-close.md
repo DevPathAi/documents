@@ -74,13 +74,14 @@ PR 을 거치지 않은 것(캠페인 절차):
 ## 4. 다음 캠페인 입력과 체크리스트
 
 - `gitops.base_sha` = `9ab0dd790d2e1cdad6a3d7716ad44abee0f6643f`(그 전에 publisher 를 돌렸으면 그 결과) · base web = `sha256:e3108c09…`
-- `ai_release_eval_config.rendered_config_sha256` **재계산**(main 의 ai-svc 다이제스트가 `c3c29ade` 로 바뀌었다, 고정 kustomize v5.4.3)
+- `ai_release_eval_config.rendered_config_sha256` — base `9ab0dd79` 기준 **`3647fc7081ab9edf7df482c71536d668cf2d2dcd6f54b126a5ea3894bc5389cf`**(5,100 bytes, 2026-10-06 저녁 계산 · 방법 증명 `a97a1754` → `9b7d7031…` 일치 · 고정 kustomize v5.4.3). publisher 로 main 이 움직이면 다시 구한다.
 - 홈 `prior_production_deployment_id` = `1c4ea148-e030-424e-a041-2f54f5a93b7b`
-- 홈 develop → master(저니 수정 #100). 홈 `source_sha` 가 바뀐다. 바뀐 파일은 `e2e/`·`tests/` 뿐이라 dist 해시는 그대로일 수 있다 — 빌드해서 확인한다.
+- 홈 develop → master(저니 수정 #100). 홈 `source_sha` 가 바뀌면 **dist 해시도 반드시 바뀐다** — 빌드가 모든 HTML 에 `appVersion` = 커밋 SHA 를 넣는다(§7-2 실측, 앞 기록 「그대로일 수 있다」 정정). master 머지 커밋에서 다시 구한다.
 - ★**그 캠페인의 validate 가 저니 수정본의 첫 종단 실행이다.** 로컬 검증은 mock 빌드의 동의 화면까지만 했다.
   동의 단계에서 또 실패하면 재디스패치하지 말고 로그의 단언 메시지부터 읽는다(이제 `toBeChecked`·`toHaveValue`·`Flutter text field did not keep the filled value` 중 하나로 드러난다).★
-- 게이트 수정이 main 에 없는 상태에서 홈 dist 가 직전과 같으면 landing 첫 런이 `public dist marker does not bind the exact release artifact` 로 실패할 수 있다.
+- 홈 master 가 직전 릴리스에서 **움직이지 않은** 캠페인에서만: 게이트 수정이 main 에 없으면 landing 첫 런이 `public dist marker does not bind the exact release artifact` 로 실패할 수 있다.
   라이브 마커가 이번 `release_id` 를 가리키는지 확인한 뒤 `py promote.py coords.json landing-resume --confirmed "<reason>"`.
+  #100 을 올리는 다음 캠페인은 dist 가 달라 마커 경로가 새것이므로 해당하지 않는다(§7-2).
 
 ## 5. 이번 세션의 함정과 교훈
 
@@ -108,3 +109,80 @@ PR 을 거치지 않은 것(캠페인 절차):
 - **이 세션이 건드리지 않은 것**: 각 레포 본 클론의 작업 브랜치(gitops `fix/bypass-observable-contract` ahead 2 · shared `fix/question-811-option-collision` ahead 1 등)는 세션 시작 때 그대로다.
 - **핀 Flutter**: `D:/workspace/dpa/.worktrees/_tools/flutter-3.44.1/bin`(PATH 의 flutter 는 3.47.2).
 - **운영 접근**: `ssh -i ~/.ssh/devpath-k3s-key-lf.pem ubuntu@13.124.153.105` 후 `sudo kubectl …`. AWS 는 MCP `run_script`.
+
+## 7. 저녁 후속 (2026-10-06 12:39Z~)
+
+§1-0 점검을 실행하고, 사용자 결정 없이 할 수 있는 것만 진행했다. 운영과 동결 브랜치는 건드리지 않았다.
+
+### 7-1. 세션 시작 점검 (12:39Z)
+
+- GPU 노드 생존 — `i-0956cd8d637f6dafd` running · 스팟 요청 `sir-wfbzg9im` fulfilled · `ip-172-31-52-85` Ready · `ollama-gpu` 1/1. 회수는 없었다.
+- 동결 head 4개가 §3 표와 같다. Argo 16 앱 Synced/Healthy(`9ab0dd79`) · ai-svc `c3c29ade` 1/1·재시작 0 · 공개 3곳 200.
+- 서비스 레포 11곳(frontend·shared·platform·learning·community·gateway·lcs·notification·sandbox·mobile·ai-svc)은 develop 과 main 의 **트리가 같다**.
+  릴리스를 기다리는 제품 변경이 없다. 다른 것은 홈(#100, 3파일)·documents·gitops 뿐이다.
+- 각 레포 본 클론의 「ahead」 커밋(gitops 2 · shared 1)은 이미 원격에 있는 내용이다(gitops = #114 와 그 revert, shared = #74 의 로컬 머지 커밋). 밀린 작업이 아니다.
+
+### 7-2. §4 의 입력값 두 개를 실측했다 (§4 본문도 고쳤다)
+
+| 항목 | 값 | 근거 |
+|---|---|---|
+| `rendered_config_sha256` (base `9ab0dd79`) | `3647fc7081ab9edf7df482c71536d668cf2d2dcd6f54b126a5ea3894bc5389cf` · 5,100 bytes | `compute_ai_rendered_config.py` · 방법 증명 `a97a1754` → `9b7d7031…` 일치 |
+| 홈 dist — master `abdf57a7` | `51e8ef8382565691672e5a79a6ca04dedcc6b5fa97687d56f98ec8d398692bb8` · 707,145 B | 원장 값과 일치(방법 증명) |
+| 홈 dist — develop `7779e0a3` | `c32f3004dafb1c6d51c64d827e1704a5e780bcaba5e00ab987515d7928596d08` · 707,145 B | **다르다** |
+
+★**홈 dist 는 `source_sha` 가 바뀌면 반드시 바뀐다.**★ `build.mjs` 가 모든 HTML 에 `window.LEVA_CONFIG={"appVersion":"<커밋 SHA>",…}` 를 넣는다.
+두 dist 의 차이는 HTML 19개의 그 한 줄뿐이다. 「`e2e/`·`tests/` 만 바뀌어 그대로일 수 있다」는 앞 기록은 틀렸다.
+
+- master 로 올리면 머지 커밋 SHA 가 또 달라 `c32f3004…` 도 최종값이 아니다. candidate 를 만들 때 master head 에서 다시 구한다.
+- 「같은 dist·다른 release」(landing 실패 조건)는 **홈 master 가 직전 릴리스에서 움직이지 않은 캠페인에서만** 생긴다.
+  #100 을 올리는 다음 캠페인은 마커 경로가 새것이라 #169 가 main 에 없어도 그 실패가 나지 않는다 → **#169 publisher 는 다음 캠페인의 선결 조건이 아니다.**
+- 홈 빌드는 git 이력을 읽는다(sitemap lastmod). `git archive` 사본으로는 빌드가 실패한다 — 워크트리에서 돌린다.
+- 고정 kustomize v5.4.3 Windows 바이너리를 `D:/workspace/dpa/.worktrees/_tools/kustomize-v5.4.3/` 에 두었다(zip sha256 `5ce680e5…`). 전에는 세션 임시 폴더에만 있었다.
+
+### 7-3. 리뷰 없이 develop 에 들어간 3건을 새 세션에서 다시 읽었다
+
+gitops #169·#170, 홈 #100 — 결함을 찾지 못했다. **Codex 독립 리뷰를 대신하지 않는다**(사용자 결정 「리뷰 대기」는 그대로다).
+
+- #170 — `--block-device-mappings` 의 `/dev/sda1` 이 AMI `ami-09d3bdf0648512f52` 의 루트 디바이스와 같은 것을 `DescribeImages` 로 확인했다
+  (`RootDeviceName=/dev/sda1`, gp3 75 GiB). DryRun 수락만으로는 이 일치를 알 수 없다.
+- #169 — 통과 조건(정확히 일치)은 그대로이고 재시도는 「형식이 정상인 같은 dist 마커」로 한정된다. 남은 물음은 30초 예산이 충분한가였다 → 7-4.
+
+### 7-4. Cloudflare Pages 전파 시간 실측
+
+preview 브랜치 `probe-prop-1006` 별칭에 같은 경로·다른 내용 파일을 4번 배포하고 75초씩 읽었다(운영 무관, 서울 → ICN).
+
+| 회차 | 옛 내용 200 | 마지막 옛 응답 | 응답 순서 (S=옛, N=새) |
+|---|---|---|---|
+| 2 | 0 | — | `NNNN…` |
+| 3 | 7 | 배포 종료 14.2초 뒤 | `SSNSNSNSNSNNSN…` |
+| 4 | 5 | 5.5초 뒤 | `SSSSNSN…` |
+
+- 운영 실패의 원인(전파 중 옛 마커가 200)이 재현됐고, 옛·새 응답이 섞여 온다.
+- 관측 최장 14.2초 < 예산 30초. 표본 3개·PoP 1곳·preview 별칭이라는 한계가 있다.
+- 스크립트·로그·README = 원장과 사본의 `propagation-probe/`.
+
+### 7-5. gitops PR #171 — 일시적 게이트 실패 두 가지가 본 것을 말하게 했다
+
+develop `6c6cf436` 로 머지했다(CI 377 tests 통과 — 기존 372 + 새 5). 독립 리뷰는 #169 와 함께 기다린다.
+
+- seal: `exactly one … producer run is required` 뒤에 목록 건수·dispatch 성공 런·릴리스 아티팩트를 갖춘 런·빠진 아티팩트를 붙인다.
+  10/03 의 seal 실패(앞 문서 3-3, 미증명)가 다시 나오면 「목록이 비었다 / 아티팩트가 안 보였다 / 경쟁 런」이 메시지로 갈린다.
+- landing 프로브: 재시도 끝에 통과하면 「몇 번째 시도·누적 대기·마지막 미준비 응답」을 stderr 한 줄로 남긴다. 운영 경로의 전파 시간 자료가 캠페인마다 쌓인다.
+- 선택·재시도·통과 조건은 바꾸지 않았다. `scripts/release/` 라 main 에는 #169 와 같은 publisher 로 올라간다.
+
+### 7-6. 알아 둘 것
+
+- **gitops 본 클론의 `.git/config` 에 `user.name = devpath-gitops-release[bot]` 이 들어 있다.** 그 레포의 모든 워크트리에서 일반 커밋도 봇 이름으로 작성된다
+  (develop 최근 60일 84건, #169·#170 포함, 2026-08-30 커밋부터 확인). `promote.py` 는 `-c user.name` 을 직접 주므로 이 설정에 기대지 않는다.
+  #171 은 `-c user.name=Qahnaarin` 으로 커밋했다. 설정을 지울지는 정하지 않았다.
+- frontend·홈 본 클론의 로컬 `user.name` 은 `VelkaressiaBlutkrone` 이다.
+- preview 배포 4개가 브랜치 `probe-prop-1006` 에 남아 있다.
+
+### 7-7. 사용자 결정이 필요한 것
+
+1. **publisher 시점** — 다음 캠페인이 홈 master 를 움직이면 #169 는 그 캠페인의 landing 에 필요 없다(7-2). 리뷰(10-19 이후)를 기다려도 다음 캠페인을 막지 않는다.
+2. **다음 캠페인 범위와 시점** — 올릴 제품 변경이 없다(7-1). 지금 후보는 홈 #100(테스트만)과 gitops publisher 뿐이다.
+   platform-svc 이미지 증거(10-15 07:12Z)는 캠페인을 그 뒤에 돌릴 때만 다시 만들면 된다.
+3. **gitops 로컬 git 설정의 봇 이름**을 지울지(7-6).
+4. **미복구 반복 통지**(EventBridge Scheduler + Lambda)와 **Slack 수신처** — 런북 「남은 공백」. AWS 리소스 생성과 Slack 쪽 발급이 필요하다.
+5. **gitops PR #168** — 정책상 머지할 수 없는 채 열려 있다. 닫을지.
