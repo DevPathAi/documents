@@ -164,3 +164,42 @@ validate 런 `37118424720`: staging 2/2 AI 승인(6826784582 · 6826850724) · `
   「고유 producer 런」 검사는 증거 종류에만·`conclusion=success` 만 · 선례 9/23 r3(validate 1차 실패 → 같은 id 2차 성공).
 - ★정정★ `et13-release-auth` 아티팩트(10-04 만료)는 seal·검증기가 쓰지 않는다 — seal 이 확인하는 인증은 승인 baseline `11271468059`(11-02 만료).
 - 다음: `check_seal_selection.py` 로 선택 성공 재확인 → gitops 디스패처 브랜치에 봇 이름 **빈 nonce 커밋** push → `validate_wait.py <since>`.
+
+## 2026-10-06 — 8단계 재개 → 9·10단계 완료 (**운영 반영 완료**, 06:14Z)
+
+계기: 04:34Z GPU 스팟 노드 `i-0956cd8d637f6dafd` Rebalance Recommendation(회수 아님, 06:15Z 까지 노드 Ready). 회수되면 운영이
+M1 나쁜 상태(폴백 불가 + Claude 재시도 0)라 이 캠페인을 끝내는 것이 완화책이었다.
+
+### 8단계 — validate 3회
+| 차수 | 런 | 결과 |
+|---|---|---|
+| 1 (10/03 11:03Z) | `37118424720` | seal 실패 `exactly one frontend producer run is required`(API 반영 지연 추정·미증명) |
+| 2 (10/06 05:11Z) | `37417289045` | 활성화 저니 실패 — `required-consent-claim-replay` 에서 `waitForRequest POST /consents` 30초 타임아웃(contextual 저니는 통과). 과거 실패 6건에 없던 증상, **원인 미규명** |
+| 3 (10/06 05:21Z) | `37418150783` | **success** · staging 승인 `6876363247`·`6876442324`(AI) |
+
+재디스패치 전 확인: `check_seal_selection.py` → `SELECTED 37117660640` · 동결 head 5개 일치 · 증거·저니 아티팩트 미만료.
+디스패처 nonce 커밋 `57c3dd3`(2차)·`40ba8b6`(3차). sealed `c8ee341d395539544ec62abad21efb406555c1d9`(부모 `0ba21e3`, 1파일) ·
+매니페스트 sha256 `dd8e9626eec6dff3db5fba14cbfc2aa721726b7c7e4f3057a8ad3d656a01c284` · sealed-validation `11392034571` ·
+activation `11391794827` · contextual `11392305189` · home visual-a11y `11391447950`.
+
+### 9단계 — preflight 통과(`step9-preflight.log`)
+이미지 9/9(최단 만료 platform-svc 10-15 07:12Z) · 체인 `phase=base` · shared main `9793b8f9` 일치 · TLS 3600일+ · 잔존 게이트 없음.
+
+### 10단계 — 사용자 「진행」(운영 관문 AI 승인, 10/02 방침) 뒤 실행
+| 단계 | 런 | 결과 |
+|---|---|---|
+| migration | shared `37419589050` | success · 결과 아티팩트 `11392666353` · gitops `3cbba3d` |
+| promote-off | `37419716583` | success · main `600cdc5`(services) → `924d252`(mission-off) · 게이트 배치·회수 |
+| promote-on | `37420243377` | success · main `9ab0dd7`(mission-on, 05:48:45Z) · canary 900s · staging rebaseline |
+| landing | `37422048024` | **failure** — 배포는 성공(`1c4ea148`), 1.35초 뒤 마커 프로브가 `public dist marker does not bind the exact release artifact` |
+| landing-resume | `37422475962` | success · `mode=reuse`(재배포 없음) · deployment `1c4ea148-e030-424e-a041-2f54f5a93b7b` |
+
+★landing 1차 실패의 원인(코드·실측으로 확인)★ 홈 dist 가 10/02 릴리스와 같다(`51e8ef83…`, 소스 `abdf57a7` 무변경) → 마커 경로
+`.well-known/devpath-release/<dist_sha>.json` 가 같고 내용만 릴리스별로 다르다. 전파 전 엣지가 **이전 배포의 마커를 200 으로** 돌려줬고,
+`cloudflare_pages.py::_probe_marker` 는 비-200·연결 실패만 재시도하므로(`validate_public_marker` 의 ValueError 는 즉시 종료) 한 번에 실패했다.
+10/03 에 넣은 프로브 재시도(404 전파)는 이 경우를 덮지 못한다. 「Uploaded 1 files (51 already uploaded)」가 같은 사실을 보여 준다.
+
+### 운영 최종 실측(06:15Z)
+web `e3108c09`(mission-on) · admin `93b26f9c` · ai-svc `c3c29ade`(M1 수정, 1/1·재시작 0·ERROR 0·폴백 env 9개) · gateway `8cf6af8d`(불변) ·
+Argo 16 앱 Synced/Healthy rev `9ab0dd79` · 체인 `phase=mission-on`(`chain-final-budget.txt`) · staging web `e3108c09` ·
+마커 3/3 이번 릴리스 바인딩 · `leva.ai.kr` `/`·`/updates`·`/api/invite-rounds`·`/api/stats` 200 · `app`·`api` 200 · GPU 노드 Ready.
