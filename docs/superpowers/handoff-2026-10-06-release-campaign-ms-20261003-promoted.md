@@ -116,7 +116,7 @@ develop 머지는 괜찮다.
 - `gitops.base_sha` = `9ab0dd790d2e1cdad6a3d7716ad44abee0f6643f` · base web = `sha256:e3108c09…`
 - `ai_release_eval_config.rendered_config_sha256` 는 **재계산**한다(main 의 ai-svc 다이제스트가 `c3c29ade` 로 바뀌었다, 고정 kustomize v5.4.3).
 - 홈 `prior_production_deployment_id` = `1c4ea148-e030-424e-a041-2f54f5a93b7b`
-- 홈 develop `7779e0a3`(저니 스펙 수정, 3-2)을 master 로 올리면 홈 `source_sha` 가 바뀐다. 바뀐 것은 `e2e/`·`tests/` 뿐이라 dist 해시가 그대로일 수 있다 — 빌드해서 확인한다.
+- 홈 develop `7779e0a3`(저니 스펙 수정, 3-2)을 master 로 올리면 홈 `source_sha` 가 바뀌고 **dist 해시도 반드시 바뀐다** — 빌드가 모든 HTML 에 `appVersion` = 커밋 SHA 를 넣는다(2026-10-06 저녁 실측: develop `7779e0a3` → `c32f3004…`, `handoff-2026-10-06-session-close.md` §7-2. 앞 기록 「그대로일 수 있다」 정정).
 - 3-1 의 게이트 수정이 main 에 올라가기 전에 홈 dist 가 직전과 같은 릴리스를 내면 3-1 이 재현될 수 있다 — landing 첫 런 실패 시 마커를 확인하고 `landing-resume`.
 - 서비스 이미지 증거 최단 만료는 여전히 platform-svc **2026-10-15 07:12Z** 다(이번엔 안 바뀐 서비스라 다음 캠페인도 같은 증거를 쓰면 기한이 걸린다).
 
