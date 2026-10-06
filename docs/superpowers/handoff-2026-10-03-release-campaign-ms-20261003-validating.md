@@ -1,5 +1,7 @@
 # 핸드오프 — 릴리스 캠페인 `ms-20261003-ai-fallback-retry-budget` 8단계(validate/seal) 1차 실패 · 재디스패치 대기 (2026-10-03 11:30Z 갱신)
 
+> **대체됨(2026-10-06)** — validate 3차 성공 뒤 운영 반영까지 끝났다. 현재 상태는 `handoff-2026-10-06-release-campaign-ms-20261003-promoted.md` 를 본다. 아래는 2026-10-03 시점 기록이다.
+
 > 이 캠페인은 ai-svc M1 근본 수정(폴백을 쓸 수 없을 때 Claude 재시도 예산 유지)을 운영에 올린다.
 > **운영은 아직 바뀌지 않았다.** 정지 지점 = 8단계 validate **1차 실패(seal 단계) → 재디스패치 대기**. 10단계(운영 변경)는 사용자 확인 뒤에만.
 > 작업 원장(git 밖, 지우지 말 것) = `D:/workspace/dpa/.release-artifacts/ms-20261003-ai-fallback-retry-budget/`
