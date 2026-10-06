@@ -203,3 +203,13 @@ activation `11391794827` · contextual `11392305189` · home visual-a11y `113914
 web `e3108c09`(mission-on) · admin `93b26f9c` · ai-svc `c3c29ade`(M1 수정, 1/1·재시작 0·ERROR 0·폴백 env 9개) · gateway `8cf6af8d`(불변) ·
 Argo 16 앱 Synced/Healthy rev `9ab0dd79` · 체인 `phase=mission-on`(`chain-final-budget.txt`) · staging web `e3108c09` ·
 마커 3/3 이번 릴리스 바인딩 · `leva.ai.kr` `/`·`/updates`·`/api/invite-rounds`·`/api/stats` 200 · `app`·`api` 200 · GPU 노드 Ready.
+
+## 2026-10-06 후속 — 드러난 결함 2건 수정(develop 까지, 운영·main·master 무변경)
+
+- **landing 마커 게이트**: gitops PR #169 → develop `4e804446`. 같은 dist·다른 release 마커(형식 정상)는 프로브 예산 안에서 재시도,
+  다른 dist·키가 다른 마커는 즉시 실패 그대로. RED(운영과 같은 오류, 시도 1회) → GREEN, CI 372 tests. 직전 배포 `087c9235` 의 같은 경로가
+  10/02 릴리스 마커를 200 으로 주는 것을 직접 확인. ★main 은 다음 publisher — Codex 는 10-19 까지 한도 소진(재실측), 리뷰 방식 미정★
+- **활성화 저니 동의 단계**: 원인 = Playwright `fill` 이 Flutter 텍스트 편집 부착 전에 들어가 유실 → 빈 연도 → 검증 실패 → 요청 없음.
+  Flutter 3.44.1 · frontend `b69e9990` mock consent 빌드에서 재현(신규 사용자 조건 32회 중 29회 실패). 홈 PR #100 → develop `7779e0a3`:
+  `fillFlutterTextField` + 누르기 전 단언, 같은 빌드에서 60/60·30/30. 홈 `npm test` 501/501. ★master 는 다음 candidate 직전★
+- **GPU 노드 디스크**: `/usr/local` 41G 가 AMI 의 CUDA 툴킷 4벌, k3s 15G, kubelet 7G. 조치 없음(기동 절차의 루트 볼륨이 결정 사항).
