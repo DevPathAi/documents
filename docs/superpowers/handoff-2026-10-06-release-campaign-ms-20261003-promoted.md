@@ -3,6 +3,7 @@
 > ai-svc M1 근본 수정(폴백을 쓸 수 없을 때 Claude 재시도 예산 유지)이 운영에 올라갔다.
 > 직전 문서 = `handoff-2026-10-03-release-campaign-ms-20261003-validating.md`(8단계 재디스패치 대기 시점).
 > **갱신(2026-10-06 07:20Z)**: 3-1·3-2 의 후속 수정(gitops #169 · 홈 #100, 둘 다 develop)과 3-4 디스크 실측을 반영했다. 운영 상태는 1절 그대로다.
+> **갱신(2026-10-06 07:45Z)**: 사용자 결정 두 건(publisher 는 리뷰 대기 · GPU 루트 볼륨은 다음 기동부터)을 반영했다.
 > 작업 원장(git 밖, 지우지 말 것) = `D:/workspace/dpa/.release-artifacts/ms-20261003-ai-fallback-retry-budget/`
 > (`PLAN.md` · `coords.json` · `step8-validate-retry*.log` · `step9-preflight.log` · `step10-*.log` · `chain-final-budget.txt`).
 > 사본 = `plans/2026-10-03-release-campaign-ms-20261003-ai-fallback-retry-budget/`(`PLAN.md`·`coords.json` 갱신).
@@ -55,7 +56,8 @@
   재시도한다. 끝까지 안 바뀌면 실패하고, 다른 dist·키가 다른 마커는 그대로 즉시 실패한다. 통과 조건(정확히 일치)은 그대로다.
   #165 가 「다른 release 마커 = 즉시 실패」로 고정했던 테스트 하나를 이 판정으로 바꿨다. CI 372 tests 통과.
 - ★**운영 게이트(gitops main)에는 아직 없다.** `scripts/release/` 는 릴리스 PR 로 못 들어가므로 다음 publisher 때 올린다.
-  Codex 리뷰는 2026-10-19 까지 한도 소진(10/06 재실측)이라 독립 리뷰 없이 develop 에만 머지했다 — publisher 전에 리뷰 방식을 정한다.★
+  Codex 리뷰는 2026-10-19 까지 한도 소진(10/06 재실측)이라 독립 리뷰 없이 develop 에만 머지했다.
+  **사용자 결정(2026-10-06): publisher 로 올리되 리뷰를 기다린다** — 독립 리뷰가 끝나기 전에는 publisher 를 실행하지 않는다.★
 
 ### 3-2. validate 활성화 저니 — 동의 단계 타임아웃 (원인 재현·수정)
 
@@ -91,7 +93,8 @@ k3s 축출 임계(여유 5%)에는 닿지 않았다. 조치는 하지 않았다.
 
 사용처 실측(`du`, 06:26Z): `/usr/local` 41G = AMI 에 들어 있는 CUDA 툴킷 4벌(`cuda-12.8` 11G · `12.9` 12G · `13.0` 9G · `13.2` 9G) ·
 `/var/lib/rancher/k3s` 15G(agent 8G + 모델 PV 7G) · `/var/lib/kubelet` 7G. 즉 디스크의 과반이 AMI 기본 탑재물이고 워크로드는 22G 안팎이다.
-노드는 회수 때마다 AMI 에서 다시 만들어지므로, 손볼 곳은 살아 있는 노드가 아니라 기동 절차다(루트 볼륨 크기 등 — 미결정).
+노드는 회수 때마다 AMI 에서 다시 만들어지므로, 손볼 곳은 살아 있는 노드가 아니라 기동 절차다.
+**사용자 결정(2026-10-06): 다음 노드 기동부터 볼륨업** — gitops 런북에 120 GiB gp3 를 명시했다(PR #170 → develop `f36dbd54`, `RunInstances` DryRun 으로 수락 확인). 120 은 제안값이고 실제 기동은 아직 없다.
 GPU 노드 SSH 는 공인 IP 로 직접 붙었다. control-plane 경유(ProxyCommand)는 타임아웃이었다 — 런북의 노드 간 SG 규칙에 22 가 없다.
 
 ## 4. 동결 규칙 — 롤백 창
@@ -120,7 +123,7 @@ develop 머지는 괜찮다.
 
 1. GPU 스팟 노드는 여전히 회수 위험이 높아진 상태다. 회수되면 학습경로 생성이 멈추고 세 기능의 폴백이 사라진다(이제 Claude 재시도는 유지된다).
    복구 = gitops `docs/runbook-k3s-bootstrap.md` 「스팟 회수 후 복구」(노드 삭제 → 옛 파드 강제 삭제 → PVC 삭제).
-2. 3-1 의 게이트 수정을 gitops main 에 올리는 publisher(리뷰 방식 결정 선행).
+2. 3-1 의 게이트 수정을 gitops main 에 올리는 publisher — **리뷰 대기**(Codex 는 2026-10-19 이후). 리뷰가 끝나면 publisher 준비·실행은 사용자 확인 뒤에 한다.
 3. 3-2 의 저니 스펙 수정을 다음 candidate 직전에 홈 master 로 올리고, 첫 validate 에서 종단 통과를 확인한다.
-4. GPU 노드 기동 절차의 루트 볼륨(3-4) — 결정 대기.
+4. GPU 노드 루트 볼륨 — 런북 반영 완료. 다음 기동 때 120 GiB 로 띄우고 `df -h /` 로 확인한다.
 5. 런북에 적힌 남은 공백(Slack 수신처·미복구 반복 통지)은 이번에 건드리지 않았다.
