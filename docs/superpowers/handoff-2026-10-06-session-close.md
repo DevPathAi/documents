@@ -14,8 +14,9 @@ GPU 스팟 노드의 회수 위험 통지를 계기로 멈춰 있던 캠페인 `
 
 ### 1-0. 세션 시작 점검 (읽기 전용)
 
-1. GPU 노드가 살아 있는가 — `i-0956cd8d637f6dafd` 상태, 노드 `ip-172-31-52-85` Ready, `ollama-gpu` 1/1.
-   2026-10-06 04:34Z 에 Rebalance Recommendation 이 왔고 07:38Z 까지 회수되지 않았다. 회수 완료 메일(SNS 규칙 ②)이 왔는지 확인한다.
+1. GPU 노드가 살아 있는가 — `i-09f6b4f41ebd973c7`(2026-10-06 18:50Z 기동, 태그 `role=k3s-agent-gpu`) 상태, 노드 `ip-172-31-60-217` Ready, `ollama-gpu` 1/1.
+   직전 노드는 2026-10-06 17:22Z 에 회수됐고 같은 날 복구했다(§8-2). `DescribeInstances` 에 GPU 인스턴스가 안 보이면 회수된 것이다 —
+   회수되면 경고·종료 메일에 더해 6시간마다 「GPU spot node is still missing」 메일이 온다.
 2. 동결 head 4개가 §3 표와 같은가.
 3. 운영: Argo 16 앱 Synced/Healthy · ai-svc `sha256:c3c29ade…`.
 
@@ -23,8 +24,8 @@ GPU 스팟 노드의 회수 위험 통지를 계기로 멈춰 있던 캠페인 `
 
 | 조건 | 할 일 |
 |---|---|
-| GPU 노드가 회수됐다 | gitops `docs/runbook-k3s-bootstrap.md` 「스팟 회수 후 복구」. **루트 볼륨 120 GiB** 로 띄운다(「절차」 2). 인스턴스 기동은 비용이 드니 사용자 확인 뒤에. 첫 기동이므로 `df -h /` 가 약 116G 인지 확인하고 런북의 「아직 띄운 적 없다」 문구를 고친다 |
-| 2026-10-19 15:13 이후 (Codex 한도 해제) | gitops #169(landing 마커 재시도)의 독립 리뷰 → 지적 처리 → publisher 준비 → **사용자 확인** → 실행. 아래 주의 참고 |
+| GPU 노드가 회수됐다 | gitops `docs/runbook-k3s-bootstrap.md` 「스팟 회수 후 복구」. **루트 볼륨 120 GiB + 태그 `role=k3s-agent-gpu`** 로 띄운다(「절차」 2). 인스턴스 기동은 비용이 드니 사용자 확인 뒤에(2026-10-07 에도 물었고 답은 「스팟으로 지금 기동」이었다). 기동부터 검증 끝까지 약 7분(§8-2) |
+| 2026-10-19 15:13 이후 (Codex 한도 해제) | gitops #169(landing 마커 재시도)·#171(진단 출력)의 독립 리뷰 → 지적 처리 → publisher 준비 → **사용자 확인** → 실행. **사용자 결정(2026-10-07): 다음 candidate 직전에 둘을 한 번에 올린다.** 아래 주의 참고 |
 | 다음 캠페인을 시작한다 | §4 의 입력값과 체크리스트 |
 | 2026-10-15 07:12Z 가 지났다 | platform-svc 이미지 증거 아티팩트(`10384972238`)가 만료된다. 다음 캠페인 preflight 의 이미지 사전 검증이 그 서비스에서 실패하므로 증거를 새로 만들어야 한다 |
 
@@ -180,9 +181,77 @@ develop `6c6cf436` 로 머지했다(CI 377 tests 통과 — 기존 372 + 새 5).
 
 ### 7-7. 사용자 결정이 필요한 것
 
+→ **2026-10-07 에 다섯 건 모두 권장대로 결정됐다. 처리 결과는 §8-1.**
+
 1. **publisher 시점** — 다음 캠페인이 홈 master 를 움직이면 #169 는 그 캠페인의 landing 에 필요 없다(7-2). 리뷰(10-19 이후)를 기다려도 다음 캠페인을 막지 않는다.
 2. **다음 캠페인 범위와 시점** — 올릴 제품 변경이 없다(7-1). 지금 후보는 홈 #100(테스트만)과 gitops publisher 뿐이다.
    platform-svc 이미지 증거(10-15 07:12Z)는 캠페인을 그 뒤에 돌릴 때만 다시 만들면 된다.
 3. **gitops 로컬 git 설정의 봇 이름**을 지울지(7-6).
 4. **미복구 반복 통지**(EventBridge Scheduler + Lambda)와 **Slack 수신처** — 런북 「남은 공백」. AWS 리소스 생성과 Slack 쪽 발급이 필요하다.
 5. **gitops PR #168** — 정책상 머지할 수 없는 채 열려 있다. 닫을지.
+
+## 8. 2026-10-07 새벽 — 결정 5건 처리와 두 번째 스팟 회수 복구 (2026-10-06 18:40Z~)
+
+### 8-1. 사용자 결정 (원문 「1~5 전부 권장대로 진행」)
+
+| # | 결정 | 처리 |
+|---|---|---|
+| 1 | publisher 는 독립 리뷰(10-19 이후) 뒤, 다음 candidate 직전에 #169·#171 을 한 번에 | 대기 |
+| 2 | 다음 캠페인은 올릴 제품 변경이 생길 때까지 보류 | 대기. 이미지 증거가 10-15(platform)·10-21(5개)·10-23(gateway)에 만료되므로, 그 뒤에 돌리면 해당 서비스의 증거 재빌드가 붙는다 |
+| 3 | gitops 로컬 git 설정의 봇 이름 제거 | **완료**(18:41Z). `.git/config` 의 `[user]` 절을 지웠고 기본 작성자가 `Qahnaarin` 이 됐다. ★gitops 의 **봇 이름 커밋**(디스패처 nonce 등)은 이제 `-c user.name=… -c user.email=…` 를 직접 줘야 한다 — 기본값이 없다★ |
+| 4 | 미복구 반복 통지 구축 · Slack 수신처 | 반복 통지 **완료**(8-3). Slack 은 워크스페이스 OAuth 승인이 사람 몫으로 남았다(8-4) |
+| 5 | gitops PR #168 닫기 | **완료**(18:41Z). 범위(#165·#166·#167)의 파일이 main 과 같은 것을 blob 으로 대조하고 근거를 댓글로 남겼다. `develop` 브랜치는 그대로다 |
+
+### 8-2. 두 번째 스팟 회수와 복구
+
+결정을 처리하려고 EC2 목록을 읽다가 GPU 인스턴스가 없는 것을 발견했다(18:40Z).
+
+| 시각(UTC) | 일 |
+|---|---|
+| 17:22 | Interruption Warning → 스팟 요청 `sir-wfbzg9im` `instance-terminated-no-capacity`. 통지 메일 3통 도착(17:22·17:24·17:31) — 발견 시점까지 읽지 않은 상태 |
+| 17:25 | 노드 `ip-172-31-52-85` NotReady · `ollama-gpu` 옛 파드 Terminating·새 파드 Pending |
+| 18:50 | **사용자 확인(「스팟으로 지금 기동」)** 뒤 기동 — `i-09f6b4f41ebd973c7` · 스팟 `sir-xta7jjwp` · 2d · 시세 $0.4649/h · 루트 120 GiB · 태그 `role=k3s-agent-gpu` |
+| 18:52 | 조인(`ip-172-31-60-217`) → 죽은 노드 삭제 → 옛 파드 강제 삭제 → PVC 삭제(ArgoCD 가 7초 안에 재생성) |
+| 18:56 | `ollama-gpu` 1/1 · 모델 2종 · 엔드포인트 ready · `nvidia.com/gpu` = 1 |
+
+- 중단 약 94분(17:22 → 18:56). 그동안 ai-svc 는 폴백 래치를 연 채 Claude 재시도를 유지했다 — M1 수정이 운영에서 의도대로 동작한 첫 사례다.
+- 폴백은 파드가 Ready 가 된 뒤 30분 늦게 돌아왔다 — 19:26:51 에 세 기능의 래치가 닫혔다(`provider latch closed by probe`). ai-svc `ProviderLatch` 는 열려 있는 동안 탐색하지 않고, 실패가 이어지면 열림 기간이 30분(상한)까지 늘어난다.
+- 생성 속도 `qwen2.5:3b` 103 tok/s · `7b` 52 tok/s. 루트 `df` 117G, 모델을 받은 뒤 64G(55%). **120 GiB 첫 기동이 실측으로 확인됐다.**
+- 공개 3곳은 내내 200, Argo 16 앱 Synced/Healthy.
+
+### 8-3. 미복구 반복 통지 — gitops PR #172
+
+develop `a5221faf` 로 머지했다(CI 383 tests 통과 — 기존 377 + 새 6). `infra/aws/` 와 런북이라 운영 게이트(publisher)와 무관하다.
+
+- EventBridge 규칙 `devpath-gpu-node-absence-watch`(`rate(6 hours)`) → 같은 이름의 Lambda → 기존 SNS 토픽.
+  태그 `role=k3s-agent-gpu` 인 `pending`·`running` 인스턴스가 없으면 알린다. EC2 만 본다(조인 실패·파드 Pending 은 못 본다).
+- 운영 계정 실측: 구축 시점에 노드가 실제로 없어서 첫 호출이 `notified: true`(메일 18:46Z), 복구 뒤 `notified: false`.
+- 런북에 태그 명시·회수 타임라인·120 GiB 실측·규칙 ③·「미복구 반복 통지」 절을 넣었다.
+
+### 8-4. 사람이 해야 하는 것 — Slack 수신처
+
+`chatbot:DescribeSlackWorkspaces` 가 승인된 워크스페이스 0개를 돌려준다. Slack 계정으로 하는 OAuth 승인이라 도구로는 못 한다.
+
+1. AWS 콘솔 → Amazon Q Developer in chat applications(구 AWS Chatbot) → Configure new client → Slack → Allow.
+2. 받을 채널 이름을 세션에 알려 준다(비공개 채널이면 `@Amazon Q` 를 초대).
+
+그 뒤는 세션이 한다: 채널 구성·IAM 역할 생성, 메시지 형식 맞추기, 종단 확인.
+Chatbot 이 받는 것은 지원 서비스 이벤트와 custom notification 형식(`version: "1.0"` · `source: "custom"` · `content.description` 필수, AWS 문서 `custom-notifs`)이고,
+지금 토픽에 싣는 메시지는 평문이라 그 형식이 아니다.
+
+### 8-5. 현재 상태 (2026-10-06 19:3xZ)
+
+| 항목 | 값 |
+|---|---|
+| 운영 | Argo 16 앱 Synced/Healthy rev `9ab0dd79` · ai-svc `c3c29ade` · 공개 3곳 200 |
+| 노드 | `ip-172-31-48-82`(control-plane) · `ip-172-31-60-217`(GPU 스팟, 루트 120 GiB) |
+| 동결 | gitops main `9ab0dd79` · 홈 master `abdf57a7` · documents main `f52b4a9a` · ai-svc main `c5614621` — 그대로 |
+| AWS 에 새로 생긴 것 | EventBridge 규칙 1 · Lambda 1 · IAM 역할 1 · 로그 그룹 1(전부 `devpath-gpu-node-absence-watch`) · EC2 인스턴스 1(교체) |
+
+### 8-6. 이번에 배운 것
+
+- ★**`DescribeInstances` 에 안 보이면 회수된 것이다.** 종료된 인스턴스는 약 1시간 뒤 목록에서 사라진다. 사유와 시각은 스팟 요청의 `Status` 가 준다.★
+- ★**메일은 왔지만 아무도 읽지 않았다.** 탐지 경로가 있어도 새벽의 회수는 사람이 볼 때까지 방치된다. 반복 통지가 그 틈을 줄인다.★
+- AWS MCP `call_boto3` 는 바이트 인자(`ZipFile`)를 넘기지 못한다 — 임시 비공개 S3 버킷 + presigned URL 로 돌아간다. 샌드박스는 `import zipfile` 도 막는다.
+- EventBridge `rate()` 규칙은 만든 직후 한 번 돈다(수동 호출과 겹쳐 메일이 2통 왔다).
+- `.worktrees/_tools/` 에 재귀 grep 을 걸면 Flutter SDK 를 통째로 훑어 2분 타임아웃이 난다.
