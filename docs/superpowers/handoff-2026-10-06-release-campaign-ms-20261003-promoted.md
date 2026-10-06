@@ -4,6 +4,7 @@
 > 직전 문서 = `handoff-2026-10-03-release-campaign-ms-20261003-validating.md`(8단계 재디스패치 대기 시점).
 > **갱신(2026-10-06 07:20Z)**: 3-1·3-2 의 후속 수정(gitops #169 · 홈 #100, 둘 다 develop)과 3-4 디스크 실측을 반영했다. 운영 상태는 1절 그대로다.
 > **갱신(2026-10-06 07:45Z)**: 사용자 결정 두 건(publisher 는 리뷰 대기 · GPU 루트 볼륨은 다음 기동부터)을 반영했다.
+> **세션 이관 요약과 다음 세션 첫 동작** = `handoff-2026-10-06-session-close.md`.
 > 작업 원장(git 밖, 지우지 말 것) = `D:/workspace/dpa/.release-artifacts/ms-20261003-ai-fallback-retry-budget/`
 > (`PLAN.md` · `coords.json` · `step8-validate-retry*.log` · `step9-preflight.log` · `step10-*.log` · `chain-final-budget.txt`).
 > 사본 = `plans/2026-10-03-release-campaign-ms-20261003-ai-fallback-retry-budget/`(`PLAN.md`·`coords.json` 갱신).

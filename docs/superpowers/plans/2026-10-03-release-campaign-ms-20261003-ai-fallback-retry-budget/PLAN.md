@@ -213,3 +213,13 @@ Argo 16 앱 Synced/Healthy rev `9ab0dd79` · 체인 `phase=mission-on`(`chain-fi
   Flutter 3.44.1 · frontend `b69e9990` mock consent 빌드에서 재현(신규 사용자 조건 32회 중 29회 실패). 홈 PR #100 → develop `7779e0a3`:
   `fillFlutterTextField` + 누르기 전 단언, 같은 빌드에서 60/60·30/30. 홈 `npm test` 501/501. ★master 는 다음 candidate 직전★
 - **GPU 노드 디스크**: `/usr/local` 41G 가 AMI 의 CUDA 툴킷 4벌, k3s 15G, kubelet 7G. 조치 없음(기동 절차의 루트 볼륨이 결정 사항).
+
+## 2026-10-06 세션 마감 — 결정 2건과 이관
+
+- **사용자 결정 「publisher/리뷰대기」**: 게이트 수정(gitops #169)의 main 반영은 publisher 로 하되 독립 리뷰가 끝나기 전에는 준비·실행하지 않는다.
+  Codex 는 2026-10-19 15:13 이후 재개(10/06 재실측 `You've hit your usage limit … try again at Oct 19th, 2026 3:13 PM`).
+- **사용자 결정 「다음 노드 기동부터 볼륨업」**: gitops 런북에 루트 볼륨 120 GiB gp3 명시(PR #170 → develop `f36dbd54`). 120 은 제안값.
+  `RunInstances` DryRun 수락 확인, 실제 기동은 아직 없다. 살아 있는 노드(75 GiB, 88%)는 그대로.
+- 마감 실측(07:38Z): 노드 2대 Ready · Argo 16 앱 Synced/Healthy rev `9ab0dd79` · ai-svc `c3c29ade` 1/1 재시작 0 ERROR 0 · `leva.ai.kr`·`app`·`api` 200.
+- 보존: `collect_seal.py`(8단계 seal 수집) · `consent-step-repro/`(저니 재현 스크립트 3개 + README).
+- 이관 문서: documents `docs/superpowers/handoff-2026-10-06-session-close.md`.
