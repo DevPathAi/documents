@@ -2,6 +2,7 @@
 
 > 앞 문서: `handoff-2026-10-06-release-campaign-ms-20261003-promoted.md`(PR #211~#213) — 캠페인 실행 기록과 결함 분석의 상세.
 > 이 문서는 세션 전체를 다음 세션에 넘기는 요약이다. **다음 세션 첫 동작은 §1.**
+> **→ 이어진 세션의 이관은 `handoff-2026-10-07-session-close.md` 다. 다음 세션은 그 문서부터 읽는다.** 이 문서의 §7 · §8 은 그 세션 앞부분의 상세 기록이다.
 > 원장(git 밖, 지우지 말 것) = `D:/workspace/dpa/.release-artifacts/ms-20261003-ai-fallback-retry-budget/` ·
 > 사본 = `plans/2026-10-03-release-campaign-ms-20261003-ai-fallback-retry-budget/`.
 
