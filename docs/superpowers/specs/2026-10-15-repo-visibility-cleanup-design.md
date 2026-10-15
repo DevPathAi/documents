@@ -100,7 +100,8 @@ Free 요금제 비공개 저장소라 브랜치 보호를 걸 수 없다. 승인
 
 **삭제**: 이동 대상 7개.
 
-**링크**: 최상위 문서 6개(`17_스케줄.md` · `27_MVP_설계서.md` · `37_전체_문서_전체_레포_정합성_점검.md` · `45_Tier3_확장_기능_카탈로그.md` · `Home.md` · `README.md`)에서 이동 대상 7개를 가리키는 링크를 일반 텍스트 「(비공개 저장소로 이동, 2026-10)」로 바꾼다.
+**링크**: 최상위 문서 중 이동 대상을 실제로 링크하는 4개(`17_스케줄.md` · `45_Tier3_확장_기능_카탈로그.md` · `Home.md` · `README.md`)에서 그 링크를 일반 텍스트 「(비공개 저장소로 이동, 2026-10)」로 바꾼다(16곳 — `Home.md` 는 `[[위키 링크]]`). `README.md` 의 읽기 경로 표 「심사 / 투자자 대응 | 27 → 29 → 30 → 31 → pitch-deck」도 같은 문구로 정리한다.
+`27_MVP_설계서.md`(834행 `devpath-ai-pitch-deck.html`) · `37_전체_문서_전체_레포_정합성_점검.md`(275행 `` `35_….md` ``)는 링크가 아니라 코드 표기 언급이라 바꾸지 않는다(2026-10-15 계획 작성 때 실측 — 처음 이 스펙은 6개로 적었다).
 `docs/` 아래 날짜 기록(핸드오프 · 계획 · 리포트 · 스펙)은 손대지 않는다. 그 안의 링크는 끊기지만 당시 기록으로 남긴다.
 
 **문구**:
@@ -119,7 +120,7 @@ Free 요금제 비공개 저장소라 브랜치 보호를 걸 수 없다. 승인
 
 ### 4.3 `devpath-landing-page`
 
-보관(archive)한 뒤 비공개로 돌린다. 순서는 보관 → 비공개.
+비공개로 돌린 뒤 보관(archive)한다. 순서는 **비공개 → 보관** — 보관된 저장소의 공개 범위를 바꿀 수 있는지 GitHub 문서(「Archiving repositories」)에 나와 있지 않아서다(2026-10-15 확인). 결과는 같다.
 
 ### 4.4 `devpath-gitops`
 
@@ -131,7 +132,7 @@ Free 요금제 비공개 저장소라 브랜치 보호를 걸 수 없다. 승인
 |---|---|---|---|
 | 1 | 지금 | 비공개 저장소 생성 → 7개 파일 원문 푸시 | sha256 이 documents develop 원본과 일치 · `visibility=PRIVATE` · 로그아웃 요청 404 |
 | 2 | 1 뒤 | documents `docs/*` → develop PR, CI 녹색 뒤 머지 | §6 완료 조건(develop 트리) |
-| 3 | 지금(1 · 2 와 무관) | 구 랜딩 보관 → 비공개 | `isArchived=true` · `PRIVATE` · 로그아웃 요청 404 |
+| 3 | 지금(1 · 2 와 무관) | 구 랜딩 비공개 → 보관 | `isArchived=true` · `PRIVATE` · 로그아웃 요청 404 · 홈 `/api/stats` 200 유지 |
 | 4 | **다음 캠페인 candidate 생성 전** | documents develop → main 머지(기존 동결 규칙) — 공개 화면이 실제로 바뀌는 시점 | §6 완료 조건(main 트리) |
 
 4단계를 candidate 생성 뒤에 하면 candidate 가 봉인한 `analytics_privacy.approval_source_sha` 와 documents main 이 어긋나 candidate 가 거부된다.
@@ -143,7 +144,9 @@ Free 요금제 비공개 저장소라 브랜치 보호를 걸 수 없다. 승인
 - 멘토 실명 0건(전체 트리 검색).
 - 최상위 `*.md` 에서 「최초의 개발자 교육」 · 「유일한 한국」 0건.
 - `17_스케줄.md` · `27_MVP_설계서.md` 에 현행 가격 머리말이 있다.
-- 최상위 `*.md` 의 상대 링크 중 끊긴 것 0개(스크립트 검사).
+- 최상위 `*.md` 에서 이동 대상 7개를 가리키는 링크 0개, 그리고 **기준 커밋 대비 새로 끊긴** 상대 링크 0개(스크립트 검사).
+  「끊긴 링크 0개」 절대 기준은 쓰지 않는다 — 이모지 이름의 설계 문서 2개(AI-LMS 계획서 · Knowledge Notes 설계)에 위키 링크 기능을 설명하는 `[[Note Title]]` 같은 예시 문법이 원래부터 수십 개 있고, 실제 링크가 아니다(2026-10-15 실측).
+- `06_화면_기능_정의서.md` 상자 그림의 고친 줄은 바로 윗줄과 표시 폭이 같다(원래 1칸 어긋나 있던 것도 함께 맞춘다 — 64 → 65).
 - workflow-guide 게시 6개 파일(09 · 10 · 11 · 12 · 14 · 16)은 바이트 단위로 변경 없음.
 - `.github/` · `tools/` 변경 없음.
 
@@ -153,7 +156,7 @@ Free 요금제 비공개 저장소라 브랜치 보호를 걸 수 없다. 승인
 |---|---|
 | documents | PR revert — 파일은 이력에 그대로 있다 |
 | `leva-business-docs` | 외부 의존 없음 — 그대로 두거나 삭제 |
-| `devpath-landing-page` | `gh repo edit DevPathAi/devpath-landing-page --visibility public --accept-visibility-change-consequences` 후 보관 해제 |
+| `devpath-landing-page` | `gh repo unarchive DevPathAi/devpath-landing-page --yes` 후 `gh repo edit DevPathAi/devpath-landing-page --visibility public --accept-visibility-change-consequences` |
 
 ## 8. 위험
 
