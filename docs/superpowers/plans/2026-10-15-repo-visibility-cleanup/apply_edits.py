@@ -55,7 +55,7 @@ BANNER = "> 현행 가격: 정식 전환 시 월 9,900원 예정(2026-10 기준)
 TAGLINE_OLD = '> **"내 수준에 맞는 다음 단계를 AI가 안내하는 최초의 개발자 교육"**'
 TAGLINE_NEW = '> **"사수 없는 0~3년차 개발자의 첫 AI 사수"**'
 BOX_OLD = '│  "Pod 간 거리를 걸어서 이해하는 최초의 개발자 교육"          │'
-BOX_NEW = '│  "Pod 간 거리를 걸어서 이해하는 개발자 교육"' + " " * 18 + "│"  # 표시 폭 65 = 윗줄과 같다
+BOX_NEW = '│  "Pod 간 거리를 걸어서 이해하는 개발자 교육"' + " " * 17 + "│"  # 표시 폭 64 = 상자 위 테두리(2026-10-15 리뷰 수정 — 처음엔 18칸·폭 65 로 잘못 맞췄다)
 CHECKLIST_ANCHOR = "   릴리스 후 **새 documents main SHA** 가 다음 candidate 의 `approval_source_sha` 가 된다.\n"
 WORD_EDITS = (
     ("README.md", TAGLINE_OLD, TAGLINE_NEW),

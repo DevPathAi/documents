@@ -39,7 +39,9 @@ BANNER_FILES = ("17_스케줄.md", "27_MVP_설계서.md")
 TAGLINE = "사수 없는 0~3년차 개발자의 첫 AI 사수"
 TAGLINE_FILES = ("README.md", "Home.md")
 BOX_FILE = "06_화면_기능_정의서.md"
-BOX_REF_LINE, BOX_LINE = 60, 61  # 1부터 센다. 60행은 같은 상자의 바로 윗줄
+# 슬로건 줄은 행 번호가 아니라 내용으로 찾는다(다른 PR 이 줄을 밀어도 엉뚱한 줄을 비교하지 않는다).
+# 기준은 같은 상자의 위 테두리(┌…┐) — 바로 윗줄(60행)은 원래부터 1칸 어긋나 있어 기준이 될 수 없다.
+BOX_ANCHOR = '"Pod 간 거리를 걸어서 이해하는'
 UNCHANGED = GUIDES + (".github", "tools")
 
 _SKIP_TARGET = re.compile(r"^(https?:|mailto:|#|/)", re.I)
@@ -139,6 +141,19 @@ def display_width(s):
     return sum(2 if unicodedata.east_asian_width(c) in "WF" else 1 for c in s)
 
 
+def box_check(lines):
+    """슬로건 줄과 그 위 가장 가까운 상자 위 테두리의 표시 폭이 같고 「최초의」가 없으면 (True, 상세)."""
+    idx = next((i for i, line in enumerate(lines) if BOX_ANCHOR in line), None)
+    if idx is None:
+        return False, "슬로건 줄 없음"
+    top = next((lines[j] for j in range(idx - 1, -1, -1) if lines[j].lstrip().startswith("┌")), None)
+    if top is None:
+        return False, "슬로건 위에 상자 위 테두리(┌) 없음"
+    top_w, slogan_w = display_width(top), display_width(lines[idx])
+    ok = top_w == slogan_w and "최초의" not in lines[idx]
+    return ok, f"{idx + 1}행 폭 {slogan_w}, 위 테두리 폭 {top_w}"
+
+
 def _read(repo, rel):
     with open(os.path.join(repo, rel), encoding="utf-8") as f:
         return f.read()
@@ -208,10 +223,8 @@ def run_checks(repo, base):
     no_tagline = [f for f in TAGLINE_FILES if TAGLINE not in _read(repo, f)]
     record("C7", not no_tagline, "README·Home 새 소개 문구", ", ".join(no_tagline))
 
-    lines = _read(repo, BOX_FILE).splitlines()
-    ref_w, box_w = display_width(lines[BOX_REF_LINE - 1]), display_width(lines[BOX_LINE - 1])
-    record("C8", ref_w == box_w and "최초의" not in lines[BOX_LINE - 1],
-           "06 상자 줄 폭 유지·「최초의」 없음", f"윗줄 폭 {ref_w}, 대상 줄 폭 {box_w}")
+    box_ok, box_detail = box_check(_read(repo, BOX_FILE).splitlines())
+    record("C8", box_ok, "06 슬로건 줄 폭 = 상자 위 테두리 폭·「최초의」 없음", box_detail)
     return results
 
 
