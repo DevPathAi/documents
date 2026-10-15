@@ -20,6 +20,8 @@ Mission Spine 릴리스의 외부 증거는 보호 브랜치의 **현재 head** 
 1. **documents develop → main 릴리스** — 프라이버시 도구 수정(PR #200 `9af1090`, candidate 런 목록을 `branch=release/candidate-<id>` 로 좁힘)이
    develop 에만 있다. 넣지 않아도 다음 candidate 런 1건(목록 79→80건, 약 1,043 KB)까지는 1 MiB 상한 아래지만 그 다음 캠페인은 반드시 터진다.
    릴리스 후 **새 documents main SHA** 가 다음 candidate 의 `approval_source_sha` 가 된다.
+   이 릴리스에는 공개 저장소 정리(`specs/2026-10-15-repo-visibility-cleanup-design.md`)가 함께 들어간다 —
+   머지 뒤 `plans/2026-10-15-repo-visibility-cleanup/check_cleanup.py` 를 main 트리에 다시 돌려 전부 PASS 인지 본다(계획 Task 5).
 2. ai-svc main · 홈 master 에 넣을 변경이 있으면 이때 넣는다(캠페인 범위 결정과 함께).
 3. gitops main 확인 — 현재 **`a97a175466962e33ca1823edbb6656091700db81`**(폴백 publisher). 그 사이 또 움직였으면 아래 값을 그 SHA 로 다시 구한다.
 
