@@ -36,6 +36,34 @@ class HashedNameTest(unittest.TestCase):
         self.assertEqual(cc.hashed_name_hits("멘토 배정 확정", self.SHA), 0)
 
 
+class BoxCheckTest(unittest.TestCase):
+    """C8 — 슬로건 줄을 내용으로 찾고, 그 위의 가장 가까운 상자 위 테두리(┌…┐)와 표시 폭을 비교한다."""
+
+    TOP = "┌" + "─" * 10 + "┐"  # 표시 폭 12
+
+    def test_slogan_wider_than_frame_fails(self):
+        lines = ["```text", self.TOP, "│ 한국 백 │ ", '│"Pod 간 거리를 걸어서 이해하는"│']
+        ok, _ = cc.box_check(lines)
+        self.assertFalse(ok)
+
+    def test_slogan_matching_frame_passes(self):
+        slogan = '│"Pod 간 거리를 걸어서 이해하는"│'
+        top = "┌" + "─" * (cc.display_width(slogan) - 2) + "┐"
+        ok, detail = cc.box_check([top, "│ 윗줄 │", slogan])
+        self.assertTrue(ok, detail)
+
+    def test_missing_slogan_fails(self):
+        ok, detail = cc.box_check([self.TOP, "│ 다른 문장 │"])
+        self.assertFalse(ok)
+        self.assertIn("슬로건", detail)
+
+    def test_slogan_with_choecho_fails_even_if_width_matches(self):
+        slogan = '│"Pod 간 거리를 걸어서 이해하는 최초의"│'
+        top = "┌" + "─" * (cc.display_width(slogan) - 2) + "┐"
+        ok, _ = cc.box_check([top, slogan])
+        self.assertFalse(ok)
+
+
 class DisplayWidthTest(unittest.TestCase):
     def test_hangul_is_double_width(self):
         self.assertEqual(cc.display_width("│가a│"), 5)
