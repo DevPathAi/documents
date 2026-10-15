@@ -63,7 +63,15 @@ py -B compute_ai_rendered_config.py <gitops clone> <gitops main 체크아웃> <b
 `platform-svc` **2026-10-15 07:12Z**(최단) · community·lcs·learning·notification·sandbox 10-21 · gateway 10-23 · admin·ai-svc 10-31.
 다음 캠페인이 10-15 를 넘기면 platform-svc 이미지 재빌드가 필요하다(그대로 두면 preverify 에서 막힌다).
 
+> **2026-10-16 갱신**: platform-svc 는 이미 만기가 지났다 → 재빌드 확정. 캠페인은 Codex 리뷰(10-19 15:13 이후) 뒤라
+> 10-21 을 넘기면 community·lcs·learning·notification·sandbox 도, 10-23 을 넘기면 gateway 도 재빌드 대상이다. 시작 시점에 preflight 로 다시 확인한다.
+
 ## 5. 범위 후보로 함께 볼 것
+
+- **(2026-10-16 추가) 이 캠페인을 여는 제품 변경 — 점검 명세 ④⑤**. 둘 다 develop 에만 있다(frontend 는 main 푸시에서만 배포, 홈 master 는 롤백 창 동결).
+  - frontend develop: #248(`ff6b2a73` — 로그인 초대 안내·카피·og 이미지·보안 헤더·세션 힌트·브랜드 「레바」) + #249(로고 스크린리더 라벨·관리자 앱 문구 「레바」, 머지 후 SHA 확인)
+  - 홈 develop: #100(validate 저니 입력 안정화) + #102(`46fc4de3` — 초대 CTA `?intent=invite`·승인 메일 약속 삭제·12주 경로 예시·HSTS·시각 기준선 재녹화)
+  - shared develop: #88(README)·#89(MinIO 이미지 고정)·#90(Testcontainers 1.21.4, CI 에서 IT skip 금지) — 전부 테스트·문서라 운영 아티팩트에는 영향 없음. main 반영은 선택.
 
 - **ai-svc M1 근본 수정** — 폴백을 켜면 Claude SDK 재시도가 2→0 이 되어, GPU 회수·7b 부재 시 폴백 이전보다 나빠진다(운영에서 지금 켜져 있다).
   재시도 예산을 실제 폴백 가용성에 연동하는 수정이 들어가려면 ai-svc 이미지 릴리스가 필요하다.
