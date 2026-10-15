@@ -20,6 +20,10 @@ Mission Spine 릴리스의 외부 증거는 보호 브랜치의 **현재 head** 
 1. **documents develop → main 릴리스** — 프라이버시 도구 수정(PR #200 `9af1090`, candidate 런 목록을 `branch=release/candidate-<id>` 로 좁힘)이
    develop 에만 있다. 넣지 않아도 다음 candidate 런 1건(목록 79→80건, 약 1,043 KB)까지는 1 MiB 상한 아래지만 그 다음 캠페인은 반드시 터진다.
    릴리스 후 **새 documents main SHA** 가 다음 candidate 의 `approval_source_sha` 가 된다.
+   이 릴리스에는 공개 저장소 정리(`specs/2026-10-15-repo-visibility-cleanup-design.md`)가 함께 들어간다 —
+   머지 뒤 `plans/2026-10-15-repo-visibility-cleanup/check_cleanup.py` 를 main 트리에 다시 돌린다(계획 Task 5) —
+   `--base` = `1689aacb6927bf4102b7265d027f63dfdcd586c9`(비공개 사본 `leva-business-docs` README 「출처」에도 있다).
+   C1~C4·C7~C9 는 PASS 필수. C5·C6 이 FAIL 이면 그 사이 develop 에 들어온 다른 PR 때문일 수 있다 — 계획 Task 5 Step 3 의 `git log` 로 무관한 PR 인지 분류하고 기록한다.
 2. ai-svc main · 홈 master 에 넣을 변경이 있으면 이때 넣는다(캠페인 범위 결정과 함께).
 3. gitops main 확인 — 현재 **`a97a175466962e33ca1823edbb6656091700db81`**(폴백 publisher). 그 사이 또 움직였으면 아래 값을 그 SHA 로 다시 구한다.
 
@@ -59,7 +63,15 @@ py -B compute_ai_rendered_config.py <gitops clone> <gitops main 체크아웃> <b
 `platform-svc` **2026-10-15 07:12Z**(최단) · community·lcs·learning·notification·sandbox 10-21 · gateway 10-23 · admin·ai-svc 10-31.
 다음 캠페인이 10-15 를 넘기면 platform-svc 이미지 재빌드가 필요하다(그대로 두면 preverify 에서 막힌다).
 
+> **2026-10-16 갱신**: platform-svc 는 이미 만기가 지났다 → 재빌드 확정. 캠페인은 Codex 리뷰(10-19 15:13 이후) 뒤라
+> 10-21 을 넘기면 community·lcs·learning·notification·sandbox 도, 10-23 을 넘기면 gateway 도 재빌드 대상이다. 시작 시점에 preflight 로 다시 확인한다.
+
 ## 5. 범위 후보로 함께 볼 것
+
+- **(2026-10-16 추가) 이 캠페인을 여는 제품 변경 — 점검 명세 ④⑤**. 둘 다 develop 에만 있다(frontend 는 main 푸시에서만 배포, 홈 master 는 롤백 창 동결).
+  - frontend develop: #248(`ff6b2a73` — 로그인 초대 안내·카피·og 이미지·보안 헤더·세션 힌트·브랜드 「레바」) + #249(로고 스크린리더 라벨·관리자 앱 문구 「레바」, 머지 후 SHA 확인)
+  - 홈 develop: #100(validate 저니 입력 안정화) + #102(`46fc4de3` — 초대 CTA `?intent=invite`·승인 메일 약속 삭제·12주 경로 예시·HSTS·시각 기준선 재녹화)
+  - shared develop: #88(README)·#89(MinIO 이미지 고정)·#90(Testcontainers 1.21.4, CI 에서 IT skip 금지) — 전부 테스트·문서라 운영 아티팩트에는 영향 없음. main 반영은 선택.
 
 - **ai-svc M1 근본 수정** — 폴백을 켜면 Claude SDK 재시도가 2→0 이 되어, GPU 회수·7b 부재 시 폴백 이전보다 나빠진다(운영에서 지금 켜져 있다).
   재시도 예산을 실제 폴백 가용성에 연동하는 수정이 들어가려면 ai-svc 이미지 릴리스가 필요하다.
