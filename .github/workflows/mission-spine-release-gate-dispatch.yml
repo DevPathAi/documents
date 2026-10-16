@@ -1,0 +1,35 @@
+---
+name: Mission Spine Release Gate Dispatch
+
+'on':
+  push:
+    branches:
+      - automation/dispatch-ms-20261016-leva-inspection-fixes
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    name: Dispatch protected privacy approval
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Dispatch privacy approval as GitHub Actions automation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api \
+            --method POST \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/mission-spine-privacy-approval.yml/dispatches" \
+            --input - <<'JSON'
+          {
+            "ref": "main",
+            "inputs": {
+              "release_id": "ms-20261016-leva-inspection-fixes",
+              "candidate_spec_sha256": "a0d56c1033acae239605678a9d6af0c45b82832c65d95f90d84018f61871df7c",
+              "approval_source_sha": "5d898ad7f5998d0de63cfc14b39d001b52349369"
+            }
+          }
+          JSON
