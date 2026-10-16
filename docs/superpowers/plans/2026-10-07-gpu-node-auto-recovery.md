@@ -1767,3 +1767,27 @@ documents `docs/superpowers/handoff-2026-10-06-session-close.md` 에 §9 를 더
 - **스펙 대조**: G1 → Task 10 · G2 → Task 2 · 4 · 7 · 9 · G3 → Task 1(테스트 4개) · Task 6 Step 2 · Task 8 Step 5 · G4 → Global Constraints · G5 → Task 5 런북 · 3.2 구성 요소 → Task 1~7 · 3.4 감시 → Task 4 · 7 · 9 · 3.5 보안 → Task 6 Step 4 · Task 8 Step 8 · 3.6 잔여 위험의 「훈련에서 관찰」 → Task 10 Step 2 · 6절 순서 → Part B → C.
 - **스펙에 없던 것**: `model-dir` 경로 검증(Review Focus 1) — 스펙은 「디렉터리를 만든다」만 적었다. 0777 로 만드는 경로이므로 저장소 루트 밖을 거부하게 했다.
 - **이름 일치**: `HEARTBEAT_TIMER` · `NODE_NAME` · `REGION` 은 Task 3 의 테스트가 두 스크립트와 유닛 파일 이름을 서로 맞춰 본다. Lambda 의 `METRIC_NAMESPACE` · `METRIC_NAME` · 차원은 Task 2 의 `PUBLISH` 와 Task 4 의 조회 단언이 같은 문자열을 쓴다.
+
+---
+
+## 실행 기록 (2026-10-16)
+
+계획 승인 = 사용자 「진행하기」(PR #219 머지, 직접 실행). 실행 원장(git 밖) = `D:/workspace/dpa/.release-artifacts/gpu-auto-recovery-part-a/progress.md`.
+
+**Part A(Task 0~5) — gitops #174 → develop `4929bd11`.** 코드 · 테스트는 이 계획의 블록과 글자 그대로 같고, 최종 리뷰(새 컨텍스트) 뒤 한 번 고쳤다:
+기동 스크립트가 생존 신호 타이머를 **맨 먼저** 켜고(실패한 부팅을 사람이 고치면 회복으로 보이게), 파라미터 읽기도 같은 30분 예산 안에서 재시도하고,
+설치는 `INSTALL_K3S_SKIP_START=true` + 시도당 600초 한도로 하고(agent 유닛이 `Type=notify` · `TimeoutStartSec=0` 이라 설치 스크립트의 `systemctl restart` 가 조인 실패 때 돌아오지 않는다),
+실패한 시도의 출력 끝부분을 비밀을 가려 남기고, agent 는 마지막에 `systemctl start --no-block` 으로 시작한다. heartbeat 는 k3s 가 아직 없으면 「아직 아님」.
+런북은 「끄는 법」(알람 동작 · 반복 통지 규칙을 함께) · 손으로 띄우기(기동 템플릿) · 기동 실패 대응 · 반복 통지 절의 배포 경고를 더했다. GPU 테스트 50 · CI 434.
+판단: Task 5 런북 상태 줄(리소스가 없을 때 「자동 복구가 처리한다」는 거짓) · PR 머지를 최종 리뷰 뒤로 · 리뷰 Minor 2건 재등급. 미룬 Minor = M1 · M4 · M5 · M6(원장 `final-review.md`).
+
+**Part B(Task 6~7) — AWS, 서비스 영향 없음.** 파라미터 3개(`model-dir` 는 전환 때) · 조인 토큰 id `pc8qap`(값은 presigned PUT → 임시 S3 → SSM 으로만) ·
+역할 · 프로파일 `devpath-gpu-node`(임시 인스턴스로 9가지 실측, 계획의 Expected 와 전부 같음) · 기동 템플릿 `lt-0f28ff0caa50e2ba6` v1(user-data sha256 `d6f500be31b1e41ae37e9333098cf1496c5733b9d603cb4b608b27a59188cb89`) ·
+ASG 희망 0 · 토픽 정책 문장 3개 · 알람 동작 꺼짐(`ALARM`, 메일 없음). 런북 상태 줄 = gitops #176 `54061633`.
+판단: 임시 인스턴스에 공인 IP 를 명시(SSH) · 18 KB user-data 전사를 순수 파이썬 해시로 검증(`run_script` 가 base64 · hashlib 을 막는다).
+
+**Part C(Task 8~11) — 미착수, 다음 세션(`handoff-2026-10-16-session-close.md` §1-1).** 이 계획의 본문과 달라진 값:
+- Task 8 Step 1·2 의 옛 노드는 이제 `i-08bf0d3ef0f3471df` · `ip-172-31-53-253`(10-07 회수 뒤 10-15 에 교체). 실행 직전 다시 읽는다.
+- Task 8 Step 5 의 기동 로그 기대값: `heartbeat timer enabled` → `wrote the node password and the agent token` → `no model-dir parameter: …` → `k3s agent v1.36.2+k3s1 installed as devpath-gpu (attempt N)` → `k3s-agent starting; …`.
+- Task 8 Step 4: 조인 실패는 기동 스크립트를 멈추지 않는다(`--no-block`) — 노드가 안 보이면 `journalctl -u k3s-agent`.
+- Task 11 Step 2: 핸드오프는 그때의 최신 문서에 적는다.

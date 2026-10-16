@@ -1,5 +1,7 @@
 # 다음 릴리스 캠페인 시작 체크리스트 (2026-10-03 작성)
 
+> **소진(2026-10-16)**: 이 체크리스트의 캠페인은 `ms-20261016-leva-inspection-fixes` 로 운영에 반영됐다. 다음 캠페인 입력값은 `handoff-2026-10-16-release-campaign-ms-20261016-promoted.md` §5 를 본다.
+
 > `ms-20261002-ai-provider-fallback-gpu7b` 운영 반영과 gitops 폴백 publisher(`a97a1754`) 뒤에 남은 「다음 캠페인이 반드시 밟아야 할」 순서와 입력값.
 > 근거 기록: `handoff-2026-10-03-release-campaign-promoted.md` · `plans/2026-10-03-gitops-main-ai-fallback-probe-via-publisher.md`.
 > 도구: `2026-10-03-next-campaign-prep/compute_ai_rendered_config.py`.
