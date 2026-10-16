@@ -1,5 +1,7 @@
 # 핸드오프 — 2026-10-16 세션 마무리 (캠페인 운영 반영 → 리뷰 후속 → GPU 자동 복구 Part A·B)
 
+> **대체됨(2026-10-17)**: 다음 세션의 시작점은 `handoff-2026-10-17-gpu-auto-recovery-cutover.md` 다. 이 문서의 §1(시작 점검 · Part C)은 처리됐고, 시작 점검의 기대값이 바뀌었다(ASG 희망 1 · 알람 동작 켜짐 · Lambda 새 판).
+
 > 앞 문서: `handoff-2026-10-16-release-campaign-ms-20261016-promoted.md`(캠페인 상세) · `handoff-2026-10-07-session-close.md`(그 전 이관).
 > 이 문서가 다음 세션의 시작점이다. **다음 세션 첫 동작은 §1.**
 > 원장(git 밖, 지우지 말 것): 캠페인 = `D:/workspace/dpa/.release-artifacts/ms-20261016-leva-inspection-fixes/` ·
