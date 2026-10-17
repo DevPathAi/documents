@@ -1,5 +1,7 @@
 # 핸드오프 — 2026-10-17 GPU 자동 복구 Part C(전환 · 감시 · 훈련 · 기록)
 
+> **대체됨(2026-10-17 세션 마감)**: 다음 세션의 시작점은 `handoff-2026-10-17-session-close.md` 다. 이 문서는 Part C 상세(시작 점검의 「다르면」 열 · 실측 · publisher 범위 목록 §4 · 교훈)로 남는다.
+
 > 앞 문서: `handoff-2026-10-16-session-close.md`(Part A · B 까지, 캠페인 `ms-20261016` 이관).
 > 이 문서가 다음 세션의 시작점이다. **다음 세션 첫 동작은 §1.**
 > 원장(git 밖, 지우지 말 것): `D:/workspace/dpa/.release-artifacts/gpu-auto-recovery-part-a/progress.md` — Part A · B · C 전부, 판단(`Ruling:`) 줄 포함.

@@ -1786,7 +1786,15 @@ documents `docs/superpowers/handoff-2026-10-06-session-close.md` 에 §9 를 더
 ASG 희망 0 · 토픽 정책 문장 3개 · 알람 동작 꺼짐(`ALARM`, 메일 없음). 런북 상태 줄 = gitops #176 `54061633`.
 판단: 임시 인스턴스에 공인 IP 를 명시(SSH) · 18 KB user-data 전사를 순수 파이썬 해시로 검증(`run_script` 가 base64 · hashlib 을 막는다).
 
-**Part C(Task 8~11) — 미착수, 다음 세션(`handoff-2026-10-16-session-close.md` §1-1).** 이 계획의 본문과 달라진 값:
+**Part C(Task 8~11) — 2026-10-16 23:51 ~ 10-17 05:45 KST 완료.** 정본 타임라인 = gitops 런북 「자동 복구」 → 「전환과 훈련(실측)」, 상세 = `handoff-2026-10-17-gpu-auto-recovery-cutover.md`.
+- Task 8 전환: 14:51Z 옛 노드 종료 → 15:00:30 `devpath-gpu` Ready → 15:03 모델 2종(GPU 기능 약 12분 중단) · ai-svc 폴백 15:06:39 복귀.
+- Task 9 감시: 생존 신호를 확인한 **뒤에** Lambda 교체 · 알람 동작 켬. 신호를 일부러 끊으니 `ALARM` 은 **26분 8초 뒤**(계획 기대 15~20분은 틀렸다 — CloudWatch 슬라이딩 창이 3/3 알람에 25분 범위를 읽는다), `OK` 는 재개 64초 뒤. 사용자가 그대로 두기로 했다(10-17).
+- Task 10 훈련: 같은 UID · 지운 것 없음 · 실패 파드 없음, 그러나 **19분 41초 — G1 실패**. 원인 = 스팟 쿼터 `L-3819A6DF` 4 vCPU(옛 인스턴스가 끝나야 대체가 뜨고 ASG 재시도 간격이 쌓인다).
+  사용자 승인으로 쿼터 8 vCPU(10-17 05:01 KST 승인) → 재훈련 t0 20:29:59Z: 대체 t0+7초 · Ready t0+1분57초 · **모델 t0+4분4초 — G1 통과**.
+- 계획 밖으로 더한 것(사용자 승인): 회수 메일 본문(규칙 ① · ② `InputTemplate` 끝)을 「Auto recovery … Do NOT delete the node, pods or the PVC」로 교체(10-17 03:07 KST, 렌더 확인 뒤).
+- Task 11 기록: gitops #177 · #178 · #179 → develop, documents #231~#235 → develop. gitops main 반영은 다음 캠페인 직전 publisher(#172~#179, 사용자 결정 10-17).
+
+실행 때 이 계획의 본문과 달랐던 값(실행 전 정정):
 - Task 8 Step 1·2 의 옛 노드는 이제 `i-08bf0d3ef0f3471df` · `ip-172-31-53-253`(10-07 회수 뒤 10-15 에 교체). 실행 직전 다시 읽는다.
 - Task 8 Step 5 의 기동 로그 기대값: `heartbeat timer enabled` → `wrote the node password and the agent token` → `no model-dir parameter: …` → `k3s agent v1.36.2+k3s1 installed as devpath-gpu (attempt N)` → `k3s-agent starting; …`.
 - Task 8 Step 4: 조인 실패는 기동 스크립트를 멈추지 않는다(`--no-block`) — 노드가 안 보이면 `journalctl -u k3s-agent`.
