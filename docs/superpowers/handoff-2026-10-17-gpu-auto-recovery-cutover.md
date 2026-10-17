@@ -49,7 +49,7 @@ GPU 스팟 노드가 **자동 복구로 넘어갔다** — 노드 이름은 이�
 | 조건 | 할 일 |
 |---|---|
 | GPU 노드가 회수됐다 | **아무것도 지우지 않는다**(2026-10-17 03:07 KST 전에 받은 회수 메일의 삭제 지시도 따르지 않는다). ASG 가 대체를 띄우고 같은 이름으로 돌아온다(재훈련 실측 4분 4초 — 쿼터 8 vCPU. 실제 회수는 미실측이고, 세 AZ 모두 스팟 용량이 없으면 더 걸린다). 30분이 지나도 안 돌아오면 런북 「자동 복구」 증상 표 → 그래도 안 되면 「끄는 법」 뒤 「스팟 회수 후 복구」 |
-| 다음 릴리스 캠페인 | 입력값 = `handoff-2026-10-16-release-campaign-ms-20261016-promoted.md` §5. gitops develop 은 main 보다 #172~#177 이 앞서 있다(main 런북에는 「자동 복구」 절 자체가 없다) — 다음 publisher 에서 #175 와 함께 런북 · `infra/aws/` 를 어디까지 올릴지 정한다. 서비스를 여러 개 함께 올리면 RDS 커넥션 여유부터 잰다 |
+| 다음 릴리스 캠페인 | 입력값 = `handoff-2026-10-16-release-campaign-ms-20261016-promoted.md` §5. **candidate 직전 gitops publisher 로 #172~#179 전부를 main 에 올린다**(2026-10-17 사용자 결정, 범위 · 제외 목록은 §4) — 올린 뒤 회수 메일의 런북 링크를 main 으로. 서비스를 여러 개 함께 올리면 RDS 커넥션 여유부터 잰다 |
 | 이미지 증거 만료 | 최단 2026-11-14 |
 
 ## 2. 이 세션에서 한 것
@@ -77,6 +77,7 @@ GPU 스팟 노드가 **자동 복구로 넘어갔다** — 노드 이름은 이�
 | 「회수 메일 본문 수정을 승인, 10분 복구 목표를 위해 스팟 쿼터를 8 vCPU로 올려」(10-17 03시) | §1-1 의 3 · 1 실행 |
 | 「승인 즉시 자율 진행」 | 쿼터 승인을 확인하는 대로 재훈련, 단계마다 묻지 않음 · 실패하면 되돌림 · 수동 기동까지 미리 승인(쓸 일은 없었다) |
 | 「알람 지연 26분과 메일 본문 형식을 그대로 두기」(10-17) | §1-1 의 2 와 §4 의 본문 형식 — 알람 설정 · `InputTemplate` 형식을 바꾸지 않는다 |
+| 「gitops develop에 쌓인 #172~#179 전부 main」 + 「다음 캠페인 직전」(10-17) | 범위 = #172~#179(17개 파일, §4) · 시점 = 다음 candidate 직전 publisher — 지금은 롤백 레인을 연 채로 둔다 |
 
 ## 4. 남은 일
 
@@ -84,7 +85,9 @@ GPU 스팟 노드가 **자동 복구로 넘어갔다** — 노드 이름은 이�
 - 회수 메일 본문 형식: 큰따옴표로 감싸이고 줄바꿈이 `\n` 두 글자로 들어간다(템플릿이 JSON 문자열 — 옛 본문도 같다). 읽을 수는 있다. **그대로 둔다**(10-17 사용자 결정).
 - publisher 로 런북이 main 에 올라가면 메일의 develop 링크를 main 으로 바꿔도 된다.
 - 자동 복구 최종 리뷰의 미룬 Minor(원장 `final-review.md`): M1 「아직 아님」 종료 코드 1 이 크래시와 같다 · M4 필수 모델 목록과 ollama 매니페스트를 잇는 테스트 없음 · M5 노드 스크립트의 Python 3.10 문법을 CI 가 안 본다. (M6 「계획 Task 8」 번호 참조는 이번 런북 수정으로 없어졌다.)
-- 다음 publisher: gitops develop 이 main 보다 #172~#177 앞서 있다 — #175 와 함께 어디까지 올릴지 정한다(다음 candidate 직전에).
+- **다음 publisher — 범위 확정**(2026-10-17 사용자 결정 「#172~#179 전부 main」, 시점 「다음 캠페인 직전」): 17개 파일 — `docs/runbook-k3s-bootstrap.md`(#170 「루트 볼륨」 절도 같은 파일이라 함께 올라간다) · `README.md` · `.gitattributes` · `infra/aws/gpu-node-absence-watch/handler.py` · `infra/aws/gpu-node/` 5개 · `scripts/release/cloudflare_pages.py` · `scripts/release/seal_release_manifest.py` · `tests/release/` 6개(`test_gpu_node_*` 4 · `test_cloudflare_api.py` · `test_et13_atomic_evidence.py`).
+  PR 이 아니라 publisher 다 — main 은 룰셋 `update` 로 앱 봇(`devpath-gitops-release`)만 갱신하고, #175 의 `scripts/release/` 는 `verify_main_pr_policy.py` 금지 경로다. 지금 올리면 ms-20261016 자동 롤백 레인이 다음 승격까지 닫혀서 미뤘다.
+  **범위 밖**(develop 트리에만 있다 — 통째로 올리면 안 된다): `apps/*/base/kustomization.yaml` 11개(옛 이미지 선택자 — 올리면 운영이 되돌아간다) · `staging/mission-spine/` 4개 · `scripts/release/provision_mission_staging.sh`(#163 staging 인증서 10년) · `tests/release/test_mission_staging_stack.py` — 뒤의 둘은 그 캠페인에서 따로 판단.
 - shared develop 이 main 보다 앞서 있다(#88~#90) — 다음 마이그레이션 캠페인에 함께.
 - 사람 몫: 홈 H-5 영상 재녹화 · Slack 수신처(사용자가 미룸). 메일 9통 수신은 10-17 사용자가 확인했다(§5).
 
