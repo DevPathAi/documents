@@ -1,5 +1,7 @@
 # 핸드오프 — 2026-10-17 세션 마감 (GPU 자동 복구 완료 · 다음 작업 정리)
 
+> **대체됨(2026-11-27 세션 마감)**: 다음 세션의 시작점은 `handoff-2026-11-27-session-close.md` 다(운영 AWS 전체 일시 정지 · RDS 재정지 장치). 이 문서의 §1-2 다음 캠페인 준비 목록은 그쪽에서 그대로 이어 쓴다 — §1-0 시작 점검 값은 이제 맞지 않는다.
+
 > 앞 문서: `handoff-2026-10-17-gpu-auto-recovery-cutover.md`(Part C 상세 — 전환 · 감시 · 훈련 · 재훈련 · 메일 · 쿼터, 시작 점검의 「다르면」 열) · `handoff-2026-10-16-release-campaign-ms-20261016-promoted.md`(다음 candidate 입력 §5).
 > 이 문서가 다음 세션의 시작점이다. **다음 세션 첫 동작은 §1.**
 > 원장(git 밖, 지우지 말 것): 자동 복구 = `D:/workspace/dpa/.release-artifacts/gpu-auto-recovery-part-a/progress.md`(Part A~C · 후속 · 사용자 결정 · `Ruling:` 줄) · 캠페인 = `D:/workspace/dpa/.release-artifacts/ms-20261016-leva-inspection-fixes/`.
